@@ -1,0 +1,70 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Condition {
+  BAIK
+  RUSAK_RINGAN
+  RUSAK_BERAT
+}
+
+enum BorrowStatus {
+  DIPINJAM
+  DIKEMBALIKAN
+  TERLAMBAT
+}
+
+model User {
+  id            String         @id @default(uuid())
+  username      String         @unique
+  password      String
+  name          String
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  borrowRecords BorrowRecord[]
+
+  @@map("users")
+}
+
+model Item {
+  id                String         @id @default(uuid())
+  code              String         @unique
+  name              String
+  category          String
+  totalQuantity     Int            @default(0)
+  availableQuantity Int            @default(0)
+  location          String
+  condition         Condition      @default(BAIK)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  borrowRecords     BorrowRecord[]
+
+  @@map("items")
+}
+
+model BorrowRecord {
+  id              String       @id @default(uuid())
+  borrowCode      String       @unique
+  itemId          String
+  item            Item         @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  adminId         String
+  admin           User         @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  borrowerName    String
+  borrowerContact String
+  borrowQuantity  Int
+  borrowDate      DateTime     @default(now())
+  dueDate         DateTime
+  returnDate      DateTime?
+  status          BorrowStatus @default(DIPINJAM)
+  returnCondition Condition?
+  notes           String?      @db.Text
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("borrow_records")
+}
