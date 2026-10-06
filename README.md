@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sistem Inventaris Aset BPTI UHAMKA
 
-## Getting Started
+Aplikasi manajemen dan sirkulasi aset inventaris Biro Pengembang Teknologi Informasi (BPTI) UHAMKA berbasis Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS, dan Prisma ORM dengan basis data MySQL.
 
-First, run the development server:
+---
 
+## 🛠️ Prasyarat Lingkungan
+- **Node.js**: Versi 20+ (Direkomendasikan v24 LTS)
+- **Package Manager**: [pnpm](https://pnpm.io/) (`corepack enable` atau `npm i -g pnpm`)
+- **Basis Data**: MySQL (XAMPP / Laragon / MySQL Service aktif pada port 3306)
+
+---
+
+## 🚀 Panduan Setup Proyek
+
+### 1. Kloning dan Instalasi Dependensi
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/Imam-Maula/bpti-project-inventaris.git
+cd bpti-project-inventaris
+pnpm install
+```
+*(Prisma Client otomatis ter-generate saat install berkat script `postinstall`).*
+
+### 2. Konfigurasi Lingkungan (`.env`)
+Salin file template `.env.example` menjadi `.env`:
+```bash
+cp .env.example .env
+```
+Sesuaikan kredensial MySQL lokal Anda:
+```env
+DATABASE_URL="mysql://root:@localhost:3306/db_inventaris_bpti"
+SESSION_SECRET="ganti_dengan_rahasia_sesi_acak_minimal_32_karakter"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. Sinkronisasi Basis Data
+Pastikan MySQL sudah berjalan dan database `db_inventaris_bpti` telah dibuat, lalu jalankan:
+```bash
+pnpm db:push
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Menjalankan Server Pengembangan
+```bash
+pnpm dev
+```
+Buka peramban di [http://localhost:3000](http://localhost:3000).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 📜 Perintah Script Tersedia
 
-To learn more about Next.js, take a look at the following resources:
+| Perintah | Deskripsi |
+|---|---|
+| `pnpm dev` | Menjalankan Next.js server dev (Turbopack aktif secara default) |
+| `pnpm build` | Membangun bundle produksi |
+| `pnpm start` | Menjalankan server aplikasi produksi |
+| `pnpm lint` | Menjalankan pengecekan ESLint CLI |
+| `pnpm typecheck` | Menjalankan validasi tipe TypeScript (`tsc --noEmit`) |
+| `pnpm db:generate` | Melakukan regenerate Prisma Client |
+| `pnpm db:push` | Mendorong perubahan skema Prisma ke basis data MySQL |
+| `pnpm db:studio` | Membuka antarmuka grafis Prisma Studio di browser |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📂 Struktur Backend & Server Actions
+- `actions/auth-actions.ts`: Autentikasi Admin & Manajemen Sesi.
+- `actions/item-actions.ts`: Operasi CRUD Master Barang Inventaris.
+- `actions/borrow-actions.ts`: Transaksi Sirkulasi Peminjaman & Pengembalian Aset (Atomik).
+- `lib/prisma.ts`: Singleton Prisma Client.
+- `lib/validations/`: Skema validasi request menggunakan Zod.
+- `prisma/schema.prisma`: Definisi model dan relasi basis data MySQL.
