@@ -1,9 +1,13 @@
 "use server";
 
-import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { createSession, deleteSession, verifySession } from "@/lib/session";
+import {
+  comparePassword,
+  createSession,
+  deleteSession,
+  verifySession,
+} from "@/lib/auth";
 import { loginSchema } from "@/lib/validations/auth";
 
 export interface AuthActionResult {
@@ -49,7 +53,7 @@ export async function loginAction(
       };
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
       return {
         success: false,

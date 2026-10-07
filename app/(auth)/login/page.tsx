@@ -1,9 +1,41 @@
+import type { Metadata } from "next";
+import { LoginForm } from "@/components/auth/login-form";
+import { Boxes } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Masuk Administrator — Sistem Inventaris BPTI",
+  description: "Portal masuk administrator Sistem Inventaris Balai Pengembangan Talenta Indonesia",
+};
+
 export default function LoginPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100">
-      <div className="w-full max-w-md rounded-lg border bg-white p-6 shadow-sm">
-        <h2 className="text-xl font-bold">Login Admin BPTI</h2>
-        <p className="mt-2 text-sm text-slate-600">Area kerja Dev 1 (Form Login & Auth Actions).</p>
+    <main className="flex min-h-screen w-full items-center justify-center bg-background px-4 py-12 text-foreground sm:px-6">
+      <div className="w-full max-w-sm space-y-6">
+        {/* Header Identitas BPTI */}
+        <div className="space-y-2 text-center">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <Boxes className="h-5 w-5" />
+          </div>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">
+            Sistem Inventaris BPTI
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Balai Pengembangan Talenta Indonesia
+          </p>
+        </div>
+
+        {/* Kartu Form Login Solid */}
+        <div className="rounded-lg border border-border bg-card p-6 shadow-xs">
+          <LoginForm />
+        </div>
+
+        {/* Footer Hak Cipta & Info */}
+        <footer className="text-center text-xs text-muted-foreground">
+          &copy; {new Date().getFullYear()} Balai Pengembangan Talenta Indonesia
+          <span className="block text-[11px] text-muted-foreground/80">
+            Pusat Prestasi Nasional &bull; Kemendikbudristek RI
+          </span>
+        </footer>
       </div>
     </main>
   );
