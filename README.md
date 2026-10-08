@@ -1,5 +1,5 @@
 # SISTEM INFORMASI PENGELOLAAN BARANG INVENTARIS KANTOR
-## Balai Pengembangan Talenta Indonesia (BPTI) — Kemendikbudristek RI & UHAMKA
+## Badan Pembina Teknologi Informasi (BPTI) — Kemendikbudristek RI & UHAMKA
 ### Dokumentasi Teknis, Arsitektur Sistem, Manual Operasional & Panduan Pengujian
 
 ---
@@ -47,7 +47,7 @@ graph TD
 ### Spesifikasi Tumpukan Teknologi (*Tech Stack*):
 - **Framework Aplikasi:** Next.js 16.3.7 (App Router, Turbopack, React 19.2 Server Components & Actions)
 - **Bahasa Pemrograman:** TypeScript 5.x (Strict Type Checking)
-- **Styling & Desain:** Tailwind CSS v4 (@theme inline OKLCH, Shadcn UI Anti AI-Slop)
+- **Styling & Desain:** Tailwind CSS v4 (@theme inline OKLCH, Shadcn UI)
 - **Tipografi:** Geist Sans & Geist Mono (Vercel)
 - **Basis Data:** MySQL Server v8.0 / MariaDB (Port 3306)
 - **Object-Relational Mapping (ORM):** Prisma ORM v5.22.0
@@ -251,4 +251,4 @@ Repositori ini dilengkapi dengan perintah skrip terstandardisasi pada `package.j
 
 ## 11. Pengesahan & Serah Terima Proyek
 
-Dokumentasi ini disusun sebagai bagian integral dari laporan akhir Praktik Kerja Lapangan (PKL) Program Studi Teknik Informatika / Sistem Informasi Universitas Muhammadiyah Prof. DR. HAMKA (UHAMKA) yang bermitra dengan Balai Pengembangan Talenta Indonesia (BPTI) Pusat Prestasi Nasional Kemendikbudristek RI.
+Dokumentasi ini disusun sebagai bagian integral dari laporan akhir Praktik Kerja Lapangan (PKL) Program Studi Teknik Informatika / Sistem Informasi Universitas Muhammadiyah Prof. DR. HAMKA (UHAMKA) yang bermitra dengan Badan Pembina Teknologi Informasi (BPTI).
