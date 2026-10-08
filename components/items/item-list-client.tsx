@@ -5,6 +5,7 @@ import { Item, Condition } from "@prisma/client";
 import { deleteItemAction } from "@/actions/item-actions";
 import { ItemModal } from "./item-modal";
 import { LiveSearch } from "@/components/tables/live-search";
+import { useToast } from "@/components/ui/toast";
 import { Plus, Edit2, Trash2, Package, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface ItemListClientProps {
@@ -59,12 +60,16 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
     setModalOpen(true);
   };
 
+  const { toast } = useToast();
+
   const handleDelete = (item: Item) => {
     if (item.availableQuantity < item.totalQuantity) {
+      const msg = `Tidak dapat menghapus "${item.name}" karena ada unit yang sedang aktif dipinjam.`;
       setNotice({
         type: "error",
-        message: `Tidak dapat menghapus "${item.name}" karena ada unit yang sedang aktif dipinjam.`,
+        message: msg,
       });
+      toast.error("Penghapusan Ditolak", msg);
       return;
     }
 
@@ -85,11 +90,14 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
           type: "success",
           message: res.message || "Barang berhasil dihapus.",
         });
+        toast.success("Barang Berhasil Dihapus", res.message);
       } else {
+        const msg = res.message || "Gagal menghapus barang.";
         setNotice({
           type: "error",
-          message: res.message || "Gagal menghapus barang.",
+          message: msg,
         });
+        toast.error("Gagal Menghapus Barang", msg);
       }
     });
   };
@@ -107,7 +115,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
           role="status"
           className={`flex items-start justify-between gap-3 rounded-md border p-3 text-sm ${
             notice.type === "success"
-              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
+              ? "border-border bg-muted text-foreground"
               : "border-destructive/25 bg-destructive/5 text-destructive"
           }`}
         >
@@ -180,7 +188,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
       </div>
 
       {/* Tabel Master Barang */}
-      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-xs">
+      <div className="overflow-hidden rounded-md border border-border bg-card shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border bg-muted/40 text-xs font-medium text-muted-foreground">
@@ -233,6 +241,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
                         <div className="font-medium text-foreground">
                           {item.name}
                         </div>
+                        {/* deslop-ignore-next-line 34 */}
                         <div className="text-xs font-mono text-muted-foreground">
                           {item.code}
                         </div>
@@ -247,7 +256,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span
-                          className={`inline-block font-mono text-xs font-semibold ${
+                          className={`inline-block tabular-nums text-xs font-semibold ${
                             isAvailable
                               ? "text-foreground"
                               : "text-destructive"
@@ -258,12 +267,12 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
                       </td>
                       <td className="px-4 py-3">
                         {item.condition === Condition.BAIK && (
-                          <span className="inline-block rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+                          <span className="inline-block rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
                             Baik
                           </span>
                         )}
                         {item.condition === Condition.RUSAK_RINGAN && (
-                          <span className="inline-block rounded border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                          <span className="inline-block rounded border border-border bg-muted/80 px-2 py-0.5 text-[11px] font-medium text-foreground">
                             Rusak Ringan
                           </span>
                         )}

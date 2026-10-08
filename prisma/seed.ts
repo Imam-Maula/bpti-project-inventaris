@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Memulai proses seeding basis data...");
+  console.log("[INFO] Memulai proses seeding basis data...");
 
   // 1. Seed Akun Admin Pertama
   const hashedPassword = await bcrypt.hash("admin123", 10);
@@ -17,7 +17,7 @@ async function main() {
       name: "Administrator BPTI",
     },
   });
-  console.log(`✅ Admin terdaftar/diperbarui: ${admin.username} (ID: ${admin.id})`);
+  console.log(`[SUCCESS] Admin terdaftar/diperbarui: ${admin.username} (ID: ${admin.id})`);
 
   // 2. Seed Contoh Data Master Barang
   const sampleItems = [
@@ -65,15 +65,15 @@ async function main() {
       update: {},
       create: item,
     });
-    console.log(`📦 Barang siap: [${record.code}] ${record.name}`);
+    console.log(`[INFO] Barang siap: [${record.code}] ${record.name}`);
   }
 
-  console.log("✨ Seeding basis data selesai dengan sukses!");
+  console.log("[SUCCESS] Seeding basis data selesai dengan sukses.");
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Terjadi kesalahan saat seeding:", e);
+    console.error("[ERROR] Terjadi kesalahan saat seeding:", e);
     process.exit(1);
   })
   .finally(async () => {

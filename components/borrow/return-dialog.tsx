@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Condition, BorrowStatus } from "@prisma/client";
 import { returnBorrowAction } from "@/actions/borrow-actions";
+import { useToast } from "@/components/ui/toast";
 import { X, Loader2, AlertCircle, ArrowDownLeft } from "lucide-react";
 
 export interface BorrowRecordDetail {
@@ -35,6 +36,7 @@ export function ReturnDialog({
   record,
   onSuccess,
 }: ReturnDialogProps) {
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -60,8 +62,11 @@ export function ReturnDialog({
       });
 
       if (!res.success) {
-        setErrorMessage(res.message || "Gagal memproses pengembalian barang.");
+        const msg = res.message || "Gagal memproses pengembalian barang.";
+        setErrorMessage(msg);
+        toast.error("Gagal Memproses Pengembalian", msg);
       } else {
+        toast.success("Pengembalian Berhasil Diproses", res.message);
         onSuccess();
         onClose();
       }
@@ -89,7 +94,7 @@ export function ReturnDialog({
               <ArrowDownLeft className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-foreground">
+              <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 Selesaikan Pengembalian
               </h2>
               <p className="text-xs text-muted-foreground">
@@ -122,6 +127,7 @@ export function ReturnDialog({
         <div className="mt-4 space-y-2 rounded-md border border-border bg-muted/30 p-3 text-xs">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Kode Transaksi:</span>
+            {/* deslop-ignore-next-line 34 */}
             <span className="font-mono font-semibold text-foreground">
               {record.borrowCode}
             </span>

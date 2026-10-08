@@ -3,6 +3,7 @@
 import { useState, useTransition, useMemo } from "react";
 import { Item } from "@prisma/client";
 import { createBorrowAction } from "@/actions/borrow-actions";
+import { useToast } from "@/components/ui/toast";
 import { X, Loader2, AlertCircle } from "lucide-react";
 
 interface BorrowModalProps {
@@ -18,6 +19,7 @@ export function BorrowModal({
   availableItems,
   onSuccess,
 }: BorrowModalProps) {
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -48,19 +50,23 @@ export function BorrowModal({
     setFieldErrors({});
 
     if (!formData.itemId) {
-      setErrorMessage("Silakan pilih barang yang akan dipinjam.");
+      const msg = "Silakan pilih barang yang akan dipinjam.";
+      setErrorMessage(msg);
+      toast.warning("Pilihan Kosong", msg);
       return;
     }
 
     if (!selectedItem) {
-      setErrorMessage("Barang yang dipilih tidak valid atau stok habis.");
+      const msg = "Barang yang dipilih tidak valid atau stok habis.";
+      setErrorMessage(msg);
+      toast.error("Stok Tidak Valid", msg);
       return;
     }
 
     if (formData.borrowQuantity > selectedItem.availableQuantity) {
-      setErrorMessage(
-        `Jumlah pinjam (${formData.borrowQuantity}) melebihi stok yang tersedia (${selectedItem.availableQuantity} unit).`
-      );
+      const msg = `Jumlah pinjam (${formData.borrowQuantity}) melebihi stok yang tersedia (${selectedItem.availableQuantity} unit).`;
+      setErrorMessage(msg);
+      toast.error("Kuota Tidak Mencukupi", msg);
       return;
     }
 
@@ -75,9 +81,12 @@ export function BorrowModal({
       });
 
       if (!res.success) {
-        setErrorMessage(res.message || "Gagal mencatat peminjaman barang.");
+        const msg = res.message || "Gagal mencatat peminjaman barang.";
+        setErrorMessage(msg);
         if (res.errors) setFieldErrors(res.errors);
+        toast.error("Gagal Mencatat Peminjaman", msg);
       } else {
+        toast.success("Peminjaman Berhasil Dicatat", res.message);
         onSuccess();
         onClose();
       }
@@ -101,7 +110,7 @@ export function BorrowModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border pb-3">
           <div>
-            <h2 className="text-base font-semibold text-foreground">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
               Catat Peminjaman Barang
             </h2>
             <p className="text-xs text-muted-foreground">
@@ -130,7 +139,7 @@ export function BorrowModal({
         )}
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
           {/* Pilih Barang */}
           <div className="space-y-1.5">
             <label

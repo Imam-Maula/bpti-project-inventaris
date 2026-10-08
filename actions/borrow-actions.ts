@@ -79,35 +79,53 @@ export async function getBorrowRecordsAction(params?: {
 }
 
 /**
- * Mengambil ringkasan statistik metrik sirkulasi untuk Dasbor.
+ * Mengambil ringkasan statistik metrik sirkulasi dan fisik aset untuk Dasbor (FR-UI-01).
  */
 export async function getCirculationMetricsAction() {
   await requireAuth();
 
   const now = new Date();
 
-  const [totalDipinjam, totalTerlambat, totalDikembalikan, totalItem] =
-    await Promise.all([
-      prisma.borrowRecord.count({
-        where: { status: "DIPINJAM" },
-      }),
-      prisma.borrowRecord.count({
-        where: {
-          status: "DIPINJAM",
-          dueDate: { lt: now },
-        },
-      }),
-      prisma.borrowRecord.count({
-        where: { status: "DIKEMBALIKAN" },
-      }),
-      prisma.item.count(),
-    ]);
-
-  return {
-    totalDipinjam,
+  const [
+    itemAggregates,
+    totalJenisAset,
+    totalTransaksiDipinjam,
     totalTerlambat,
     totalDikembalikan,
-    totalItem,
+  ] = await Promise.all([
+    prisma.item.aggregate({
+      _sum: {
+        totalQuantity: true,
+        availableQuantity: true,
+      },
+    }),
+    prisma.item.count(),
+    prisma.borrowRecord.count({
+      where: { status: "DIPINJAM" },
+    }),
+    prisma.borrowRecord.count({
+      where: {
+        status: "DIPINJAM",
+        dueDate: { lt: now },
+      },
+    }),
+    prisma.borrowRecord.count({
+      where: { status: "DIKEMBALIKAN" },
+    }),
+  ]);
+
+  const totalUnitFisik = itemAggregates._sum.totalQuantity ?? 0;
+  const totalUnitSiapPakai = itemAggregates._sum.availableQuantity ?? 0;
+  const totalUnitDipinjam = Math.max(0, totalUnitFisik - totalUnitSiapPakai);
+
+  return {
+    totalJenisAset,
+    totalUnitFisik,
+    totalUnitDipinjam,
+    totalUnitSiapPakai,
+    totalTransaksiDipinjam,
+    totalTerlambat,
+    totalDikembalikan,
   };
 }
 

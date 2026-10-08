@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Condition, Item } from "@prisma/client";
 import { createItemAction, updateItemAction } from "@/actions/item-actions";
+import { useToast } from "@/components/ui/toast";
 import { X, Loader2, AlertCircle } from "lucide-react";
 
 interface ItemModalProps {
@@ -20,6 +21,7 @@ interface ItemFormProps {
 
 function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
   const isEdit = Boolean(initialData);
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
@@ -58,9 +60,12 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
         });
 
         if (!res.success) {
-          setErrorMessage(res.message || "Gagal memperbarui data barang.");
+          const msg = res.message || "Gagal memperbarui data barang.";
+          setErrorMessage(msg);
           if (res.errors) setFieldErrors(res.errors);
+          toast.error("Gagal Memperbarui Aset", msg);
         } else {
+          toast.success("Data Barang Diperbarui", res.message);
           onSuccess();
           onClose();
         }
@@ -75,9 +80,12 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
         });
 
         if (!res.success) {
-          setErrorMessage(res.message || "Gagal menambahkan barang baru.");
+          const msg = res.message || "Gagal menambahkan barang baru.";
+          setErrorMessage(msg);
           if (res.errors) setFieldErrors(res.errors);
+          toast.error("Gagal Menyimpan Aset", msg);
         } else {
+          toast.success("Aset Berhasil Didaftarkan", res.message);
           onSuccess();
           onClose();
         }
@@ -90,7 +98,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div>
-          <h2 className="text-base font-semibold text-foreground">
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">
             {isEdit ? "Edit Master Barang" : "Tambah Master Barang"}
           </h2>
           <p className="text-xs text-muted-foreground">
@@ -121,7 +129,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
       )}
 
       {/* Form Body */}
-      <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+      <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Kode Barang */}
           <div className="space-y-1.5">

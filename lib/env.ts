@@ -9,7 +9,7 @@ const envSchema = z.object({
 const parsedEnv = envSchema.safeParse(process.env);
 
 if (!parsedEnv.success) {
-  console.error("❌ Kesalahan konfigurasi variabel lingkungan (.env):", parsedEnv.error.format());
+  console.error("[ERROR] Kesalahan konfigurasi variabel lingkungan (.env):", parsedEnv.error.format());
   throw new Error("Konfigurasi variabel lingkungan (.env) tidak valid.");
 }
 

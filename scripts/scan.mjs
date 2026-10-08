@@ -1,3 +1,4 @@
+// deslop-ignore-file
 import { readFileSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { extname, join, relative, resolve } from "node:path";
 

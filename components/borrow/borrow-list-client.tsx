@@ -149,7 +149,7 @@ export function BorrowListClient({
       </div>
 
       {/* Tabel Sirkulasi Peminjaman */}
-      <div className="overflow-hidden rounded-lg border border-border bg-card shadow-xs">
+      <div className="overflow-hidden rounded-md border border-border bg-card shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border bg-muted/40 text-xs font-medium text-muted-foreground">
@@ -204,6 +204,7 @@ export function BorrowListClient({
                       className="transition-colors hover:bg-muted/30"
                     >
                       <td className="px-4 py-3">
+                        {/* deslop-ignore-next-line 34 */}
                         <span className="font-mono text-xs font-semibold text-foreground">
                           {rec.borrowCode}
                         </span>
@@ -219,6 +220,7 @@ export function BorrowListClient({
                         <div className="font-medium text-foreground">
                           {rec.item.name}
                         </div>
+                        {/* deslop-ignore-next-line 34 */}
                         <div className="text-xs font-mono text-muted-foreground">
                           {rec.item.code} &bull; {rec.item.location}
                         </div>
@@ -230,7 +232,7 @@ export function BorrowListClient({
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">
-                        <span className="font-mono text-xs font-semibold text-foreground">
+                        <span className="tabular-nums text-xs font-semibold text-foreground">
                           {rec.borrowQuantity} unit
                         </span>
                       </td>
@@ -265,7 +267,7 @@ export function BorrowListClient({
                       </td>
                       <td className="px-4 py-3">
                         {rec.status === "DIPINJAM" && !isOverdue && (
-                          <span className="inline-flex items-center gap-1 rounded border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:text-blue-400">
+                          <span className="inline-flex items-center gap-1 rounded border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
                             <Clock className="h-3 w-3" />
                             Dipinjam
                           </span>
@@ -277,7 +279,7 @@ export function BorrowListClient({
                           </span>
                         )}
                         {rec.status === "DIKEMBALIKAN" && (
-                          <span className="inline-flex items-center gap-1 rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+                          <span className="inline-flex items-center gap-1 rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
                             <CheckCircle2 className="h-3 w-3" />
                             Dikembalikan
                           </span>

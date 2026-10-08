@@ -2,33 +2,45 @@ import { z } from "zod";
 import { Condition } from "@prisma/client";
 
 export const createBorrowSchema = z.object({
-  itemId: z.string().uuid("Item yang dipilih tidak valid"),
+  itemId: z.string().uuid("Aset inventaris yang dipilih tidak valid"),
   borrowerName: z
     .string()
-    .min(2, "Nama peminjam minimal 2 karakter")
-    .max(100, "Nama peminjam maksimal 100 karakter")
+    .min(2, "Nama staf peminjam minimal 2 karakter")
+    .max(100, "Nama staf peminjam maksimal 100 karakter")
     .trim(),
   borrowerContact: z
     .string()
-    .min(8, "Kontak peminjam minimal 8 digit/karakter")
-    .max(30, "Kontak peminjam maksimal 30 karakter")
+    .min(8, "Nomor kontak peminjam minimal 8 karakter")
+    .max(30, "Nomor kontak peminjam maksimal 30 karakter")
+    .regex(
+      /^[\d\s+\-()]+$/,
+      "Format kontak hanya boleh memuat angka, spasi, dan tanda (+ - ())"
+    )
     .trim(),
   borrowQuantity: z.coerce
     .number()
-    .int("Jumlah pinjam harus berupa bilangan bulat")
-    .min(1, "Jumlah pinjam minimal 1 unit"),
+    .int("Jumlah unit pinjam harus berupa bilangan bulat")
+    .min(1, "Jumlah unit pinjam minimal 1 unit"),
   dueDate: z.coerce.date({
-    message: "Format tanggal batas kembali tidak valid",
+    message: "Format tanggal batas pengembalian tidak valid",
   }),
-  notes: z.string().max(500, "Catatan maksimal 500 karakter").optional().nullable(),
+  notes: z
+    .string()
+    .max(500, "Catatan keperluan maksimal 500 karakter")
+    .optional()
+    .nullable(),
 });
 
 export const returnBorrowSchema = z.object({
-  borrowRecordId: z.string().uuid("ID peminjaman tidak valid"),
+  borrowRecordId: z.string().uuid("ID transaksi peminjaman tidak valid"),
   returnCondition: z.nativeEnum(Condition, {
-    message: "Kondisi saat kembali harus ditentukan",
+    message: "Kondisi fisik unit saat kembali wajib ditentukan",
   }),
-  notes: z.string().max(500, "Catatan maksimal 500 karakter").optional().nullable(),
+  notes: z
+    .string()
+    .max(500, "Catatan pengembalian maksimal 500 karakter")
+    .optional()
+    .nullable(),
 });
 
 export type CreateBorrowInput = z.infer<typeof createBorrowSchema>;

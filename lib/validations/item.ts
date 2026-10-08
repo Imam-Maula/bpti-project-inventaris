@@ -4,8 +4,12 @@ import { Condition } from "@prisma/client";
 export const itemSchema = z.object({
   code: z
     .string()
-    .min(2, "Kode barang minimal 2 karakter")
-    .max(50, "Kode barang maksimal 50 karakter")
+    .min(2, "Kode inventaris minimal 2 karakter")
+    .max(50, "Kode inventaris maksimal 50 karakter")
+    .regex(
+      /^[A-Za-z0-9\-_]+$/,
+      "Kode inventaris hanya boleh berisi huruf, angka, dan tanda hubung (-)"
+    )
     .trim()
     .toUpperCase(),
   name: z
@@ -15,20 +19,21 @@ export const itemSchema = z.object({
     .trim(),
   category: z
     .string()
-    .min(2, "Kategori minimal 2 karakter")
-    .max(50, "Kategori maksimal 50 karakter")
+    .min(2, "Kategori aset minimal 2 karakter")
+    .max(50, "Kategori aset maksimal 50 karakter")
     .trim(),
   totalQuantity: z.coerce
     .number()
-    .int("Jumlah total harus berupa bilangan bulat")
-    .min(1, "Jumlah total minimal 1 unit"),
+    .int("Jumlah total unit harus berupa bilangan bulat")
+    .min(1, "Jumlah total unit minimal 1 unit")
+    .max(100000, "Jumlah total unit melebihi batas wajar"),
   location: z
     .string()
     .min(2, "Lokasi penyimpanan minimal 2 karakter")
     .max(100, "Lokasi penyimpanan maksimal 100 karakter")
     .trim(),
   condition: z.nativeEnum(Condition, {
-    message: "Kondisi barang tidak valid",
+    message: "Kondisi fisik barang wajib dipilih (BAIK, RUSAK_RINGAN, RUSAK_BERAT)",
   }),
 });
 

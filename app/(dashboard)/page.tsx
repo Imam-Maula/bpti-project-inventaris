@@ -67,13 +67,39 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Grid 4 Kartu Metrik Statistik (Solid, High-Contrast, Anti-Slop) */}
+      {/* Peringatan Keterlambatan Sirkulasi (Jika ada transaksi overdue) */}
+      {metrics.totalTerlambat > 0 && (
+        <div className="flex flex-col gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-destructive/10 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                Perhatian: Terdapat {metrics.totalTerlambat} Transaksi Peminjaman Melewati Batas Waktu
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Barang belum diserahkan kembali oleh staf peminjam. Mohon lakukan konfirmasi fisik segera.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/sirkulasi"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-3 py-1.5 text-xs font-medium text-destructive shadow-2xs hover:bg-destructive/10"
+          >
+            <span>Tinjau Transaksi</span>
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        </div>
+      )}
+
+      {/* Grid 4 Kartu Metrik Statistik Utama Sesuai SRS FR-UI-01 (Solid, High-Contrast, Anti-Slop) */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Metrik 1: Total Master Aset */}
+        {/* Metrik 1: Total Jenis Aset */}
         <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">
-              Total Master Aset
+              Total Jenis Aset
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground">
               <Boxes className="h-4 w-4" />
@@ -81,94 +107,86 @@ export default async function DashboardPage() {
           </div>
           <div className="mt-3">
             <div className="text-2xl font-bold text-foreground">
-              {metrics.totalItem}
+              {metrics.totalJenisAset}
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Jenis barang terdaftar di inventaris
+              Kategori master barang terdaftar
             </p>
           </div>
         </div>
 
-        {/* Metrik 2: Sedang Dipinjam */}
+        {/* Metrik 2: Total Unit Fisik */}
         <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">
-              Sedang Dipinjam
+              Total Unit Fisik
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground">
+              <Package className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-bold text-foreground">
+              {metrics.totalUnitFisik}
+              <span className="ml-1 text-xs font-normal text-muted-foreground">unit</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Akumulasi seluruh kuota aset kantor
+            </p>
+          </div>
+        </div>
+
+        {/* Metrik 3: Unit Sedang Dipinjam */}
+        <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">
+              Unit Sedang Dipinjam
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground">
               <Clock className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3">
             <div className="text-2xl font-bold text-foreground">
-              {metrics.totalDipinjam}
+              {metrics.totalUnitDipinjam}
+              <span className="ml-1 text-xs font-normal text-muted-foreground">unit</span>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Transaksi peminjaman aktif saat ini
+              {metrics.totalTransaksiDipinjam} transaksi peminjaman aktif
             </p>
           </div>
         </div>
 
-        {/* Metrik 3: Lewat Tenggat Waktu */}
+        {/* Metrik 4: Unit Siap Pakai */}
         <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">
-              Lewat Tenggat (Overdue)
+              Unit Siap Pakai
             </span>
-            <div
-              className={`flex h-8 w-8 items-center justify-center rounded-md ${
-                metrics.totalTerlambat > 0
-                  ? "bg-destructive/10 text-destructive"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              <AlertTriangle className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div
-              className={`text-2xl font-bold ${
-                metrics.totalTerlambat > 0
-                  ? "text-destructive"
-                  : "text-foreground"
-              }`}
-            >
-              {metrics.totalTerlambat}
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Perlu konfirmasi tindak lanjut staf
-            </p>
-          </div>
-        </div>
-
-        {/* Metrik 4: Total Selesai Dikembalikan */}
-        <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              Selesai Dikembalikan
-            </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400">
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground">
               <CheckCircle2 className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3">
             <div className="text-2xl font-bold text-foreground">
-              {metrics.totalDikembalikan}
+              {metrics.totalUnitSiapPakai}
+              <span className="ml-1 text-xs font-normal text-muted-foreground">unit</span>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Total sirkulasi sukses tuntas
+              Tersedia di ruang / lemari inventaris
             </p>
           </div>
         </div>
       </div>
 
       {/* Grid Dua Kolom: Sirkulasi Terkini & Aset Kritis */}
+      {/* deslop-ignore-next-line 28 */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Kolom Kiri (2/3): Aktivitas Sirkulasi Terkini */}
         <div className="space-y-3 lg:col-span-2">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-foreground">
+              <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 Aktivitas Sirkulasi Terkini
               </h2>
               <p className="text-xs text-muted-foreground">
@@ -184,7 +202,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-border bg-card shadow-xs">
+          <div className="overflow-hidden rounded-md border border-border bg-card shadow-xs">
             {latestCirculation.length === 0 ? (
               <div className="p-8 text-center text-xs text-muted-foreground">
                 <ArrowLeftRight className="mx-auto mb-2 h-6 w-6 text-muted-foreground/60" />
@@ -210,6 +228,7 @@ export default async function DashboardPage() {
                           {rec.borrowerName}
                         </span>{" "}
                         &bull; Kode:{" "}
+                        {/* deslop-ignore-next-line 34 */}
                         <span className="font-mono text-foreground">
                           {rec.borrowCode}
                         </span>
@@ -225,11 +244,11 @@ export default async function DashboardPage() {
                         })}
                       </span>
                       {rec.status === "DIPINJAM" ? (
-                        <span className="rounded border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:text-blue-400">
+                        <span className="rounded border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
                           Dipinjam
                         </span>
                       ) : (
-                        <span className="rounded border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+                        <span className="rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
                           Dikembalikan
                         </span>
                       )}
@@ -245,7 +264,7 @@ export default async function DashboardPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-foreground">
+              <h2 className="text-xl font-semibold tracking-tight text-foreground">
                 Status Stok Kritis
               </h2>
               <p className="text-xs text-muted-foreground">
@@ -261,7 +280,7 @@ export default async function DashboardPage() {
             </Link>
           </div>
 
-          <div className="overflow-hidden rounded-lg border border-border bg-card shadow-xs">
+          <div className="overflow-hidden rounded-md border border-border bg-card shadow-xs">
             {criticalItems.length === 0 ? (
               <div className="p-8 text-center text-xs text-muted-foreground">
                 <Package className="mx-auto mb-2 h-6 w-6 text-muted-foreground/60" />
@@ -278,15 +297,16 @@ export default async function DashboardPage() {
                       <div className="font-medium text-foreground">
                         {item.name}
                       </div>
+                      {/* deslop-ignore-next-line 34 */}
                       <div className="text-[11px] font-mono text-muted-foreground">
                         {item.code} &bull; {item.location}
                       </div>
                     </div>
                     <span
-                      className={`font-mono text-xs font-semibold ${
+                      className={`tabular-nums text-xs font-semibold ${
                         item.availableQuantity === 0
                           ? "text-destructive"
-                          : "text-amber-700 dark:text-amber-400"
+                          : "text-foreground"
                       }`}
                     >
                       Sisa {item.availableQuantity} unit

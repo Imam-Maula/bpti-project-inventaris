@@ -13,7 +13,10 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:check": "tsx scripts/check-db.ts",
+    "test:uat": "tsx scripts/run-phase3-uat.ts",
+    "scan:slop": "node scripts/scan.mjs"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
