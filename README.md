@@ -1,5 +1,5 @@
 # SISTEM INFORMASI PENGELOLAAN BARANG INVENTARIS KANTOR
-## Badan Pembina Teknologi Informasi (BPTI) — Kemendikbudristek RI & UHAMKA
+## Badan Pembina Teknologi Informasi (BPTI) UHAMKA
 ### Dokumentasi Teknis, Arsitektur Sistem, Manual Operasional & Panduan Pengujian
 
 ---
@@ -12,7 +12,7 @@ Sistem dioperasikan pada lingkungan jaringan lokal (*On-Premise Intranet*) denga
 
 ---
 
-## 2. Arsitektur Perangkat Lunak (*Three-Tier Architecture*)
+## 2. Arsitektur Perangkat Lunak
 
 Sistem dibangun dengan memisahkan tanggung jawab secara tegas (*Separation of Concerns*):
 
@@ -47,7 +47,7 @@ graph TD
 ### Spesifikasi Tumpukan Teknologi (*Tech Stack*):
 - **Framework Aplikasi:** Next.js 16.3.7 (App Router, Turbopack, React 19.2 Server Components & Actions)
 - **Bahasa Pemrograman:** TypeScript 5.x (Strict Type Checking)
-- **Styling & Desain:** Tailwind CSS v4 (@theme inline OKLCH, Shadcn UI)
+- **Styling & Desain:** Tailwind CSS v4 (Shadcn UI)
 - **Tipografi:** Geist Sans & Geist Mono (Vercel)
 - **Basis Data:** MySQL Server v8.0 / MariaDB (Port 3306)
 - **Object-Relational Mapping (ORM):** Prisma ORM v5.22.0
