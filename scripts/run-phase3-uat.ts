@@ -57,7 +57,7 @@ async function main() {
   console.log("   Sistem Informasi Pengelolaan Barang Inventaris BPTI UHAMKA");
   console.log("================================================================================\n");
 
-  let adminUser = await prisma.user.findUnique({ where: { username: "admin" } });
+  const adminUser = await prisma.user.findUnique({ where: { username: "admin" } });
   if (!adminUser) {
     throw new Error("Pengguna admin tidak ditemukan dalam basis data. Jalankan pnpm db:seed terlebih dahulu.");
   }

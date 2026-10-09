@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     template: "%s | BPTI Inventaris",
   },
   description:
-    "Sistem Manajemen Inventaris & Sirkulasi Aset Balai Pengembangan Talenta Indonesia, Pusat Prestasi Nasional - Kemendikbudristek",
+    "Sistem Manajemen Inventaris & Sirkulasi Aset Badan Pengembangan Teknologi Informasi (BPTI)",
 };
 
 export default function RootLayout({

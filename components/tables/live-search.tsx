@@ -25,6 +25,7 @@ export function LiveSearch({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        aria-label={placeholder}
         className="w-full rounded-md border border-input bg-background py-2 pr-8 pl-9 text-sm text-foreground placeholder:text-muted-foreground transition-colors duration-150 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
       />
       {value && (

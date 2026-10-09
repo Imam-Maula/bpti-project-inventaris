@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Condition, BorrowStatus } from "@prisma/client";
 import { returnBorrowAction } from "@/actions/borrow-actions";
 import { useToast } from "@/components/ui/toast";
@@ -45,6 +45,17 @@ export function ReturnDialog({
   );
   const [notes, setNotes] = useState("");
 
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isPending) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, isPending, onClose]);
+
   if (!open || !record) return null;
 
   const isOverdue =
@@ -77,6 +88,7 @@ export function ReturnDialog({
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby="return-dialog-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
       {/* Backdrop */}
@@ -94,7 +106,7 @@ export function ReturnDialog({
               <ArrowDownLeft className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              <h2 id="return-dialog-title" className="text-xl font-semibold tracking-tight text-foreground">
                 Selesaikan Pengembalian
               </h2>
               <p className="text-xs text-muted-foreground">

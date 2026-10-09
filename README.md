@@ -250,4 +250,4 @@ Repositori ini dilengkapi dengan perintah skrip terstandardisasi pada `package.j
 
 ## 11. Pengesahan & Serah Terima Proyek
 
-Dokumentasi ini disusun sebagai bagian dari laporan akhir Praktik Kerja Lapangan (PKL) Program Studi Teknik Informatika Universitas Muhammadiyah Prof. DR. HAMKA (UHAMKA) yang bermitra dengan Badan Pembina Teknologi Informasi (BPTI) UHAMKA.
+Dokumentasi ini disusun sebagai bagian dari laporan akhir Praktik Kerja Lapangan (PKL) Program Studi Teknik Informatika Universitas Muhammadiyah Prof. DR. HAMKA (UHAMKA) yang bermitra dengan Badan Pengembangan Teknologi Informasi (BPTI) UHAMKA.

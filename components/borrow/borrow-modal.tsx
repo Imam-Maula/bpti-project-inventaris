@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useEffect } from "react";
 import { Item } from "@prisma/client";
 import { createBorrowAction } from "@/actions/borrow-actions";
 import { useToast } from "@/components/ui/toast";
@@ -23,6 +23,17 @@ export function BorrowModal({
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !isPending) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, isPending, onClose]);
 
   // Filter items yang memiliki stok tersedia > 0
   const selectableItems = useMemo(() => {
@@ -97,6 +108,7 @@ export function BorrowModal({
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby="borrow-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
       {/* Backdrop */}
@@ -110,7 +122,7 @@ export function BorrowModal({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border pb-3">
           <div>
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            <h2 id="borrow-modal-title" className="text-xl font-semibold tracking-tight text-foreground">
               Catat Peminjaman Barang
             </h2>
             <p className="text-xs text-muted-foreground">

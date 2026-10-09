@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function BarangPage() {
-  const items = await getItemsAction();
+  const items = await getItemsAction({ status: "ALL" });
 
   return (
     <div className="space-y-6">

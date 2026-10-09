@@ -80,11 +80,21 @@ export async function getBorrowRecordsAction(params?: {
 
 /**
  * Mengambil ringkasan statistik metrik sirkulasi dan fisik aset untuk Dasbor (FR-UI-01).
+ * Mendukung filter rentang tanggal opsional untuk analisis sirkulasi berkala.
  */
-export async function getCirculationMetricsAction() {
+export async function getCirculationMetricsAction(params?: {
+  startDate?: Date;
+  endDate?: Date;
+}) {
   await requireAuth();
 
   const now = new Date();
+  const dateFilter: Prisma.BorrowRecordWhereInput = {};
+  if (params?.startDate || params?.endDate) {
+    dateFilter.borrowDate = {};
+    if (params.startDate) dateFilter.borrowDate.gte = params.startDate;
+    if (params.endDate) dateFilter.borrowDate.lte = params.endDate;
+  }
 
   const [
     itemAggregates,
@@ -94,23 +104,27 @@ export async function getCirculationMetricsAction() {
     totalDikembalikan,
   ] = await Promise.all([
     prisma.item.aggregate({
+      where: { status: "AKTIF" },
       _sum: {
         totalQuantity: true,
         availableQuantity: true,
       },
     }),
-    prisma.item.count(),
+    prisma.item.count({
+      where: { status: "AKTIF" },
+    }),
     prisma.borrowRecord.count({
-      where: { status: "DIPINJAM" },
+      where: { ...dateFilter, status: "DIPINJAM" },
     }),
     prisma.borrowRecord.count({
       where: {
+        ...dateFilter,
         status: "DIPINJAM",
         dueDate: { lt: now },
       },
     }),
     prisma.borrowRecord.count({
-      where: { status: "DIKEMBALIKAN" },
+      where: { ...dateFilter, status: "DIKEMBALIKAN" },
     }),
   ]);
 
@@ -185,7 +199,10 @@ export async function createBorrowAction(
         }
       }
 
-      // 3. Catat rekaman peminjaman
+      // 3. Catat rekaman peminjaman (tenggat waktu diatur ke akhir hari 23:59:59.999 agar adil)
+      const adjustedDueDate = new Date(dueDate);
+      adjustedDueDate.setHours(23, 59, 59, 999);
+
       const record = await tx.borrowRecord.create({
         data: {
           borrowCode,
@@ -194,7 +211,7 @@ export async function createBorrowAction(
           borrowerName,
           borrowerContact,
           borrowQuantity,
-          dueDate,
+          dueDate: adjustedDueDate,
           notes: notes || null,
           status: "DIPINJAM",
         },
@@ -285,25 +302,42 @@ export async function returnBorrowAction(
         throw new Error("Peminjaman ini sudah tercatat dikembalikan sebelumnya.");
       }
 
-      // 3. Kembalikan stok barang yang dipinjam
-      await tx.item.update({
-        where: { id: record.itemId },
-        data: {
-          availableQuantity: { increment: record.borrowQuantity },
-        },
-      });
+      // 3. Kembalikan stok barang yang dipinjam atau karantina jika rusak berat
+      const isDamagedHeavy = returnCondition === "RUSAK_BERAT";
 
-      return record;
+      if (isDamagedHeavy) {
+        // Unit teridentifikasi RUSAK BERAT: otomatis dikarantina (tidak ditambahkan ke availableQuantity)
+        await tx.item.update({
+          where: { id: record.itemId },
+          data: {
+            condition: "RUSAK_BERAT",
+          },
+        });
+      } else {
+        // Unit kondisi BAIK / RUSAK_RINGAN: pulihkan ke stok siap pakai
+        await tx.item.update({
+          where: { id: record.itemId },
+          data: {
+            availableQuantity: { increment: record.borrowQuantity },
+          },
+        });
+      }
+
+      return { record, isDamagedHeavy };
     });
 
     revalidatePath("/sirkulasi");
     revalidatePath("/barang");
     revalidatePath("/");
 
+    const quarantineNote = result.isDamagedHeavy
+      ? " Unit teridentifikasi RUSAK BERAT dan otomatis dikarantina (tidak dimasukkan ke stok siap pakai)."
+      : " Unit berhasil dipulihkan ke stok siap pakai.";
+
     return {
       success: true,
-      message: `Barang "${result.item.name}" (${result.borrowCode}) telah berhasil dikembalikan.`,
-      data: result,
+      message: `Barang "${result.record.item.name}" (${result.record.borrowCode}) telah berhasil dikembalikan.${quarantineNote}`,
+      data: result.record,
     };
   } catch (error) {
     const errorMessage =

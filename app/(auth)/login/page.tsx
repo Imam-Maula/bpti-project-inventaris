@@ -4,7 +4,7 @@ import { Boxes } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Masuk Administrator — Sistem Inventaris BPTI",
-  description: "Portal masuk administrator Sistem Inventaris Balai Pengembangan Talenta Indonesia",
+  description: "Portal masuk administrator Sistem Inventaris Badan Pengembangan Teknologi Informasi",
 };
 
 export default function LoginPage() {
@@ -20,7 +20,7 @@ export default function LoginPage() {
             Sistem Inventaris BPTI
           </h1>
           <p className="text-sm text-muted-foreground">
-            Balai Pengembangan Talenta Indonesia
+            Badan Pengembangan Teknologi Informasi
           </p>
         </div>
 
@@ -31,10 +31,7 @@ export default function LoginPage() {
 
         {/* Footer Hak Cipta & Info */}
         <footer className="text-center text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} Balai Pengembangan Talenta Indonesia
-          <span className="block text-[11px] text-muted-foreground/80">
-            Pusat Prestasi Nasional &bull; Kemendikbudristek RI
-          </span>
+          &copy; {new Date().getFullYear()} Badan Pengembangan Teknologi Informasi (BPTI)
         </footer>
       </div>
     </main>

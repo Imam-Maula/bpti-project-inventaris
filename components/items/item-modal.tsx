@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Condition, Item } from "@prisma/client";
 import { createItemAction, updateItemAction } from "@/actions/item-actions";
 import { useToast } from "@/components/ui/toast";
@@ -98,7 +98,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">
+          <h2 id="item-modal-title" className="text-xl font-semibold tracking-tight text-foreground">
             {isEdit ? "Edit Master Barang" : "Tambah Master Barang"}
           </h2>
           <p className="text-xs text-muted-foreground">
@@ -326,12 +326,24 @@ export function ItemModal({
   initialData,
   onSuccess,
 }: ItemModalProps) {
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open, onClose]);
+
   if (!open) return null;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
+      aria-labelledby="item-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
       {/* Backdrop */}

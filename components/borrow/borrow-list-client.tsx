@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Item, BorrowStatus } from "@prisma/client";
 import { BorrowModal } from "./borrow-modal";
 import { ReturnDialog, BorrowRecordDetail } from "./return-dialog";
@@ -51,7 +52,7 @@ export function BorrowListClient({
   initialRecords,
   availableItems,
 }: BorrowListClientProps) {
-  const [records] = useState<BorrowRecordWithItem[]>(initialRecords);
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
 
@@ -62,9 +63,9 @@ export function BorrowListClient({
 
   const now = useMemo(() => new Date(), []);
 
-  // Filter records di client secara instan
+  // Filter records di client secara instan dari props RSC (selalu tersinkronisasi)
   const filteredRecords = useMemo(() => {
-    return records.filter((rec) => {
+    return initialRecords.filter((rec) => {
       const matchSearch =
         search === "" ||
         rec.borrowCode.toLowerCase().includes(search.toLowerCase()) ||
@@ -85,7 +86,7 @@ export function BorrowListClient({
 
       return matchSearch && matchStatus;
     });
-  }, [records, search, selectedStatus, now]);
+  }, [initialRecords, search, selectedStatus, now]);
 
   const handleOpenReturn = (record: BorrowRecordWithItem) => {
     setSelectedRecordForReturn({
@@ -108,7 +109,8 @@ export function BorrowListClient({
   };
 
   const handleSuccessAction = () => {
-    window.location.reload();
+    // Revalidasi halus via RSC router.refresh() tanpa reload paksa browser
+    router.refresh();
   };
 
   return (
@@ -292,6 +294,7 @@ export function BorrowListClient({
                             onClick={() => handleOpenReturn(rec)}
                             className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground shadow-2xs hover:bg-muted focus:outline-hidden"
                             title="Konfirmasi Pengembalian Barang"
+                            aria-label={`Konfirmasi pengembalian ${rec.item.name} (${rec.borrowCode})`}
                           >
                             <ArrowDownLeft className="h-3.5 w-3.5" />
                             <span>Kembalikan</span>

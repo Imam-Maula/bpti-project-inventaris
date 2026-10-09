@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Condition } from "@prisma/client";
+import { Condition, ItemStatus } from "@prisma/client";
 
 export const itemSchema = z.object({
   code: z
@@ -35,6 +35,7 @@ export const itemSchema = z.object({
   condition: z.nativeEnum(Condition, {
     message: "Kondisi fisik barang wajib dipilih (BAIK, RUSAK_RINGAN, RUSAK_BERAT)",
   }),
+  status: z.nativeEnum(ItemStatus).optional(),
 });
 
 export const createItemSchema = itemSchema;

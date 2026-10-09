@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Prisma, Condition } from "@prisma/client";
+import { Prisma, Condition, ItemStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/dal";
 import {
@@ -19,16 +19,23 @@ export interface ItemActionResult<T = unknown> {
 }
 
 /**
- * Mengambil daftar seluruh barang master dengan filter opsional (pencarian, kategori, kondisi).
+ * Mengambil daftar seluruh barang master dengan filter opsional (pencarian, kategori, kondisi, status).
  */
 export async function getItemsAction(params?: {
   search?: string;
   category?: string;
   condition?: Condition;
+  status?: ItemStatus | "ALL";
 }) {
   await requireAuth();
 
   const where: Prisma.ItemWhereInput = {};
+
+  if (params?.status && params.status !== "ALL") {
+    where.status = params.status;
+  } else if (!params?.status) {
+    where.status = "AKTIF";
+  }
 
   if (params?.search) {
     where.OR = [
@@ -221,8 +228,77 @@ export async function updateItemAction(
 }
 
 /**
+ * Mengarsipkan master barang (Soft Delete).
+ */
+export async function archiveItemAction(id: string): Promise<ItemActionResult> {
+  await requireAuth();
+
+  try {
+    const activeBorrows = await prisma.borrowRecord.count({
+      where: { itemId: id, status: "DIPINJAM" },
+    });
+
+    if (activeBorrows > 0) {
+      return {
+        success: false,
+        message: "Barang tidak dapat diarsipkan karena masih ada unit yang aktif dipinjam.",
+      };
+    }
+
+    const archived = await prisma.item.update({
+      where: { id },
+      data: { status: "DIARSIPKAN" },
+    });
+
+    revalidatePath("/barang");
+    revalidatePath("/");
+
+    return {
+      success: true,
+      message: `Barang "${archived.name}" (${archived.code}) berhasil diarsipkan.`,
+      data: archived,
+    };
+  } catch (error) {
+    console.error("Kesalahan saat mengarsipkan barang:", error);
+    return {
+      success: false,
+      message: "Terjadi kesalahan server saat mengarsipkan barang.",
+    };
+  }
+}
+
+/**
+ * Mengaktifkan kembali master barang yang diarsipkan ke katalog aktif.
+ */
+export async function unarchiveItemAction(id: string): Promise<ItemActionResult> {
+  await requireAuth();
+
+  try {
+    const restored = await prisma.item.update({
+      where: { id },
+      data: { status: "AKTIF" },
+    });
+
+    revalidatePath("/barang");
+    revalidatePath("/");
+
+    return {
+      success: true,
+      message: `Barang "${restored.name}" (${restored.code}) berhasil diaktifkan kembali ke katalog aktif.`,
+      data: restored,
+    };
+  } catch (error) {
+    console.error("Kesalahan saat mengaktifkan barang:", error);
+    return {
+      success: false,
+      message: "Terjadi kesalahan server saat mengaktifkan kembali barang.",
+    };
+  }
+}
+
+/**
  * Menghapus master barang.
- * Dilarang jika barang sedang dipinjam atau memiliki rekaman relasi foreign-key.
+ * Jika memiliki riwayat sirkulasi masa lalu (FK Restrict P2003), otomatis dialihkan ke status Diarsipkan (Soft Delete).
  */
 export async function deleteItemAction(id: string): Promise<ItemActionResult> {
   await requireAuth();
@@ -242,32 +318,45 @@ export async function deleteItemAction(id: string): Promise<ItemActionResult> {
       };
     }
 
-    const deleted = await prisma.item.delete({
-      where: { id },
-    });
+    try {
+      const deleted = await prisma.item.delete({
+        where: { id },
+      });
 
-    revalidatePath("/barang");
-    revalidatePath("/");
+      revalidatePath("/barang");
+      revalidatePath("/");
 
-    return {
-      success: true,
-      message: `Barang "${deleted.name}" (${deleted.code}) berhasil dihapus.`,
-    };
-  } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2003") {
+      return {
+        success: true,
+        message: `Barang "${deleted.name}" (${deleted.code}) berhasil dihapus permanen.`,
+      };
+    } catch (dbError) {
+      if (
+        dbError instanceof Prisma.PrismaClientKnownRequestError &&
+        dbError.code === "P2003"
+      ) {
+        // Otomatis alihkan ke status DIARSIPKAN jika memiliki relasi masa lalu
+        const archived = await prisma.item.update({
+          where: { id },
+          data: { status: "DIARSIPKAN" },
+        });
+
+        revalidatePath("/barang");
+        revalidatePath("/");
+
         return {
-          success: false,
-          message:
-            "Barang tidak dapat dihapus dari basis data karena memiliki riwayat sirkulasi peminjaman masa lalu.",
+          success: true,
+          message: `Barang "${archived.name}" (${archived.code}) memiliki riwayat transaksi sirkulasi masa lalu dan berhasil diarsipkan (soft delete).`,
+          data: archived,
         };
       }
+      throw dbError;
     }
-
-    console.error("Kesalahan saat menghapus barang:", error);
+  } catch (error) {
+    console.error("Kesalahan saat memproses penghapusan barang:", error);
     return {
       success: false,
-      message: "Terjadi kesalahan server saat menghapus barang.",
+      message: "Terjadi kesalahan server saat memproses penghapusan barang.",
     };
   }
 }
