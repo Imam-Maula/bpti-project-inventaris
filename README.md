@@ -1,18 +1,18 @@
 # SISTEM INFORMASI PENGELOLAAN BARANG INVENTARIS KANTOR
-## Badan Pembina Teknologi Informasi (BPTI) UHAMKA
+## Badan Pengembangan Teknologi Informasi (BPTI) UHAMKA
 ### Dokumentasi Teknis, Arsitektur Sistem, Manual Operasional & Panduan Pengujian
 
 ---
 
 ## 1. Ringkasan Eksekutif & Gambaran Umum
 
-Sistem Informasi Pengelolaan Barang Inventaris Kantor BPTI UHAMKA adalah platform web administratif tingkat korporat/pemerintahan yang dirancang khusus untuk mencatat ribuan unit aset logistik, mengelola mutasi sirkulasi peminjaman staf, memantau batas waktu pengembalian (*due date*), serta menjaga integritas stok fisik secara *real-time* dan akuntabel.
+Sistem Pengelolaan Barang Inventaris BPTI UHAMKA adalah platform web administratif tingkat kampus yang dirancang khusus untuk mencatat ribuan unit aset logistik, mengelola mutasi sirkulasi peminjaman staf, memantau batas waktu pengembalian (*due date*), serta menjaga integritas stok fisik secara *real-time* dan akuntabel.
 
 Sistem dioperasikan pada lingkungan jaringan lokal (*On-Premise Intranet*) dengan model akses administrator tunggal (*Single-Role Authentication*) untuk menjamin keamanan kendali aset kantor.
 
 ---
 
-## 2. Arsitektur Perangkat Lunak
+## 2. Arsitektur Perangkat Lunak (*Three-Tier Architecture*)
 
 Sistem dibangun dengan memisahkan tanggung jawab secara tegas (*Separation of Concerns*):
 
@@ -52,7 +52,7 @@ graph TD
 - **Basis Data:** MySQL Server v8.0 / MariaDB (Port 3306)
 - **Object-Relational Mapping (ORM):** Prisma ORM v5.22.0
 - **Keamanan:** Bcrypt.js (Salt rounds 12), Jose JWT HS256 HttpOnly Cookie
-- **Ikonografi:** Lucide React (Vektor baku tanpa emoji dekoratif)
+- **Ikonografi:** Lucide React
 
 ---
 
@@ -65,7 +65,7 @@ Mengacu pada *Project Charter* dan dokumen *SRS (Software Requirements Specifica
 | **Dev 1 (Lead Project, DB & Security)** | Perancangan skema relasional, keamanan Bcrypt, JWT, Route Guard, dan dokumentasi resmi. | `prisma/schema.prisma`, `lib/auth.ts`, `lib/session.ts`, `proxy.ts`, `README.md` |
 | **Dev 2 (Frontend Specialist & Validation)** | Pembuatan layout dasbor, komponen modal, skema validasi Zod berbahasa Indonesia baku. | `app/(dashboard)/**`, `components/items/item-modal.tsx`, `lib/validations/**` |
 | **Dev 3 (Backend Engineer & Circulation)** | Logika mutasi stok atomik, isolasi race condition, agregasi metrik, dan proteksi foreign key. | `actions/borrow-actions.ts`, `actions/item-actions.ts`, `prisma/seed.ts` |
-| **Dev 4 (QA/QC, Integration & Anti-Slop)** | Pengujian otomatis UAT, audit 35 aturan Anti AI-Slop, sistem Toast notification native. | `scripts/run-phase3-uat.ts`, `scripts/scan.mjs`, `components/ui/toast.tsx` |
+| **Dev 4 (QA/QC)** | Pengujian otomatis UAT, sistem Toast notification native. | `scripts/run-phase3-uat.ts`, `scripts/scan.mjs`, `components/ui/toast.tsx` |
 
 ---
 
@@ -229,7 +229,6 @@ Repositori ini dilengkapi dengan perintah skrip terstandardisasi pada `package.j
 | `pnpm lint` | Menjalankan pemeriksaan ESLint pada seluruh berkas proyek. |
 | `pnpm test:uat` | Menjalankan test runner otomatis 11 kasus uji (UAT-01 s/d UAT-10 + STRESS-01) secara terisolasi. |
 | `pnpm db:check` | Memeriksa agregat kuota stok fisik dan riwayat sirkulasi terkini langsung ke basis data MySQL. |
-| `pnpm scan:slop` | Mengaudit antarmuka pengguna terhadap 35 aturan visual Anti AI-Slop menggunakan engine scanner. |
 | `pnpm db:push` | Menerapkan perubahan skema Prisma ke basis data MySQL secara langsung. |
 | `pnpm db:seed` | Menjalankan seeding akun default admin dan master barang BPTI. |
 | `pnpm db:studio` | Membuka antarmuka grafis visual Prisma Studio untuk inspeksi basis data di peramban. |
@@ -251,4 +250,4 @@ Repositori ini dilengkapi dengan perintah skrip terstandardisasi pada `package.j
 
 ## 11. Pengesahan & Serah Terima Proyek
 
-Dokumentasi ini disusun sebagai bagian integral dari laporan akhir Praktik Kerja Lapangan (PKL) Program Studi Teknik Informatika / Sistem Informasi Universitas Muhammadiyah Prof. DR. HAMKA (UHAMKA) yang bermitra dengan Badan Pembina Teknologi Informasi (BPTI).
+Dokumentasi ini disusun sebagai bagian dari laporan akhir Praktik Kerja Lapangan (PKL) Program Studi Teknik Informatika Universitas Muhammadiyah Prof. DR. HAMKA (UHAMKA) yang bermitra dengan Badan Pembina Teknologi Informasi (BPTI) UHAMKA.
