@@ -152,8 +152,10 @@ erDiagram
         string category "Kategori Logistik"
         int totalQuantity "Total Kuota Unit Fisik"
         int availableQuantity "Unit Fisik Siap Pakai"
+        int quarantinedQuantity "Unit Karantina / Perbaikan"
         string location "Lokasi Rak/Gudang Penyimpanan"
         enum condition "BAIK | RUSAK_RINGAN | RUSAK_BERAT"
+        enum status "AKTIF | DIARSIPKAN"
         datetime createdAt
         datetime updatedAt
     }
@@ -178,7 +180,7 @@ erDiagram
 ```
 
 ### Aturan Integritas Matematika Persamaan Stok:
-$$\text{Total Unit Fisik} = \text{Unit Sedang Dipinjam} + \text{Unit Siap Pakai}$$
+$$\text{Total Unit Fisik} = \text{Unit Siap Pakai} + \text{Unit Sedang Dipinjam} + \text{Unit Karantina / Perbaikan}$$
 Persamaan ini dijaga secara mutlak oleh blok transaksi `prisma.$transaction`.
 
 ---

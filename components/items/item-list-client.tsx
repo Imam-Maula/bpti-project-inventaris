@@ -23,6 +23,7 @@ import {
   Eye,
   Archive,
   RotateCcw,
+  Download,
 } from "lucide-react";
 
 interface ItemListClientProps {
@@ -224,6 +225,51 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
     router.refresh();
   };
 
+  const handleExportCSV = () => {
+    if (filteredItems.length === 0) {
+      toast.warning("Tidak Ada Data", "Tidak ada data barang untuk diekspor.");
+      return;
+    }
+
+    const headers = [
+      "Kode Barang",
+      "Nama Barang",
+      "Kategori",
+      "Total Unit",
+      "Siap Pakai",
+      "Karantina",
+      "Lokasi Simpan",
+      "Kondisi",
+      "Status",
+    ];
+
+    const rows = filteredItems.map((item) => [
+      `"${item.code.replace(/"/g, '""')}"`,
+      `"${item.name.replace(/"/g, '""')}"`,
+      `"${item.category.replace(/"/g, '""')}"`,
+      item.totalQuantity,
+      item.availableQuantity,
+      item.quarantinedQuantity,
+      `"${item.location.replace(/"/g, '""')}"`,
+      item.condition,
+      item.status,
+    ]);
+
+    const csvContent =
+      "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `laporan_master_barang_bpti_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Ekspor Berhasil", "Daftar master barang berhasil diunduh.");
+  };
+
   return (
     <div className="space-y-4">
       {/* Toast Notification Banner */}
@@ -305,15 +351,27 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
           </select>
         </div>
 
-        {/* Tombol Tambah Barang */}
-        <button
-          type="button"
-          onClick={handleOpenCreate}
-          className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 focus:outline-hidden focus:ring-1 focus:ring-ring"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Tambah Barang</span>
-        </button>
+        {/* Tombol Aksi Kanan */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-foreground shadow-2xs hover:bg-muted focus:outline-hidden"
+            title="Unduh seluruh data tabel dalam format CSV/Excel"
+          >
+            <Download className="h-3.5 w-3.5" />
+            <span>Ekspor CSV / Excel</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 focus:outline-hidden focus:ring-1 focus:ring-ring"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Tambah Barang</span>
+          </button>
+        </div>
       </div>
 
       {/* Tabel Master Barang */}

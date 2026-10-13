@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Item, BorrowStatus } from "@prisma/client";
 import { BorrowModal } from "./borrow-modal";
 import { ReturnDialog, BorrowRecordDetail } from "./return-dialog";
+import { BeritaAcaraDialog, BeritaAcaraData } from "./berita-acara-dialog";
 import { LiveSearch } from "@/components/tables/live-search";
 import {
   Plus,
@@ -13,6 +14,8 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
+  Download,
+  FileText,
 } from "lucide-react";
 
 interface BorrowRecordWithItem {
@@ -61,6 +64,10 @@ export function BorrowListClient({
   const [selectedRecordForReturn, setSelectedRecordForReturn] =
     useState<BorrowRecordDetail | null>(null);
 
+  const [beritaAcaraOpen, setBeritaAcaraOpen] = useState(false);
+  const [selectedBeritaAcara, setSelectedBeritaAcara] =
+    useState<BeritaAcaraData | null>(null);
+
   const now = useMemo(() => new Date(), []);
 
   // Filter records di client secara instan dari props RSC (selalu tersinkronisasi)
@@ -108,6 +115,76 @@ export function BorrowListClient({
     setReturnDialogOpen(true);
   };
 
+  const handleOpenBeritaAcara = (record: BorrowRecordWithItem) => {
+    setSelectedBeritaAcara({
+      id: record.id,
+      borrowCode: record.borrowCode,
+      borrowerName: record.borrowerName,
+      borrowerContact: record.borrowerContact,
+      borrowQuantity: record.borrowQuantity,
+      borrowDate: record.borrowDate,
+      dueDate: record.dueDate,
+      returnDate: record.returnDate,
+      status: record.status,
+      notes: record.notes,
+      item: {
+        code: record.item.code,
+        name: record.item.name,
+        category: record.item.category,
+        location: record.item.location,
+      },
+      admin: {
+        name: record.admin.name,
+        username: record.admin.username,
+      },
+    });
+    setBeritaAcaraOpen(true);
+  };
+
+  const handleExportCSV = () => {
+    if (filteredRecords.length === 0) return;
+    const headers = [
+      "Kode Transaksi",
+      "Nama Peminjam",
+      "Kontak Peminjam",
+      "Kode Barang",
+      "Nama Barang",
+      "Jumlah Unit",
+      "Tanggal Pinjam",
+      "Batas Waktu",
+      "Tanggal Realisasi",
+      "Status",
+      "Catatan Keperluan",
+    ];
+
+    const rows = filteredRecords.map((rec) => [
+      `"${rec.borrowCode.replace(/"/g, '""')}"`,
+      `"${rec.borrowerName.replace(/"/g, '""')}"`,
+      `"${rec.borrowerContact.replace(/"/g, '""')}"`,
+      `"${rec.item.code.replace(/"/g, '""')}"`,
+      `"${rec.item.name.replace(/"/g, '""')}"`,
+      rec.borrowQuantity,
+      new Date(rec.borrowDate).toISOString().slice(0, 10),
+      new Date(rec.dueDate).toISOString().slice(0, 10),
+      rec.returnDate ? new Date(rec.returnDate).toISOString().slice(0, 10) : "-",
+      rec.status,
+      `"${(rec.notes || "").replace(/"/g, '""')}"`,
+    ]);
+
+    const csvContent =
+      "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `laporan_sirkulasi_bpti_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleSuccessAction = () => {
     // Revalidasi halus via RSC router.refresh() tanpa reload paksa browser
     router.refresh();
@@ -139,15 +216,27 @@ export function BorrowListClient({
           </select>
         </div>
 
-        {/* Tombol Catat Peminjaman */}
-        <button
-          type="button"
-          onClick={() => setBorrowModalOpen(true)}
-          className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 focus:outline-hidden focus:ring-1 focus:ring-ring"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Catat Peminjaman</span>
-        </button>
+        {/* Tombol Aksi Kanan */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-foreground shadow-2xs hover:bg-muted focus:outline-hidden"
+            title="Unduh seluruh data sirkulasi dalam format CSV/Excel"
+          >
+            <Download className="h-3.5 w-3.5" />
+            <span>Ekspor CSV / Excel</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setBorrowModalOpen(true)}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 focus:outline-hidden focus:ring-1 focus:ring-ring"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Catat Peminjaman</span>
+          </button>
+        </div>
       </div>
 
       {/* Tabel Sirkulasi Peminjaman */}
@@ -288,22 +377,31 @@ export function BorrowListClient({
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        {rec.status === "DIPINJAM" ? (
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
                             type="button"
-                            onClick={() => handleOpenReturn(rec)}
+                            onClick={() => handleOpenBeritaAcara(rec)}
                             className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground shadow-2xs hover:bg-muted focus:outline-hidden"
-                            title="Konfirmasi Pengembalian Barang"
-                            aria-label={`Konfirmasi pengembalian ${rec.item.name} (${rec.borrowCode})`}
+                            title="Pratinjau & Cetak Berita Acara Peminjaman (PDF)"
+                            aria-label={`Cetak Berita Acara ${rec.borrowCode}`}
                           >
-                            <ArrowDownLeft className="h-3.5 w-3.5" />
-                            <span>Kembalikan</span>
+                            <FileText className="h-3.5 w-3.5 text-primary" />
+                            <span>Berita Acara</span>
                           </button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            Selesai
-                          </span>
-                        )}
+
+                          {rec.status === "DIPINJAM" && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenReturn(rec)}
+                              className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-foreground shadow-2xs hover:bg-muted focus:outline-hidden"
+                              title="Konfirmasi Pengembalian Barang"
+                              aria-label={`Konfirmasi pengembalian ${rec.item.name} (${rec.borrowCode})`}
+                            >
+                              <ArrowDownLeft className="h-3.5 w-3.5" />
+                              <span>Kembalikan</span>
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -328,6 +426,13 @@ export function BorrowListClient({
         onClose={() => setReturnDialogOpen(false)}
         record={selectedRecordForReturn}
         onSuccess={handleSuccessAction}
+      />
+
+      {/* Dialog Cetak / Pratinjau Berita Acara (PDF) */}
+      <BeritaAcaraDialog
+        open={beritaAcaraOpen}
+        data={selectedBeritaAcara}
+        onClose={() => setBeritaAcaraOpen(false)}
       />
     </div>
   );
