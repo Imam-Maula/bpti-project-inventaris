@@ -10,6 +10,16 @@ import {
   CreateItemInput,
   UpdateItemInput,
 } from "@/lib/validations/item";
+import {
+  getItemsService,
+  getItemByIdService,
+  createItemService,
+  updateItemAtomicService,
+  archiveItemService,
+  unarchiveItemService,
+  deleteItemService,
+  restoreQuarantinedItemService,
+} from "@/lib/services/item-service";
 
 export interface ItemActionResult<T = unknown> {
   success: boolean;
@@ -19,7 +29,7 @@ export interface ItemActionResult<T = unknown> {
 }
 
 /**
- * Mengambil daftar seluruh barang master dengan filter opsional (pencarian, kategori, kondisi, status).
+ * Mengambil daftar seluruh barang master dengan filter opsional.
  */
 export async function getItemsAction(params?: {
   search?: string;
@@ -28,35 +38,7 @@ export async function getItemsAction(params?: {
   status?: ItemStatus | "ALL";
 }) {
   await requireAuth();
-
-  const where: Prisma.ItemWhereInput = {};
-
-  if (params?.status && params.status !== "ALL") {
-    where.status = params.status;
-  } else if (!params?.status) {
-    where.status = "AKTIF";
-  }
-
-  if (params?.search) {
-    where.OR = [
-      { code: { contains: params.search } },
-      { name: { contains: params.search } },
-      { location: { contains: params.search } },
-    ];
-  }
-
-  if (params?.category) {
-    where.category = params.category;
-  }
-
-  if (params?.condition) {
-    where.condition = params.condition;
-  }
-
-  return prisma.item.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-  });
+  return getItemsService(prisma, params);
 }
 
 /**
@@ -64,22 +46,11 @@ export async function getItemsAction(params?: {
  */
 export async function getItemByIdAction(id: string) {
   await requireAuth();
-
-  return prisma.item.findUnique({
-    where: { id },
-    include: {
-      borrowRecords: {
-        where: { status: "DIPINJAM" },
-        take: 5,
-        orderBy: { borrowDate: "desc" },
-      },
-    },
-  });
+  return getItemByIdService(prisma, id);
 }
 
 /**
  * Membuat master barang baru.
- * Saat barang pertama kali dibuat, availableQuantity sama dengan totalQuantity.
  */
 export async function createItemAction(
   data: CreateItemInput
@@ -95,21 +66,8 @@ export async function createItemAction(
     };
   }
 
-  const { code, name, category, totalQuantity, location, condition } =
-    validated.data;
-
   try {
-    const newItem = await prisma.item.create({
-      data: {
-        code,
-        name,
-        category,
-        totalQuantity,
-        availableQuantity: totalQuantity,
-        location,
-        condition,
-      },
-    });
+    const newItem = await createItemService(prisma, validated.data);
 
     revalidatePath("/barang");
     revalidatePath("/");
@@ -120,13 +78,11 @@ export async function createItemAction(
       data: newItem,
     };
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2002") {
-        return {
-          success: false,
-          message: `Kode barang "${code}" sudah digunakan oleh barang lain.`,
-        };
-      }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return {
+        success: false,
+        message: `Kode barang "${validated.data.code}" sudah digunakan oleh barang lain.`,
+      };
     }
 
     console.error("Kesalahan saat menambahkan barang:", error);
@@ -138,8 +94,7 @@ export async function createItemAction(
 }
 
 /**
- * Memperbarui data master barang.
- * Memvalidasi agar totalQuantity baru tidak lebih kecil dari jumlah unit yang sedang dipinjam.
+ * Memperbarui data master barang secara atomik.
  */
 export async function updateItemAction(
   data: UpdateItemInput
@@ -155,50 +110,8 @@ export async function updateItemAction(
     };
   }
 
-  const { id, code, name, category, totalQuantity, location, condition } =
-    validated.data;
-
   try {
-    const existing = await prisma.item.findUnique({
-      where: { id },
-      include: {
-        borrowRecords: {
-          where: { status: "DIPINJAM" },
-        },
-      },
-    });
-
-    if (!existing) {
-      return {
-        success: false,
-        message: "Barang tidak ditemukan.",
-      };
-    }
-
-    // Hitung unit yang sedang dipinjam saat ini
-    const currentlyBorrowed = existing.totalQuantity - existing.availableQuantity;
-
-    if (totalQuantity < currentlyBorrowed) {
-      return {
-        success: false,
-        message: `Jumlah total tidak boleh kurang dari unit yang sedang aktif dipinjam (${currentlyBorrowed} unit).`,
-      };
-    }
-
-    const newAvailableQuantity = totalQuantity - currentlyBorrowed;
-
-    const updated = await prisma.item.update({
-      where: { id },
-      data: {
-        code,
-        name,
-        category,
-        totalQuantity,
-        availableQuantity: newAvailableQuantity,
-        location,
-        condition,
-      },
-    });
+    const updated = await updateItemAtomicService(prisma, validated.data);
 
     revalidatePath("/barang");
     revalidatePath("/sirkulasi");
@@ -210,19 +123,54 @@ export async function updateItemAction(
       data: updated,
     };
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2002") {
-        return {
-          success: false,
-          message: `Kode barang "${code}" sudah digunakan oleh barang lain.`,
-        };
-      }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return {
+        success: false,
+        message: `Kode barang "${validated.data.code}" sudah digunakan oleh barang lain.`,
+      };
     }
 
-    console.error("Kesalahan saat memperbarui barang:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Terjadi kesalahan server saat memperbarui data barang.";
+
     return {
       success: false,
-      message: "Terjadi kesalahan server saat memperbarui data barang.",
+      message,
+    };
+  }
+}
+
+/**
+ * Memulihkan unit yang berstatus karantina/perbaikan kembali ke stok siap pakai.
+ */
+export async function restoreQuarantinedItemAction(
+  id: string,
+  quantityToRestore: number
+): Promise<ItemActionResult> {
+  await requireAuth();
+
+  try {
+    const updated = await restoreQuarantinedItemService(prisma, id, quantityToRestore);
+
+    revalidatePath("/barang");
+    revalidatePath("/sirkulasi");
+    revalidatePath("/");
+
+    return {
+      success: true,
+      message: `${quantityToRestore} unit barang "${updated.name}" berhasil dipulihkan dari karantina ke stok siap pakai.`,
+      data: updated,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Terjadi kesalahan saat memulihkan unit dari karantina.";
+    return {
+      success: false,
+      message,
     };
   }
 }
@@ -234,21 +182,7 @@ export async function archiveItemAction(id: string): Promise<ItemActionResult> {
   await requireAuth();
 
   try {
-    const activeBorrows = await prisma.borrowRecord.count({
-      where: { itemId: id, status: "DIPINJAM" },
-    });
-
-    if (activeBorrows > 0) {
-      return {
-        success: false,
-        message: "Barang tidak dapat diarsipkan karena masih ada unit yang aktif dipinjam.",
-      };
-    }
-
-    const archived = await prisma.item.update({
-      where: { id },
-      data: { status: "DIARSIPKAN" },
-    });
+    const archived = await archiveItemService(prisma, id);
 
     revalidatePath("/barang");
     revalidatePath("/");
@@ -259,10 +193,13 @@ export async function archiveItemAction(id: string): Promise<ItemActionResult> {
       data: archived,
     };
   } catch (error) {
-    console.error("Kesalahan saat mengarsipkan barang:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Terjadi kesalahan server saat mengarsipkan barang.";
     return {
       success: false,
-      message: "Terjadi kesalahan server saat mengarsipkan barang.",
+      message,
     };
   }
 }
@@ -274,10 +211,7 @@ export async function unarchiveItemAction(id: string): Promise<ItemActionResult>
   await requireAuth();
 
   try {
-    const restored = await prisma.item.update({
-      where: { id },
-      data: { status: "AKTIF" },
-    });
+    const restored = await unarchiveItemService(prisma, id);
 
     revalidatePath("/barang");
     revalidatePath("/");
@@ -298,65 +232,37 @@ export async function unarchiveItemAction(id: string): Promise<ItemActionResult>
 
 /**
  * Menghapus master barang.
- * Jika memiliki riwayat sirkulasi masa lalu (FK Restrict P2003), otomatis dialihkan ke status Diarsipkan (Soft Delete).
+ * Jika memiliki riwayat sirkulasi masa lalu (FK Restrict P2003), otomatis dialihkan ke status Diarsipkan.
  */
 export async function deleteItemAction(id: string): Promise<ItemActionResult> {
   await requireAuth();
 
   try {
-    const activeBorrows = await prisma.borrowRecord.count({
-      where: {
-        itemId: id,
-        status: "DIPINJAM",
-      },
-    });
+    const result = await deleteItemService(prisma, id);
 
-    if (activeBorrows > 0) {
-      return {
-        success: false,
-        message: "Barang tidak dapat dihapus karena masih ada unit yang aktif dipinjam.",
-      };
-    }
+    revalidatePath("/barang");
+    revalidatePath("/");
 
-    try {
-      const deleted = await prisma.item.delete({
-        where: { id },
-      });
-
-      revalidatePath("/barang");
-      revalidatePath("/");
-
+    if (result.isDeletedPermanent) {
       return {
         success: true,
-        message: `Barang "${deleted.name}" (${deleted.code}) berhasil dihapus permanen.`,
+        message: `Barang "${result.item.name}" (${result.item.code}) berhasil dihapus permanen.`,
       };
-    } catch (dbError) {
-      if (
-        dbError instanceof Prisma.PrismaClientKnownRequestError &&
-        dbError.code === "P2003"
-      ) {
-        // Otomatis alihkan ke status DIARSIPKAN jika memiliki relasi masa lalu
-        const archived = await prisma.item.update({
-          where: { id },
-          data: { status: "DIARSIPKAN" },
-        });
-
-        revalidatePath("/barang");
-        revalidatePath("/");
-
-        return {
-          success: true,
-          message: `Barang "${archived.name}" (${archived.code}) memiliki riwayat transaksi sirkulasi masa lalu dan berhasil diarsipkan (soft delete).`,
-          data: archived,
-        };
-      }
-      throw dbError;
+    } else {
+      return {
+        success: true,
+        message: `Barang "${result.item.name}" (${result.item.code}) memiliki riwayat transaksi sirkulasi masa lalu dan berhasil diarsipkan (soft delete).`,
+        data: result.item,
+      };
     }
   } catch (error) {
-    console.error("Kesalahan saat memproses penghapusan barang:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Terjadi kesalahan server saat memproses penghapusan barang.";
     return {
       success: false,
-      message: "Terjadi kesalahan server saat memproses penghapusan barang.",
+      message,
     };
   }
 }

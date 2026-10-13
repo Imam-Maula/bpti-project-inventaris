@@ -37,19 +37,21 @@ model User {
 }
 
 model Item {
-  id                String         @id @default(uuid())
-  code              String         @unique
-  name              String
-  category          String
-  totalQuantity     Int            @default(0)
-  availableQuantity Int            @default(0)
-  location          String
-  condition         Condition      @default(BAIK)
-  status            ItemStatus     @default(AKTIF)
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  borrowRecords     BorrowRecord[]
+  id                  String         @id @default(uuid())
+  code                String         @unique
+  name                String
+  category            String
+  totalQuantity       Int            @default(0)
+  availableQuantity   Int            @default(0)
+  quarantinedQuantity Int            @default(0)
+  location            String
+  condition           Condition      @default(BAIK)
+  status              ItemStatus     @default(AKTIF)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  borrowRecords       BorrowRecord[]
 
+  @@index([status, category])
   @@map("items")
 }
 
@@ -72,5 +74,7 @@ model BorrowRecord {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
+  @@index([status, dueDate])
+  @@index([createdAt])
   @@map("borrow_records")
 }

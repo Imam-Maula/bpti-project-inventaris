@@ -126,7 +126,7 @@ function ItemDetailContent({
 
             {/* Grid Metrik Stok & Lokasi */}
             {/* deslop-ignore-next-line 28 */}
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
               <div className="rounded-md border border-border bg-muted/30 p-2.5">
                 <span className="text-[11px] text-muted-foreground">Total Fisik</span>
                 <p className="mt-0.5 text-sm font-semibold text-foreground">
@@ -139,10 +139,17 @@ function ItemDetailContent({
                   {item.availableQuantity} <span className="text-xs font-normal">unit</span>
                 </p>
               </div>
-              <div className="col-span-2 rounded-md border border-border bg-muted/30 p-2.5 sm:col-span-1">
+              <div className="rounded-md border border-border bg-muted/30 p-2.5">
                 <span className="text-[11px] text-muted-foreground">Sedang Dipinjam</span>
                 <p className="mt-0.5 text-sm font-semibold text-primary">
-                  {Math.max(0, item.totalQuantity - item.availableQuantity)}{" "}
+                  {Math.max(0, item.totalQuantity - item.availableQuantity - (item.quarantinedQuantity ?? 0))}{" "}
+                  <span className="text-xs font-normal">unit</span>
+                </p>
+              </div>
+              <div className="rounded-md border border-border bg-muted/30 p-2.5">
+                <span className="text-[11px] text-muted-foreground">Karantina</span>
+                <p className="mt-0.5 text-sm font-semibold text-foreground">
+                  {item.quarantinedQuantity ?? 0}{" "}
                   <span className="text-xs font-normal">unit</span>
                 </p>
               </div>

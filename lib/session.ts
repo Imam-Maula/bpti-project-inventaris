@@ -22,8 +22,10 @@ export async function encrypt(payload: Omit<SessionPayload, "expiresAt"> & { exp
     .sign(secretKey);
 }
 
+const revokedTokens = new Set<string>();
+
 export async function decrypt(token?: string): Promise<SessionPayload | null> {
-  if (!token) return null;
+  if (!token || revokedTokens.has(token)) return null;
   try {
     const { payload } = await jwtVerify(token, secretKey, {
       algorithms: ["HS256"],
@@ -56,5 +58,9 @@ export async function verifySession(): Promise<SessionPayload | null> {
 
 export async function deleteSession(): Promise<void> {
   const cookieStore = await cookies();
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  if (token) {
+    revokedTokens.add(token);
+  }
   cookieStore.delete(SESSION_COOKIE_NAME);
 }

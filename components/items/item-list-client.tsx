@@ -418,6 +418,11 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
                               Rusak Berat
                             </span>
                           )}
+                          {(item.quarantinedQuantity ?? 0) > 0 && (
+                            <span className="inline-block rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
+                              {item.quarantinedQuantity} Karantina
+                            </span>
+                          )}
                           {isArchived && (
                             <span className="inline-flex items-center gap-1 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                               <Archive className="h-2.5 w-2.5" />
