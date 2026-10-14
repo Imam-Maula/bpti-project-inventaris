@@ -149,10 +149,12 @@ export async function createBorrowTransactionService(
   const { itemId, borrowerName, borrowerContact, borrowQuantity, dueDate, notes } = data;
 
   return db.$transaction(async (tx) => {
-    // 1. CAS decrement bersyarat: WHERE availableQuantity >= borrowQuantity
+    // 1. CAS decrement bersyarat: WHERE availableQuantity >= borrowQuantity AND status = 'AKTIF'
+    // Mencegah peminjaman aset yang telah dinonaktifkan/diarsipkan
     const updateResult = await tx.item.updateMany({
       where: {
         id: itemId,
+        status: "AKTIF",
         availableQuantity: { gte: borrowQuantity },
       },
       data: {
@@ -161,7 +163,9 @@ export async function createBorrowTransactionService(
     });
 
     if (updateResult.count === 0) {
-      throw new Error("Stok barang yang tersedia tidak mencukupi untuk dipinjam.");
+      throw new Error(
+        "Stok barang yang tersedia tidak mencukupi atau barang dalam status tidak aktif/diarsipkan."
+      );
     }
 
     // 2. Buat kode transaksi unik

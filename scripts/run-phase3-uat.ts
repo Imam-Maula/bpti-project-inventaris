@@ -75,6 +75,22 @@ async function main() {
   console.log("   Sistem Informasi Pengelolaan Barang Inventaris BPTI UHAMKA");
   console.log("================================================================================\n");
 
+  // ---------------------------------------------------------------------------
+  // SAFETY GUARD: Mencegah eksekusi UAT pada basis data produksi sebenarnya
+  // ---------------------------------------------------------------------------
+  const dbUrl = process.env.DATABASE_URL || "";
+  const isProduction = process.env.NODE_ENV === "production";
+  const isLocalHost =
+    dbUrl.includes("127.0.0.1") ||
+    dbUrl.includes("localhost") ||
+    dbUrl.includes("db_inventaris_bpti");
+
+  if (isProduction || !isLocalHost) {
+    throw new Error(
+      "[ABORT CRITICAL] Skrip UAT ditolak! Skrip ini melakukan mutasi pengujian dan hanya boleh dijalankan pada basis data lokal / staging pengujian (localhost / 127.0.0.1)."
+    );
+  }
+
   const adminUser = await prisma.user.findUnique({ where: { username: "admin" } });
   if (!adminUser) {
     throw new Error("Pengguna admin tidak ditemukan dalam basis data. Jalankan pnpm db:seed terlebih dahulu.");
