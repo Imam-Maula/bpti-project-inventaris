@@ -105,6 +105,11 @@ Terapkan skema tabel relasional ke basis data MySQL:
 pnpm db:push
 ```
 
+Pada peningkatan dari versi lama, jalankan backfill satu kali untuk menginisialisasi jumlah kondisi dan alokasi peminjaman yang sudah ada:
+```bash
+pnpm db:backfill-condition-quantities
+```
+
 ### Langkah 5: Seeding Data Awal (Akun Admin & Master Aset)
 Inisialisasi akun administrator dan data master barang bawaan BPTI:
 ```bash
@@ -152,6 +157,9 @@ erDiagram
         string category "Kategori Logistik"
         int totalQuantity "Total Kuota Unit Fisik"
         int availableQuantity "Unit Fisik Siap Pakai"
+        int goodQuantity "Unit Baik Tersedia"
+        int lightDamageQuantity "Unit Rusak Ringan Tersedia"
+        int heavyDamageQuantity "Unit Rusak Berat Tidak Siap Dipinjam"
         string location "Lokasi Rak/Gudang Penyimpanan"
         enum condition "BAIK | RUSAK_RINGAN | RUSAK_BERAT"
         datetime createdAt
@@ -166,6 +174,8 @@ erDiagram
         string borrowerName "Nama Staf Peminjam"
         string borrowerContact "Nomor WhatsApp/HP Peminjam"
         int borrowQuantity "Jumlah Unit Dipinjam"
+        int borrowGoodQuantity "Unit Baik yang Dipinjam"
+        int borrowLightDamageQuantity "Unit Rusak Ringan yang Dipinjam"
         datetime borrowDate "Tanggal Mulai Pinjam"
         datetime dueDate "Tenggat Waktu Pengembalian"
         datetime returnDate "Waktu Realisasi Pengembalian"
@@ -178,8 +188,8 @@ erDiagram
 ```
 
 ### Aturan Integritas Matematika Persamaan Stok:
-$$\text{Total Unit Fisik} = \text{Unit Sedang Dipinjam} + \text{Unit Siap Pakai}$$
-Persamaan ini dijaga secara mutlak oleh blok transaksi `prisma.$transaction`.
+$$\text{Total Unit Fisik} = \text{Baik} + \text{Rusak Ringan} + \text{Rusak Berat}$$
+Jumlah kondisi yang ditampilkan di master sudah mencakup unit yang sedang dipinjam. Secara internal, `goodQuantity` dan `lightDamageQuantity` menyimpan unit tersedia, sedangkan unit yang sedang dipinjam tercatat per kondisi pada transaksi aktif. Unit baik dan rusak ringan dapat dipinjam; unit rusak berat dikarantina.
 
 ---
 
@@ -188,8 +198,10 @@ Persamaan ini dijaga secara mutlak oleh blok transaksi `prisma.$transaction`.
 ### SOP-01: Pendaftaran Master Aset Baru (FR-ITEM-01)
 1. Buka menu **Master Barang** (`/barang`).
 2. Klik tombol **Tambah Barang**.
-3. Isi kolom Kode Barang (format alfanumerik bebas spasi, misal `BRG-006`), Kategori, Nama Barang, Total Unit Fisik, Kondisi Fisik, dan Lokasi Simpan.
-4. Klik **Tambah Barang**. Toast notifikasi hijau akan mengonfirmasi pendaftaran aset. Unit siap pakai otomatis sama dengan total unit fisik.
+3. Isi Kode Barang (format alfanumerik bebas spasi, misal `BRG-006`), Kategori, Nama Barang, jumlah unit **Baik**, **Rusak Ringan**, **Rusak Berat**, dan Lokasi Simpan. Total unit fisik dihitung otomatis.
+4. Klik **Tambah Barang**. Toast notifikasi hijau akan mengonfirmasi pendaftaran aset. Hanya unit baik dan rusak ringan yang dihitung sebagai stok siap dipinjam.
+
+Saat mengedit master, sesuaikan jumlah pada ketiga kondisi dengan keadaan fisik terbaru. Jumlah total diperbarui otomatis; unit rusak berat yang telah diperbaiki dapat dipindahkan ke jumlah **Baik** atau **Rusak Ringan**.
 
 ### SOP-02: Transaksi Sirkulasi Peminjaman Aset (FR-TRX-01)
 1. Buka menu **Sirkulasi Peminjaman** (`/sirkulasi`).

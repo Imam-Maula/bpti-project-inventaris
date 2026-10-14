@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma, BorrowStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/dal";
+import { getDominantCondition } from "@/lib/item-condition";
 import {
   createBorrowSchema,
   returnBorrowSchema,
@@ -98,6 +99,8 @@ export async function getCirculationMetricsAction(params?: {
 
   const [
     itemAggregates,
+    borrowedUnitAggregate,
+    damagedUnitAggregate,
     totalJenisAset,
     totalTransaksiDipinjam,
     totalTerlambat,
@@ -109,6 +112,17 @@ export async function getCirculationMetricsAction(params?: {
         totalQuantity: true,
         availableQuantity: true,
       },
+    }),
+    prisma.borrowRecord.aggregate({
+      where: {
+        status: "DIPINJAM",
+        item: { status: "AKTIF" },
+      },
+      _sum: { borrowQuantity: true },
+    }),
+    prisma.item.aggregate({
+      where: { status: "AKTIF" },
+      _sum: { heavyDamageQuantity: true },
     }),
     prisma.item.count({
       where: { status: "AKTIF" },
@@ -130,12 +144,15 @@ export async function getCirculationMetricsAction(params?: {
 
   const totalUnitFisik = itemAggregates._sum.totalQuantity ?? 0;
   const totalUnitSiapPakai = itemAggregates._sum.availableQuantity ?? 0;
-  const totalUnitDipinjam = Math.max(0, totalUnitFisik - totalUnitSiapPakai);
+  const totalUnitDipinjam = borrowedUnitAggregate._sum.borrowQuantity ?? 0;
+  const totalUnitRusakBerat =
+    damagedUnitAggregate._sum.heavyDamageQuantity ?? 0;
 
   return {
     totalJenisAset,
     totalUnitFisik,
     totalUnitDipinjam,
+    totalUnitRusakBerat,
     totalUnitSiapPakai,
     totalTransaksiDipinjam,
     totalTerlambat,
@@ -167,14 +184,38 @@ export async function createBorrowAction(
 
   try {
     const borrowRecord = await prisma.$transaction(async (tx) => {
-      // 1. Pengurangan stok secara atomik bersyarat
+      const item = await tx.item.findUnique({
+        where: { id: itemId },
+        select: {
+          name: true,
+          code: true,
+          goodQuantity: true,
+          lightDamageQuantity: true,
+        },
+      });
+      if (!item) {
+        throw new Error("Barang tidak ditemukan.");
+      }
+
+      const borrowGoodQuantity = Math.min(
+        item.goodQuantity,
+        borrowQuantity
+      );
+      const borrowLightDamageQuantity =
+        borrowQuantity - borrowGoodQuantity;
+
+      // 1. Pengurangan stok dan alokasi kondisi dilakukan secara atomik.
       const updateResult = await tx.item.updateMany({
         where: {
           id: itemId,
           availableQuantity: { gte: borrowQuantity },
+          goodQuantity: { gte: borrowGoodQuantity },
+          lightDamageQuantity: { gte: borrowLightDamageQuantity },
         },
         data: {
           availableQuantity: { decrement: borrowQuantity },
+          goodQuantity: { decrement: borrowGoodQuantity },
+          lightDamageQuantity: { decrement: borrowLightDamageQuantity },
         },
       });
 
@@ -211,6 +252,8 @@ export async function createBorrowAction(
           borrowerName,
           borrowerContact,
           borrowQuantity,
+          borrowGoodQuantity,
+          borrowLightDamageQuantity,
           dueDate: adjustedDueDate,
           notes: notes || null,
           status: "DIPINJAM",
@@ -250,7 +293,7 @@ export async function createBorrowAction(
 /**
  * Memproses pengembalian barang secara atomik.
  * Mencegah duplikasi pengembalian (double return) dengan updateMany bersyarat (status = DIPINJAM).
- * Mengembalikan stok yang dipinjam ke unit tersedia.
+ * Mengembalikan unit layak pakai ke stok tersedia dan mengarantina unit rusak berat.
  */
 export async function returnBorrowAction(
   data: ReturnBorrowInput
@@ -304,24 +347,46 @@ export async function returnBorrowAction(
 
       // 3. Kembalikan stok barang yang dipinjam atau karantina jika rusak berat
       const isDamagedHeavy = returnCondition === "RUSAK_BERAT";
+      const nextGoodQuantity =
+        record.item.goodQuantity +
+        (returnCondition === "BAIK" ? record.borrowQuantity : 0);
+      const nextLightDamageQuantity =
+        record.item.lightDamageQuantity +
+        (returnCondition === "RUSAK_RINGAN" ? record.borrowQuantity : 0);
+      const nextHeavyDamageQuantity =
+        record.item.heavyDamageQuantity +
+        (isDamagedHeavy ? record.borrowQuantity : 0);
+      const remainingBorrowSummary = await tx.borrowRecord.aggregate({
+        where: {
+          itemId: record.itemId,
+          status: "DIPINJAM",
+          id: { not: borrowRecordId },
+        },
+        _sum: {
+          borrowGoodQuantity: true,
+          borrowLightDamageQuantity: true,
+        },
+      });
+      const itemCondition = getDominantCondition(
+        nextGoodQuantity +
+          (remainingBorrowSummary._sum.borrowGoodQuantity ?? 0),
+        nextLightDamageQuantity +
+          (remainingBorrowSummary._sum.borrowLightDamageQuantity ?? 0),
+        nextHeavyDamageQuantity
+      );
 
-      if (isDamagedHeavy) {
-        // Unit teridentifikasi RUSAK BERAT: otomatis dikarantina (tidak ditambahkan ke availableQuantity)
-        await tx.item.update({
-          where: { id: record.itemId },
-          data: {
-            condition: "RUSAK_BERAT",
-          },
-        });
-      } else {
-        // Unit kondisi BAIK / RUSAK_RINGAN: pulihkan ke stok siap pakai
-        await tx.item.update({
-          where: { id: record.itemId },
-          data: {
+      await tx.item.update({
+        where: { id: record.itemId },
+        data: {
+          goodQuantity: nextGoodQuantity,
+          lightDamageQuantity: nextLightDamageQuantity,
+          heavyDamageQuantity: nextHeavyDamageQuantity,
+          ...(!isDamagedHeavy && {
             availableQuantity: { increment: record.borrowQuantity },
-          },
-        });
-      }
+          }),
+          condition: itemCondition,
+        },
+      });
 
       return { record, isDamagedHeavy };
     });

@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { Condition, ItemStatus } from "@prisma/client";
+import { ItemStatus } from "@prisma/client";
 
-export const itemSchema = z.object({
+const itemFieldsSchema = z.object({
   code: z
     .string()
     .min(2, "Kode inventaris minimal 2 karakter")
@@ -22,27 +22,59 @@ export const itemSchema = z.object({
     .min(2, "Kategori aset minimal 2 karakter")
     .max(50, "Kategori aset maksimal 50 karakter")
     .trim(),
-  totalQuantity: z.coerce
+  goodQuantity: z.coerce
     .number()
     .int("Jumlah total unit harus berupa bilangan bulat")
-    .min(1, "Jumlah total unit minimal 1 unit")
-    .max(100000, "Jumlah total unit melebihi batas wajar"),
+    .min(0, "Jumlah unit baik tidak boleh kurang dari 0")
+    .max(100000, "Jumlah unit melebihi batas wajar"),
+  lightDamageQuantity: z.coerce
+    .number()
+    .int("Jumlah unit rusak ringan harus berupa bilangan bulat")
+    .min(0, "Jumlah unit rusak ringan tidak boleh kurang dari 0")
+    .max(100000, "Jumlah unit melebihi batas wajar"),
+  heavyDamageQuantity: z.coerce
+    .number()
+    .int("Jumlah unit rusak berat harus berupa bilangan bulat")
+    .min(0, "Jumlah unit rusak berat tidak boleh kurang dari 0")
+    .max(100000, "Jumlah unit melebihi batas wajar"),
   location: z
     .string()
     .min(2, "Lokasi penyimpanan minimal 2 karakter")
     .max(100, "Lokasi penyimpanan maksimal 100 karakter")
     .trim(),
-  condition: z.nativeEnum(Condition, {
-    message: "Kondisi fisik barang wajib dipilih (BAIK, RUSAK_RINGAN, RUSAK_BERAT)",
-  }),
   status: z.nativeEnum(ItemStatus).optional(),
 });
 
+function validateQuantities(
+  data: z.infer<typeof itemFieldsSchema>,
+  ctx: z.RefinementCtx
+) {
+  const totalQuantity =
+    data.goodQuantity + data.lightDamageQuantity + data.heavyDamageQuantity;
+
+  if (totalQuantity < 1) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["totalQuantity"],
+      message: "Jumlah total barang minimal 1 unit",
+    });
+  }
+  if (totalQuantity > 100000) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["totalQuantity"],
+      message: "Jumlah total barang melebihi batas wajar",
+    });
+  }
+}
+
+export const itemSchema = itemFieldsSchema.superRefine(validateQuantities);
+
 export const createItemSchema = itemSchema;
 
-export const updateItemSchema = itemSchema.extend({
+export const updateItemSchema = itemFieldsSchema.extend({
   id: z.string().uuid("ID barang tidak valid"),
-});
+}).superRefine(validateQuantities);
 
 export type CreateItemInput = z.infer<typeof createItemSchema>;
 export type UpdateItemInput = z.infer<typeof updateItemSchema>;

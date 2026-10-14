@@ -4,12 +4,72 @@ import { revalidatePath } from "next/cache";
 import { Prisma, Condition, ItemStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/dal";
+import { getDominantCondition } from "@/lib/item-condition";
 import {
   createItemSchema,
   updateItemSchema,
   CreateItemInput,
   UpdateItemInput,
 } from "@/lib/validations/item";
+
+type ItemStockSummary = {
+  borrowedQuantity: number;
+  borrowedGoodQuantity: number;
+  borrowedLightDamageQuantity: number;
+  damagedQuantity: number;
+};
+
+async function getItemStockSummaries(
+  itemIds: string[]
+): Promise<Map<string, ItemStockSummary>> {
+  if (itemIds.length === 0) {
+    return new Map();
+  }
+
+  const [borrowedItems, items] = await Promise.all([
+    prisma.borrowRecord.groupBy({
+      by: ["itemId"],
+      where: {
+        itemId: { in: itemIds },
+        status: "DIPINJAM",
+      },
+      _sum: {
+        borrowQuantity: true,
+        borrowGoodQuantity: true,
+        borrowLightDamageQuantity: true,
+      },
+    }),
+    prisma.item.findMany({
+      where: { id: { in: itemIds } },
+      select: { id: true, heavyDamageQuantity: true },
+    }),
+  ]);
+
+  const summaries = new Map<string, ItemStockSummary>(
+    itemIds.map((itemId) => [
+      itemId,
+      {
+        borrowedQuantity: 0,
+        borrowedGoodQuantity: 0,
+        borrowedLightDamageQuantity: 0,
+        damagedQuantity: 0,
+      },
+    ])
+  );
+
+  for (const { itemId, _sum } of borrowedItems) {
+    const summary = summaries.get(itemId)!;
+    summary.borrowedQuantity = _sum.borrowQuantity ?? 0;
+    summary.borrowedGoodQuantity = _sum.borrowGoodQuantity ?? 0;
+    summary.borrowedLightDamageQuantity =
+      _sum.borrowLightDamageQuantity ?? 0;
+  }
+  for (const item of items) {
+    summaries.get(item.id)!.damagedQuantity = item.heavyDamageQuantity;
+  }
+
+  return summaries;
+}
 
 export interface ItemActionResult<T = unknown> {
   success: boolean;
@@ -49,13 +109,50 @@ export async function getItemsAction(params?: {
     where.category = params.category;
   }
 
-  if (params?.condition) {
-    where.condition = params.condition;
-  }
-
-  return prisma.item.findMany({
+  const items = await prisma.item.findMany({
     where,
     orderBy: { createdAt: "desc" },
+  });
+  const stockSummaries = await getItemStockSummaries(
+    items.map((item) => item.id)
+  );
+
+  const itemsWithStockSummary = items.map((item) => ({
+    ...item,
+    condition: getDominantCondition(
+      item.goodQuantity +
+        (stockSummaries.get(item.id)?.borrowedGoodQuantity ?? 0),
+      item.lightDamageQuantity +
+        (stockSummaries.get(item.id)?.borrowedLightDamageQuantity ?? 0),
+      item.heavyDamageQuantity
+    ),
+    borrowedQuantity: stockSummaries.get(item.id)?.borrowedQuantity ?? 0,
+    borrowedGoodQuantity:
+      stockSummaries.get(item.id)?.borrowedGoodQuantity ?? 0,
+    borrowedLightDamageQuantity:
+      stockSummaries.get(item.id)?.borrowedLightDamageQuantity ?? 0,
+    goodQuantity:
+      item.goodQuantity +
+      (stockSummaries.get(item.id)?.borrowedGoodQuantity ?? 0),
+    lightDamageQuantity:
+      item.lightDamageQuantity +
+      (stockSummaries.get(item.id)?.borrowedLightDamageQuantity ?? 0),
+    damagedQuantity: stockSummaries.get(item.id)?.damagedQuantity ?? 0,
+  }));
+
+  if (!params?.condition) {
+    return itemsWithStockSummary;
+  }
+
+  return itemsWithStockSummary.filter((item) => {
+    switch (params.condition) {
+      case Condition.BAIK:
+        return item.goodQuantity > 0;
+      case Condition.RUSAK_RINGAN:
+        return item.lightDamageQuantity > 0;
+      case Condition.RUSAK_BERAT:
+        return item.heavyDamageQuantity > 0;
+    }
   });
 }
 
@@ -65,21 +162,51 @@ export async function getItemsAction(params?: {
 export async function getItemByIdAction(id: string) {
   await requireAuth();
 
-  return prisma.item.findUnique({
-    where: { id },
-    include: {
-      borrowRecords: {
-        where: { status: "DIPINJAM" },
-        take: 5,
-        orderBy: { borrowDate: "desc" },
+  const [item, stockSummaries] = await Promise.all([
+    prisma.item.findUnique({
+      where: { id },
+      include: {
+        borrowRecords: {
+          where: { status: "DIPINJAM" },
+          take: 5,
+          orderBy: { borrowDate: "desc" },
+        },
       },
-    },
-  });
+    }),
+    getItemStockSummaries([id]),
+  ]);
+
+  if (!item) {
+    return null;
+  }
+
+  return {
+    ...item,
+    condition: getDominantCondition(
+      item.goodQuantity +
+        (stockSummaries.get(id)?.borrowedGoodQuantity ?? 0),
+      item.lightDamageQuantity +
+        (stockSummaries.get(id)?.borrowedLightDamageQuantity ?? 0),
+      item.heavyDamageQuantity
+    ),
+    borrowedQuantity: stockSummaries.get(id)?.borrowedQuantity ?? 0,
+    borrowedGoodQuantity:
+      stockSummaries.get(id)?.borrowedGoodQuantity ?? 0,
+    borrowedLightDamageQuantity:
+      stockSummaries.get(id)?.borrowedLightDamageQuantity ?? 0,
+    goodQuantity:
+      item.goodQuantity +
+      (stockSummaries.get(id)?.borrowedGoodQuantity ?? 0),
+    lightDamageQuantity:
+      item.lightDamageQuantity +
+      (stockSummaries.get(id)?.borrowedLightDamageQuantity ?? 0),
+    damagedQuantity: stockSummaries.get(id)?.damagedQuantity ?? 0,
+  };
 }
 
 /**
  * Membuat master barang baru.
- * Saat barang pertama kali dibuat, availableQuantity sama dengan totalQuantity.
+ * Jumlah total dan stok siap pinjam diturunkan dari jumlah tiap kondisi.
  */
 export async function createItemAction(
   data: CreateItemInput
@@ -95,8 +222,22 @@ export async function createItemAction(
     };
   }
 
-  const { code, name, category, totalQuantity, location, condition } =
-    validated.data;
+  const {
+    code,
+    name,
+    category,
+    goodQuantity,
+    lightDamageQuantity,
+    heavyDamageQuantity,
+    location,
+  } = validated.data;
+  const totalQuantity =
+    goodQuantity + lightDamageQuantity + heavyDamageQuantity;
+  const condition = getDominantCondition(
+    goodQuantity,
+    lightDamageQuantity,
+    heavyDamageQuantity
+  );
 
   try {
     const newItem = await prisma.item.create({
@@ -105,7 +246,10 @@ export async function createItemAction(
         name,
         category,
         totalQuantity,
-        availableQuantity: totalQuantity,
+        availableQuantity: goodQuantity + lightDamageQuantity,
+        goodQuantity,
+        lightDamageQuantity,
+        heavyDamageQuantity,
         location,
         condition,
       },
@@ -139,7 +283,7 @@ export async function createItemAction(
 
 /**
  * Memperbarui data master barang.
- * Memvalidasi agar totalQuantity baru tidak lebih kecil dari jumlah unit yang sedang dipinjam.
+ * Memperbarui jumlah unit tiap kondisi, dengan jumlah unit yang sedang dipinjam tetap terlindungi.
  */
 export async function updateItemAction(
   data: UpdateItemInput
@@ -155,50 +299,76 @@ export async function updateItemAction(
     };
   }
 
-  const { id, code, name, category, totalQuantity, location, condition } =
-    validated.data;
+  const {
+    id,
+    code,
+    name,
+    category,
+    goodQuantity,
+    lightDamageQuantity,
+    heavyDamageQuantity,
+    location,
+  } = validated.data;
+  const totalQuantity =
+    goodQuantity + lightDamageQuantity + heavyDamageQuantity;
+  const condition = getDominantCondition(
+    goodQuantity,
+    lightDamageQuantity,
+    heavyDamageQuantity
+  );
 
   try {
-    const existing = await prisma.item.findUnique({
-      where: { id },
-      include: {
-        borrowRecords: {
-          where: { status: "DIPINJAM" },
+    const updated = await prisma.$transaction(async (tx) => {
+      const [existing, activeBorrowSummary] = await Promise.all([
+        tx.item.findUnique({ where: { id } }),
+        tx.borrowRecord.aggregate({
+          where: { itemId: id, status: "DIPINJAM" },
+          _sum: {
+            borrowQuantity: true,
+            borrowGoodQuantity: true,
+            borrowLightDamageQuantity: true,
+          },
+        }),
+      ]);
+
+      if (!existing) {
+        throw new Error("Barang tidak ditemukan.");
+      }
+
+      const borrowedQuantity =
+        activeBorrowSummary._sum.borrowQuantity ?? 0;
+      const borrowedGoodQuantity =
+        activeBorrowSummary._sum.borrowGoodQuantity ?? 0;
+      const borrowedLightDamageQuantity =
+        activeBorrowSummary._sum.borrowLightDamageQuantity ?? 0;
+
+      if (
+        goodQuantity < borrowedGoodQuantity ||
+        lightDamageQuantity < borrowedLightDamageQuantity ||
+        totalQuantity < borrowedQuantity
+      ) {
+        throw new Error(
+          `Jumlah kondisi tidak boleh lebih kecil dari unit yang sedang dipinjam (Baik: ${borrowedGoodQuantity}, Rusak ringan: ${borrowedLightDamageQuantity}, Total dipinjam: ${borrowedQuantity}).`
+        );
+      }
+
+      return tx.item.update({
+        where: { id },
+        data: {
+          code,
+          name,
+          category,
+          totalQuantity,
+          goodQuantity: goodQuantity - borrowedGoodQuantity,
+          lightDamageQuantity:
+            lightDamageQuantity - borrowedLightDamageQuantity,
+          heavyDamageQuantity,
+          availableQuantity: goodQuantity + lightDamageQuantity - borrowedQuantity,
+          location,
+          condition,
         },
-      },
-    });
-
-    if (!existing) {
-      return {
-        success: false,
-        message: "Barang tidak ditemukan.",
-      };
-    }
-
-    // Hitung unit yang sedang dipinjam saat ini
-    const currentlyBorrowed = existing.totalQuantity - existing.availableQuantity;
-
-    if (totalQuantity < currentlyBorrowed) {
-      return {
-        success: false,
-        message: `Jumlah total tidak boleh kurang dari unit yang sedang aktif dipinjam (${currentlyBorrowed} unit).`,
-      };
-    }
-
-    const newAvailableQuantity = totalQuantity - currentlyBorrowed;
-
-    const updated = await prisma.item.update({
-      where: { id },
-      data: {
-        code,
-        name,
-        category,
-        totalQuantity,
-        availableQuantity: newAvailableQuantity,
-        location,
-        condition,
-      },
-    });
+      });
+    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
 
     revalidatePath("/barang");
     revalidatePath("/sirkulasi");
@@ -206,7 +376,7 @@ export async function updateItemAction(
 
     return {
       success: true,
-      message: `Data barang "${updated.name}" berhasil diperbarui.`,
+      message: `Data barang "${updated.name}" berhasil diperbarui. Total ${totalQuantity} unit: ${goodQuantity} baik, ${lightDamageQuantity} rusak ringan, dan ${heavyDamageQuantity} rusak berat.`,
       data: updated,
     };
   } catch (error) {
@@ -217,6 +387,17 @@ export async function updateItemAction(
           message: `Kode barang "${code}" sudah digunakan oleh barang lain.`,
         };
       }
+    }
+
+    if (
+      error instanceof Error &&
+      (error.message === "Barang tidak ditemukan." ||
+        error.message.startsWith("Jumlah kondisi tidak boleh"))
+    ) {
+      return {
+        success: false,
+        message: error.message,
+      };
     }
 
     console.error("Kesalahan saat memperbarui barang:", error);
