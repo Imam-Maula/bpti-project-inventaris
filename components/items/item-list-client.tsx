@@ -26,8 +26,26 @@ import {
 } from "lucide-react";
 
 interface ItemListClientProps {
-  initialItems: Item[];
+  initialItems: (Item & {
+    borrowedQuantity: number;
+    borrowedGoodQuantity: number;
+    borrowedLightDamageQuantity: number;
+    goodQuantity: number;
+    lightDamageQuantity: number;
+    heavyDamageQuantity: number;
+    damagedQuantity: number;
+  })[];
 }
+
+type ItemWithStockSummary = Item & {
+  borrowedQuantity: number;
+  borrowedGoodQuantity: number;
+  borrowedLightDamageQuantity: number;
+  goodQuantity: number;
+  lightDamageQuantity: number;
+  heavyDamageQuantity: number;
+  damagedQuantity: number;
+};
 
 export function ItemListClient({ initialItems }: ItemListClientProps) {
   const router = useRouter();
@@ -39,7 +57,8 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<Item | null>(null);
+  const [editingItem, setEditingItem] =
+    useState<ItemWithStockSummary | null>(null);
 
   const [detailItemId, setDetailItemId] = useState<string | null>(null);
 
@@ -98,13 +117,13 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
     setModalOpen(true);
   };
 
-  const handleOpenEdit = (item: Item) => {
+  const handleOpenEdit = (item: ItemWithStockSummary) => {
     setEditingItem(item);
     setModalOpen(true);
   };
 
-  const handlePromptDelete = (item: Item) => {
-    if (item.availableQuantity < item.totalQuantity) {
+  const handlePromptDelete = (item: ItemWithStockSummary) => {
+    if (item.borrowedQuantity > 0) {
       const msg = `Tidak dapat menghapus "${item.name}" karena ada unit yang sedang aktif dipinjam.`;
       setNotice({
         type: "error",
@@ -145,8 +164,8 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
     });
   };
 
-  const handlePromptArchive = (item: Item) => {
-    if (item.availableQuantity < item.totalQuantity) {
+  const handlePromptArchive = (item: ItemWithStockSummary) => {
+    if (item.borrowedQuantity > 0) {
       const msg = `Tidak dapat mengarsipkan "${item.name}" karena ada unit yang sedang aktif dipinjam.`;
       setNotice({
         type: "error",
@@ -398,26 +417,25 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
                               : "text-destructive"
                           }`}
                         >
-                          {item.availableQuantity} / {item.totalQuantity} unit
+                          <span className="block">
+                            {item.availableQuantity} / {item.totalQuantity} unit
+                          </span>
+                          <span className="block text-[10px] font-normal text-muted-foreground">
+                            Dipinjam {item.borrowedQuantity}
+                          </span>
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          {item.condition === Condition.BAIK && (
-                            <span className="inline-block rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
-                              Baik
-                            </span>
-                          )}
-                          {item.condition === Condition.RUSAK_RINGAN && (
-                            <span className="inline-block rounded border border-border bg-muted/80 px-2 py-0.5 text-[11px] font-medium text-foreground">
-                              Rusak Ringan
-                            </span>
-                          )}
-                          {item.condition === Condition.RUSAK_BERAT && (
-                            <span className="inline-block rounded border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
-                              Rusak Berat
-                            </span>
-                          )}
+                          <span className="inline-block rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
+                            Baik: {item.goodQuantity}
+                          </span>
+                          <span className="inline-block rounded border border-border bg-muted/80 px-2 py-0.5 text-[11px] font-medium text-foreground">
+                            Ringan: {item.lightDamageQuantity}
+                          </span>
+                          <span className="inline-block rounded border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
+                            Berat: {item.heavyDamageQuantity}
+                          </span>
                           {isArchived && (
                             <span className="inline-flex items-center gap-1 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                               <Archive className="h-2.5 w-2.5" />

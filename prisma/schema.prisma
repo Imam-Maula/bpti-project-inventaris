@@ -37,40 +37,46 @@ model User {
 }
 
 model Item {
-  id                String         @id @default(uuid())
-  code              String         @unique
-  name              String
-  category          String
-  totalQuantity     Int            @default(0)
-  availableQuantity Int            @default(0)
-  location          String
-  condition         Condition      @default(BAIK)
-  status            ItemStatus     @default(AKTIF)
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  borrowRecords     BorrowRecord[]
+  id                      String         @id @default(uuid())
+  code                    String         @unique
+  name                    String
+  category                String
+  totalQuantity           Int            @default(0)
+  availableQuantity       Int            @default(0)
+  goodQuantity            Int            @default(0)
+  lightDamageQuantity     Int            @default(0)
+  heavyDamageQuantity     Int            @default(0)
+  resolvedDamagedQuantity Int            @default(0)
+  location                String
+  condition               Condition      @default(BAIK)
+  status                  ItemStatus     @default(AKTIF)
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  borrowRecords           BorrowRecord[]
 
   @@map("items")
 }
 
 model BorrowRecord {
-  id              String       @id @default(uuid())
-  borrowCode      String       @unique
-  itemId          String
-  item            Item         @relation(fields: [itemId], references: [id], onDelete: Restrict)
-  adminId         String
-  admin           User         @relation(fields: [adminId], references: [id], onDelete: Restrict)
-  borrowerName    String
-  borrowerContact String
-  borrowQuantity  Int
-  borrowDate      DateTime     @default(now())
-  dueDate         DateTime
-  returnDate      DateTime?
-  status          BorrowStatus @default(DIPINJAM)
-  returnCondition Condition?
-  notes           String?      @db.Text
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id                        String       @id @default(uuid())
+  borrowCode                String       @unique
+  itemId                    String
+  item                      Item         @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  adminId                   String
+  admin                     User         @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  borrowerName              String
+  borrowerContact           String
+  borrowQuantity            Int
+  borrowGoodQuantity        Int          @default(0)
+  borrowLightDamageQuantity Int          @default(0)
+  borrowDate                DateTime     @default(now())
+  dueDate                   DateTime
+  returnDate                DateTime?
+  status                    BorrowStatus @default(DIPINJAM)
+  returnCondition           Condition?
+  notes                     String?      @db.Text
+  createdAt                 DateTime     @default(now())
+  updatedAt                 DateTime     @updatedAt
 
   @@map("borrow_records")
 }

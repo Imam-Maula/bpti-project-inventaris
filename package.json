@@ -12,6 +12,7 @@
     "postinstall": "prisma generate",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
+    "db:backfill-condition-quantities": "tsx scripts/backfill-condition-quantities.ts",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "db:check": "tsx scripts/check-db.ts",

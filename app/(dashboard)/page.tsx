@@ -94,7 +94,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Grid 4 Kartu Metrik Statistik Utama Sesuai SRS FR-UI-01 (Solid, High-Contrast, Anti-Slop) */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {/* Metrik 1: Total Jenis Aset */}
         <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
           <div className="flex items-center justify-between">
@@ -157,7 +157,28 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Metrik 4: Unit Siap Pakai */}
+        {/* Metrik 4: Unit Rusak Berat */}
+        <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-muted-foreground">
+              Unit Rusak Berat
+            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-destructive/10 text-destructive">
+              <AlertTriangle className="h-4 w-4" />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="text-2xl font-bold text-foreground">
+              {metrics.totalUnitRusakBerat}
+              <span className="ml-1 text-xs font-normal text-muted-foreground">unit</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Dikarantina dan tidak siap dipinjam
+            </p>
+          </div>
+        </div>
+
+        {/* Metrik 5: Unit Siap Pakai */}
         <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">

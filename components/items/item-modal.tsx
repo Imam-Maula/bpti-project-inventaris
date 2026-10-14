@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { Condition, Item } from "@prisma/client";
+import { Item } from "@prisma/client";
 import { createItemAction, updateItemAction } from "@/actions/item-actions";
 import { useToast } from "@/components/ui/toast";
 import { X, Loader2, AlertCircle } from "lucide-react";
@@ -9,15 +9,21 @@ import { X, Loader2, AlertCircle } from "lucide-react";
 interface ItemModalProps {
   open: boolean;
   onClose: () => void;
-  initialData?: Item | null;
+  initialData?: InventoryItem | null;
   onSuccess: () => void;
 }
 
 interface ItemFormProps {
-  initialData?: Item | null;
+  initialData?: InventoryItem | null;
   onClose: () => void;
   onSuccess: () => void;
 }
+
+type InventoryItem = Item & {
+  goodQuantity: number;
+  lightDamageQuantity: number;
+  heavyDamageQuantity: number;
+};
 
 function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
   const isEdit = Boolean(initialData);
@@ -30,17 +36,23 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
     code: string;
     name: string;
     category: string;
-    totalQuantity: number;
+    goodQuantity: number;
+    lightDamageQuantity: number;
+    heavyDamageQuantity: number;
     location: string;
-    condition: Condition;
   }>({
     code: initialData?.code || "",
     name: initialData?.name || "",
     category: initialData?.category || "",
-    totalQuantity: initialData?.totalQuantity || 1,
+    goodQuantity: initialData?.goodQuantity ?? initialData?.totalQuantity ?? 1,
+    lightDamageQuantity: initialData?.lightDamageQuantity ?? 0,
+    heavyDamageQuantity: initialData?.heavyDamageQuantity ?? 0,
     location: initialData?.location || "",
-    condition: initialData?.condition || Condition.BAIK,
   });
+  const totalQuantity =
+    formData.goodQuantity +
+    formData.lightDamageQuantity +
+    formData.heavyDamageQuantity;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,9 +66,10 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
           code: formData.code,
           name: formData.name,
           category: formData.category,
-          totalQuantity: Number(formData.totalQuantity),
+          goodQuantity: Number(formData.goodQuantity),
+          lightDamageQuantity: Number(formData.lightDamageQuantity),
+          heavyDamageQuantity: Number(formData.heavyDamageQuantity),
           location: formData.location,
-          condition: formData.condition,
         });
 
         if (!res.success) {
@@ -74,9 +87,10 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
           code: formData.code,
           name: formData.name,
           category: formData.category,
-          totalQuantity: Number(formData.totalQuantity),
+          goodQuantity: Number(formData.goodQuantity),
+          lightDamageQuantity: Number(formData.lightDamageQuantity),
+          heavyDamageQuantity: Number(formData.heavyDamageQuantity),
           location: formData.location,
-          condition: formData.condition,
         });
 
         if (!res.success) {
@@ -211,62 +225,129 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {/* Total Unit */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="totalQuantity"
-              className="block text-xs font-medium text-foreground"
-            >
-              Total Unit Fisik *
-            </label>
-            <input
-              id="totalQuantity"
-              type="number"
-              min={1}
-              required
-              disabled={isPending}
-              value={formData.totalQuantity}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  totalQuantity: Math.max(1, Number(e.target.value)),
-                })
-              }
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
-            />
-            {fieldErrors.totalQuantity && (
-              <p className="text-xs text-destructive">
-                {fieldErrors.totalQuantity[0]}
-              </p>
-            )}
+        <div className="space-y-3 rounded-md border border-border p-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-foreground">
+              Jumlah Unit per Kondisi
+            </span>
           </div>
+          <p className="text-[11px] text-muted-foreground">
+            Unit baik dan rusak ringan dapat dipinjam. Rusak berat tidak dapat
+            dipinjam. Total fisik dihitung otomatis.
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label
+                htmlFor="totalQuantity"
+                className="block text-xs font-medium text-foreground"
+              >
+                Total Unit Fisik
+              </label>
+              <input
+                id="totalQuantity"
+                type="number"
+                value={totalQuantity}
+                readOnly
+                aria-readonly="true"
+                className="w-full rounded-md border border-input bg-muted px-3 py-1.5 text-sm text-foreground"
+              />
+            </div>
 
-          {/* Kondisi Fisik */}
-          <div className="space-y-1.5">
-            <label
-              htmlFor="condition"
-              className="block text-xs font-medium text-foreground"
-            >
-              Kondisi Fisik *
-            </label>
-            <select
-              id="condition"
-              disabled={isPending}
-              value={formData.condition}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  condition: e.target.value as Condition,
-                })
-              }
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
-            >
-              <option value={Condition.BAIK}>BAIK (Siap Pakai)</option>
-              <option value={Condition.RUSAK_RINGAN}>RUSAK RINGAN</option>
-              <option value={Condition.RUSAK_BERAT}>RUSAK BERAT</option>
-            </select>
+            {/* Unit baik */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="goodQuantity"
+                className="block text-xs font-medium text-foreground"
+              >
+                Baik *
+              </label>
+              <input
+                id="goodQuantity"
+                type="number"
+                min={0}
+                required
+                disabled={isPending}
+                value={formData.goodQuantity}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    goodQuantity: Math.max(0, Number(e.target.value)),
+                  })
+                }
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+              />
+              {fieldErrors.goodQuantity && (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.goodQuantity[0]}
+                </p>
+              )}
+            </div>
+
+            {/* Unit rusak ringan */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="lightDamageQuantity"
+                className="block text-xs font-medium text-foreground"
+              >
+                Rusak Ringan *
+              </label>
+              <input
+                id="lightDamageQuantity"
+                type="number"
+                min={0}
+                required
+                disabled={isPending}
+                value={formData.lightDamageQuantity}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    lightDamageQuantity: Math.max(0, Number(e.target.value)),
+                  })
+                }
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+              />
+              {fieldErrors.lightDamageQuantity && (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.lightDamageQuantity[0]}
+                </p>
+              )}
+            </div>
+
+            {/* Unit rusak berat */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="heavyDamageQuantity"
+                className="block text-xs font-medium text-foreground"
+              >
+                Rusak Berat *
+              </label>
+              <input
+                id="heavyDamageQuantity"
+                type="number"
+                min={0}
+                required
+                disabled={isPending}
+                value={formData.heavyDamageQuantity}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    heavyDamageQuantity: Math.max(0, Number(e.target.value)),
+                  })
+                }
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+              />
+              {fieldErrors.heavyDamageQuantity && (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.heavyDamageQuantity[0]}
+                </p>
+              )}
+            </div>
           </div>
+          {fieldErrors.totalQuantity && (
+            <p className="text-xs text-destructive">
+              {fieldErrors.totalQuantity[0]}
+            </p>
+          )}
         </div>
 
         {/* Lokasi Gudang / Rak */}

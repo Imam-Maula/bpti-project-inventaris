@@ -127,6 +127,9 @@ async function main() {
           category: "Elektronik",
           totalQuantity: 10,
           availableQuantity: 10,
+          goodQuantity: 10,
+          lightDamageQuantity: 0,
+          heavyDamageQuantity: 0,
           location: "Lab Simulasi Sistem BPTI",
           condition: Condition.BAIK,
         },
@@ -153,6 +156,9 @@ async function main() {
             category: "Elektronik",
             totalQuantity: 5,
             availableQuantity: 5,
+            goodQuantity: 5,
+            lightDamageQuantity: 0,
+            heavyDamageQuantity: 0,
             location: "Gudang",
             condition: Condition.BAIK,
           },
@@ -181,9 +187,11 @@ async function main() {
           where: {
             id: testItemId,
             availableQuantity: { gte: borrowQuantity },
+            goodQuantity: { gte: borrowQuantity },
           },
           data: {
             availableQuantity: { decrement: borrowQuantity },
+            goodQuantity: { decrement: borrowQuantity },
           },
         });
 
@@ -200,6 +208,8 @@ async function main() {
             borrowerName: "Ir. M. Ridwan (Pusat Riset)",
             borrowerContact: "081288887777",
             borrowQuantity,
+            borrowGoodQuantity: borrowQuantity,
+            borrowLightDamageQuantity: 0,
             dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             status: BorrowStatus.DIPINJAM,
             notes: "Keperluan uji beban sirkulasi BPTI",
@@ -305,6 +315,7 @@ async function main() {
           where: { id: record.itemId },
           data: {
             availableQuantity: { increment: record.borrowQuantity },
+            goodQuantity: { increment: record.borrowQuantity },
           },
         });
       });
@@ -464,6 +475,9 @@ async function main() {
           category: "Elektronik",
           totalQuantity: 1,
           availableQuantity: 1,
+          goodQuantity: 1,
+          lightDamageQuantity: 0,
+          heavyDamageQuantity: 0,
           location: "Lab Jaringan",
           condition: Condition.BAIK,
         },
@@ -477,9 +491,11 @@ async function main() {
             where: {
               id: raceItemId,
               availableQuantity: { gte: 1 },
+              goodQuantity: { gte: 1 },
             },
             data: {
               availableQuantity: { decrement: 1 },
+              goodQuantity: { decrement: 1 },
             },
           });
 
@@ -495,6 +511,8 @@ async function main() {
               borrowerName,
               borrowerContact: "081233334444",
               borrowQuantity: 1,
+              borrowGoodQuantity: 1,
+              borrowLightDamageQuantity: 0,
               dueDate: new Date(),
               status: BorrowStatus.DIPINJAM,
             },
