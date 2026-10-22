@@ -14,7 +14,6 @@ import {
   Plus,
   ArrowLeftRight,
   Package,
-  Wrench,
 } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -94,8 +93,8 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Grid 5 Kartu Metrik Statistik Utama Sesuai Invarian Stok BPTI */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {/* Grid 4 Kartu Metrik Statistik Utama Sesuai SRS FR-UI-01 (Solid, High-Contrast, Anti-Slop) */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Metrik 1: Total Jenis Aset */}
         <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
           <div className="flex items-center justify-between">
@@ -137,28 +136,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Metrik 3: Unit Siap Pakai */}
-        <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              Unit Siap Pakai
-            </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground">
-              <CheckCircle2 className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold text-foreground">
-              {metrics.totalUnitSiapPakai}
-              <span className="ml-1 text-xs font-normal text-muted-foreground">unit</span>
-            </div>
-            <p className="text-[11px] text-muted-foreground">
-              Tersedia di ruang / lemari inventaris
-            </p>
-          </div>
-        </div>
-
-        {/* Metrik 4: Unit Sedang Dipinjam */}
+        {/* Metrik 3: Unit Sedang Dipinjam */}
         <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">
@@ -179,23 +157,23 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {/* Metrik 5: Unit Karantina / Rusak */}
+        {/* Metrik 4: Unit Siap Pakai */}
         <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">
-              Karantina / Rusak
+              Unit Siap Pakai
             </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground">
-              <Wrench className="h-4 w-4" />
+              <CheckCircle2 className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3">
             <div className="text-2xl font-bold text-foreground">
-              {metrics.totalUnitKarantina}
+              {metrics.totalUnitSiapPakai}
               <span className="ml-1 text-xs font-normal text-muted-foreground">unit</span>
             </div>
             <p className="text-[11px] text-muted-foreground">
-              Aset rusak dalam perbaikan
+              Tersedia di ruang / lemari inventaris
             </p>
           </div>
         </div>

@@ -9,11 +9,6 @@ import {
   verifySession,
 } from "@/lib/auth";
 import { loginSchema } from "@/lib/validations/auth";
-import {
-  checkLoginRateLimit,
-  recordFailedLogin,
-  resetLoginRateLimit,
-} from "@/lib/rate-limiter";
 
 export interface AuthActionResult {
   success: boolean;
@@ -23,7 +18,7 @@ export interface AuthActionResult {
 
 /**
  * Server Action untuk autentikasi login administrator BPTI.
- * Dilengkapi proteksi brute-force rate limiter dan pencetakan cookie sesi JWT.
+ * Menggunakan perbandingan password bcrypt dan mencetak cookie sesi stateless JWT.
  */
 export async function loginAction(
   _prevState: unknown,
@@ -44,17 +39,6 @@ export async function loginAction(
   }
 
   const { username, password } = validated.data;
-  const rateLimitKey = username.toLowerCase();
-
-  // 1. Periksa batas laju percobaan login (Rate Limiting)
-  const rateLimitStatus = checkLoginRateLimit(rateLimitKey);
-  if (!rateLimitStatus.allowed) {
-    const minutesLeft = Math.ceil((rateLimitStatus.retryAfterSeconds || 60) / 60);
-    return {
-      success: false,
-      message: `Terlalu banyak percobaan login gagal. Demi keamanan, silakan coba lagi dalam ${minutesLeft} menit.`,
-    };
-  }
 
   try {
     const user = await prisma.user.findUnique({
@@ -63,7 +47,6 @@ export async function loginAction(
 
     // Gunakan pesan generik untuk mencegah kebocoran informasi validitas username
     if (!user) {
-      recordFailedLogin(rateLimitKey);
       return {
         success: false,
         message: "Username atau password tidak sesuai.",
@@ -72,15 +55,11 @@ export async function loginAction(
 
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
-      recordFailedLogin(rateLimitKey);
       return {
         success: false,
         message: "Username atau password tidak sesuai.",
       };
     }
-
-    // Reset percobaan jika login berhasil
-    resetLoginRateLimit(rateLimitKey);
 
     await createSession(user.id, user.username, user.name);
   } catch (error) {

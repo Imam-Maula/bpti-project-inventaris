@@ -19,7 +19,7 @@ Sistem dibangun dengan memisahkan tanggung jawab secara tegas (*Separation of Co
 ```mermaid
 graph TD
     subgraph Client [Tingkat Klien / Browser]
-        UI[Antarmuka Responsif Tailwind CSS Native]
+        UI[Antarmuka Responsif Shadcn UI]
         Toast[Toast Notification Global]
         Search[Live Search & Filter Multi-Kriteria]
     end
@@ -28,20 +28,18 @@ graph TD
         Proxy[Proxy Guard & Middleware Sesi JWT]
         Actions[Server Actions: Auth, Item, Borrow Engine]
         Zod[Skema Validasi & Sanitasi Input Zod]
-        Services[Service Layer Terisolasi: ItemService & BorrowService]
     end
 
     subgraph DataTier [Tingkat Basis Data / Persistence]
         Prisma[Prisma ORM Client]
         MySQL[(MySQL Server 8.0 - db_inventaris_bpti)]
-        ACID[Transaksi Atomik CAS Mutex & Proteksi Kuantitas]
+        ACID[Blok Transaksi Atomik CAS: Zero Race Condition]
     end
 
     UI -->|HTTP / React 19 Form Action| Proxy
     Proxy --> Actions
     Actions --> Zod
-    Actions --> Services
-    Services --> Prisma
+    Actions --> Prisma
     Prisma --> ACID
     ACID --> MySQL
 ```
@@ -49,7 +47,7 @@ graph TD
 ### Spesifikasi Tumpukan Teknologi (*Tech Stack*):
 - **Framework Aplikasi:** Next.js 16.3.7 (App Router, Turbopack, React 19.2 Server Components & Actions)
 - **Bahasa Pemrograman:** TypeScript 5.x (Strict Type Checking)
-- **Styling & Desain:** Vanilla Tailwind CSS (Sistem Desain Khusus BPTI, Dark/Light Mode Adaptif)
+- **Styling & Desain:** Tailwind CSS v4 (Shadcn UI)
 - **Tipografi:** Geist Sans & Geist Mono (Vercel)
 - **Basis Data:** MySQL Server v8.0 / MariaDB (Port 3306)
 - **Object-Relational Mapping (ORM):** Prisma ORM v5.22.0
@@ -127,7 +125,7 @@ Gunakan akun berikut untuk masuk ke sistem:
 - **URL Login:** `http://localhost:3000/login`
 - **Username:** `admin`
 - **Password:** `admin123`
-- **Masa Berlaku Sesi:** 7 hari kalender (JWT HS256 HttpOnly Cookie).
+- **Masa Berlaku Sesi:** 7 hari kalender (diperbarui otomatis).
 
 ---
 
@@ -154,10 +152,8 @@ erDiagram
         string category "Kategori Logistik"
         int totalQuantity "Total Kuota Unit Fisik"
         int availableQuantity "Unit Fisik Siap Pakai"
-        int quarantinedQuantity "Unit Karantina / Perbaikan"
         string location "Lokasi Rak/Gudang Penyimpanan"
         enum condition "BAIK | RUSAK_RINGAN | RUSAK_BERAT"
-        enum status "AKTIF | DIARSIPKAN"
         datetime createdAt
         datetime updatedAt
     }
@@ -182,7 +178,7 @@ erDiagram
 ```
 
 ### Aturan Integritas Matematika Persamaan Stok:
-$$\text{Total Unit Fisik} = \text{Unit Siap Pakai} + \text{Unit Sedang Dipinjam} + \text{Unit Karantina / Perbaikan}$$
+$$\text{Total Unit Fisik} = \text{Unit Sedang Dipinjam} + \text{Unit Siap Pakai}$$
 Persamaan ini dijaga secara mutlak oleh blok transaksi `prisma.$transaction`.
 
 ---
@@ -231,30 +227,24 @@ Repositori ini dilengkapi dengan perintah skrip terstandardisasi pada `package.j
 | `pnpm start` | Menjalankan server build produksi lokal. |
 | `pnpm typecheck` | Memvalidasi seluruh tipe TypeScript secara ketat tanpa menghasilkan berkas keluaran. |
 | `pnpm lint` | Menjalankan pemeriksaan ESLint pada seluruh berkas proyek. |
-| `pnpm test:uat` | Menjalankan test runner otomatis 11 kasus uji (UAT-01 s/d UAT-10 + STRESS-01) dengan database safety guard. |
+| `pnpm test:uat` | Menjalankan test runner otomatis 11 kasus uji (UAT-01 s/d UAT-10 + STRESS-01) secara terisolasi. |
 | `pnpm db:check` | Memeriksa agregat kuota stok fisik dan riwayat sirkulasi terkini langsung ke basis data MySQL. |
 | `pnpm db:push` | Menerapkan perubahan skema Prisma ke basis data MySQL secara langsung. |
-| `pnpm db:seed` | Menjalankan seeding akun default admin (Bcrypt salt 12) dan master barang BPTI. |
+| `pnpm db:seed` | Menjalankan seeding akun default admin dan master barang BPTI. |
 | `pnpm db:studio` | Membuka antarmuka grafis visual Prisma Studio untuk inspeksi basis data di peramban. |
-| `scripts/backup-db.bat` | Membuat snapshot cadangan data relasional lengkap ke format JSON di folder `backups/`. |
-| `scripts/restore-db.bat` | Memulihkan basis data secara utuh dari snapshot cadangan JSON (Clean & Repopulate Transaction). |
 
 ---
 
 ## 10. Jaminan Keamanan Sistem & Ketahanan Transaksi ACID
 
-1. **Pencegahan Kondisi Balapan (Conditional CAS Mutex):**
-   Pengurangan kuota unit menggunakan klausa `WHERE availableQuantity >= borrowQuantity AND status = 'AKTIF'`. Transaksi gagal otomatis di tingkat basis data bila kuota tidak mencukupi atau barang diarsipkan, mencegah stok bernilai negatif (*zero negative stock*).
+1. **Zero Race Condition (Conditional CAS Mutex):**
+   Pengurangan kuota unit menggunakan klausa `WHERE availableQuantity >= borrowQuantity`. Transaksi gagal otomatis di tingkat basis data bila kuota tidak mencukupi, mencegah stok negatif (*zero negative stock*).
 2. **Idempotensi Pengembalian (Anti Double-Return):**
-   Pengembalian dibatasi oleh predikat `WHERE status = 'DIPINJAM'`. Percobaan kedua pada transaksi yang sama ditolak seketika, mencegah manipulasi pemulihan stok ganda.
+   Pengembalian dibatasi oleh predikat `WHERE status = 'DIPINJAM'`. Percobaan kedua pada transaksi yang sama ditolak seketika, mencegah manipulasi stok berlebih.
 3. **Integritas Relasional MySQL (`onDelete: Restrict`):**
-   Barang yang memiliki riwayat transaksi peminjaman tidak dapat dihapus dari tabel master demi menjaga akuntabilitas audit sejarah aset institusi.
+   Barang yang memiliki riwayat transaksi peminjaman tidak dapat dihapus dari tabel master demi menjaga akuntabilitas audit sejarah aset negara.
 4. **Keamanan Kredensial & Sesi Admin:**
    Sandi di-hash dengan Bcrypt 12 rounds (kebal terhadap *rainbow table* dan *timing attack*). Token sesi JWT menggunakan algoritma `HS256` yang disimpan dalam cookie `HttpOnly`, `SameSite=Lax`, dan `Path=/`.
-5. **Keterbatasan Sistem Saat Ini (*Known Limitations*):**
-   - **Model Inventaris:** Berbasis kuantitas unit agregat per item (`totalQuantity`, `availableQuantity`), belum pelacakan per serial number individual fisik (RFID/Barcode).
-   - **Manajemen Sesi:** Daftar token sesi yang dicabut (*revocation list*) saat ini tersimpan di memori proses lokal (*In-Memory Set*), sehingga restart server akan mereset cache token yang dicabut.
-   - **Tingkat Akses Pengguna:** Menggunakan model administrator tunggal (*Single-Role Authentication*), belum mengimplementasikan hierarki multi-role (RBAC) bertingkat.
 
 ---
 

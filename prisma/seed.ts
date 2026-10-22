@@ -6,8 +6,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("[INFO] Memulai proses seeding basis data...");
 
-  // 1. Seed Akun Admin Pertama (12 Salt Rounds konsisten dengan lib/auth.ts)
-  const hashedPassword = await bcrypt.hash("admin123", 12);
+  // 1. Seed Akun Admin Pertama
+  const hashedPassword = await bcrypt.hash("admin123", 10);
   const admin = await prisma.user.upsert({
     where: { username: "admin" },
     update: {},
