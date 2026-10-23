@@ -11,6 +11,9 @@ export const metadata: Metadata = {
   },
   description:
     "Sistem Manajemen Inventaris & Sirkulasi Aset Badan Pengembangan Teknologi Informasi (BPTI)",
+  icons: {
+    icon: "/logo-bpti.png",
+  },
 };
 
 export default function RootLayout({

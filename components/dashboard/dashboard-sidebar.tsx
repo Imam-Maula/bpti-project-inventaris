@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useTransition } from "react";
@@ -8,7 +9,6 @@ import {
   LayoutDashboard,
   Package,
   ArrowLeftRight,
-  Boxes,
   LogOut,
   ShieldCheck,
   Menu,
@@ -50,9 +50,13 @@ export function DashboardSidebar() {
       {/* Brand Header */}
       <div>
         <div className="flex items-center gap-3 border-b border-sidebar-border px-6 py-5">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Boxes className="h-5 w-5" />
-          </div>
+          <Image
+            src="/logo-bpti.png"
+            alt="Logo BPTI"
+            width={36}
+            height={36}
+            className="h-9 w-9 shrink-0 object-contain"
+          />
           <div className="min-w-0 flex-1">
             <span className="block truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
               Inventaris BPTI

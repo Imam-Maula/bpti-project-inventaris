@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { LoginForm } from "@/components/auth/login-form";
-import { Boxes } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Masuk Administrator — Sistem Inventaris BPTI",
@@ -13,9 +13,13 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         {/* Header Identitas BPTI */}
         <div className="space-y-2 text-center">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Boxes className="h-5 w-5" />
-          </div>
+          <Image
+            src="/logo-bpti.png"
+            alt="Logo BPTI"
+            width={40}
+            height={40}
+            className="mx-auto h-10 w-10 object-contain"
+          />
           <h1 className="text-xl font-semibold tracking-tight text-foreground">
             Sistem Inventaris BPTI
           </h1>
