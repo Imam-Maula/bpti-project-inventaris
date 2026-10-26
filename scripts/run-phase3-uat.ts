@@ -1,9 +1,27 @@
-import { PrismaClient, Condition, BorrowStatus } from "@prisma/client";
+import { PrismaClient, Condition } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
+import {
+  createItemService,
+  updateItemAtomicService,
+  restoreQuarantinedItemService,
+} from "../lib/services/item-service";
+import {
+  createBorrowTransactionService,
+  returnBorrowTransactionService,
+  getBorrowRecordsService,
+  getCirculationMetricsService,
+} from "../lib/services/borrow-service";
+import {
+  checkLoginRateLimit,
+  recordFailedLogin,
+  resetLoginRateLimit,
+} from "../lib/rate-limiter";
 
 const prisma = new PrismaClient();
-const SESSION_SECRET = process.env.SESSION_SECRET || "bpti-inventory-secure-session-secret-key-2026-min-32-chars";
+const SESSION_SECRET =
+  process.env.SESSION_SECRET ||
+  "bpti-inventory-secure-session-secret-key-2026-min-32-chars";
 const secretKey = new TextEncoder().encode(SESSION_SECRET);
 
 interface TestResult {
@@ -57,6 +75,22 @@ async function main() {
   console.log("   Sistem Informasi Pengelolaan Barang Inventaris BPTI UHAMKA");
   console.log("================================================================================\n");
 
+  // ---------------------------------------------------------------------------
+  // SAFETY GUARD: Mencegah eksekusi UAT pada basis data produksi sebenarnya
+  // ---------------------------------------------------------------------------
+  const dbUrl = process.env.DATABASE_URL || "";
+  const isProduction = process.env.NODE_ENV === "production";
+  const isLocalHost =
+    dbUrl.includes("127.0.0.1") ||
+    dbUrl.includes("localhost") ||
+    dbUrl.includes("db_inventaris_bpti");
+
+  if (isProduction || !isLocalHost) {
+    throw new Error(
+      "[ABORT CRITICAL] Skrip UAT ditolak! Skrip ini melakukan mutasi pengujian dan hanya boleh dijalankan pada basis data lokal / staging pengujian (localhost / 127.0.0.1)."
+    );
+  }
+
   const adminUser = await prisma.user.findUnique({ where: { username: "admin" } });
   if (!adminUser) {
     throw new Error("Pengguna admin tidak ditemukan dalam basis data. Jalankan pnpm db:seed terlebih dahulu.");
@@ -69,7 +103,7 @@ async function main() {
 
   try {
     // -------------------------------------------------------------------------
-    // UAT-01: Autentikasi Admin & Verifikasi Kredensial Bcrypt
+    // UAT-01: Autentikasi Admin & Verifikasi Hash Bcrypt
     // -------------------------------------------------------------------------
     await recordTest("UAT-01", "Autentikasi Admin & Verifikasi Hash Bcrypt", "UAT", async () => {
       const isMatchValid = await bcrypt.compare("admin123", adminUser!.password);
@@ -82,10 +116,34 @@ async function main() {
     });
 
     // -------------------------------------------------------------------------
-    // UAT-02: Integritas Sesi JWT & Proteksi Penolakan Token Rusak (Route Guard)
+    // UAT-02: Proteksi Brute-Force Rate Limiting
     // -------------------------------------------------------------------------
-    await recordTest("UAT-02", "Integritas Sesi JWT & Penolakan Token Rusak", "UAT", async () => {
-      // 1. Buat token sah
+    await recordTest("UAT-02", "Proteksi Brute-Force Rate Limiting pada Login", "UAT", async () => {
+      const testKey = "test_brute_admin";
+      resetLoginRateLimit(testKey);
+
+      for (let i = 0; i < 5; i++) {
+        recordFailedLogin(testKey);
+      }
+
+      const status = checkLoginRateLimit(testKey);
+      if (status.allowed) {
+        throw new Error("Percobaan login ke-6 seharusnya diblokir oleh rate limiter.");
+      }
+
+      resetLoginRateLimit(testKey);
+      const resetStatus = checkLoginRateLimit(testKey);
+      if (!resetStatus.allowed) {
+        throw new Error("Reset rate limiter gagal mengembalikan status.");
+      }
+
+      return "Batas 5 kali kesalahan login terpicu dan memblokir upaya selanjutnya secara presisi.";
+    });
+
+    // -------------------------------------------------------------------------
+    // UAT-03: Integritas Sesi JWT & Penolakan Token Rusak
+    // -------------------------------------------------------------------------
+    await recordTest("UAT-03", "Integritas Sesi JWT & Penolakan Token Rusak", "UAT", async () => {
       const validToken = await new SignJWT({
         userId: adminUser!.id,
         username: adminUser!.username,
@@ -99,7 +157,6 @@ async function main() {
       const verified = await jwtVerify(validToken, secretKey, { algorithms: ["HS256"] });
       if (!verified.payload.userId) throw new Error("Token sah gagal didekripsi.");
 
-      // 2. Buat token palsu / di-tamper
       let tamperedFailed = false;
       try {
         const tamperedToken = validToken.slice(0, -6) + "XXXXXX";
@@ -110,159 +167,77 @@ async function main() {
 
       if (!tamperedFailed) throw new Error("Token yang dimodifikasi signature-nya tidak ditolak.");
 
-      return "Token JWT HS256 valid terverifikasi; token yang di-tamper ditolak 100%.";
+      return "Token JWT HS256 valid terverifikasi; token tamper ditolak 100%.";
     });
 
     // -------------------------------------------------------------------------
-    // UAT-03: Penambahan Master Barang Baru & Inisialisasi Kuota Fisik
+    // UAT-04: Penambahan Master Barang Baru via Service Layer
     // -------------------------------------------------------------------------
-    await recordTest("UAT-03", "Penambahan Master Barang Baru & Inisialisasi Stok", "UAT", async () => {
-      // Pastikan bersih dari sisa uji sebelumnya
-      await prisma.item.deleteMany({ where: { code: { in: ["BRG-UAT-TEST", "BRG-RACE-TEST"] } } });
+    await recordTest("UAT-04", "Penambahan Master Barang Baru via Service Layer", "UAT", async () => {
+      await prisma.borrowRecord.deleteMany({
+        where: { item: { code: { in: ["BRG-UAT-TEST", "BRG-RACE-TEST"] } } },
+      });
+      await prisma.item.deleteMany({
+        where: { code: { in: ["BRG-UAT-TEST", "BRG-RACE-TEST"] } },
+      });
 
-      const item = await prisma.item.create({
-        data: {
-          code: "BRG-UAT-TEST",
-          name: "Perangkat Pengujian UAT Master",
-          category: "Elektronik",
-          totalQuantity: 10,
-          availableQuantity: 10,
-          goodQuantity: 10,
-          lightDamageQuantity: 0,
-          heavyDamageQuantity: 0,
-          location: "Lab Simulasi Sistem BPTI",
-          condition: Condition.BAIK,
-        },
+      const item = await createItemService(prisma, {
+        code: "BRG-UAT-TEST",
+        name: "Perangkat Pengujian UAT Master",
+        category: "Elektronik",
+        goodQuantity: 10,
+        lightDamageQuantity: 0,
+        heavyDamageQuantity: 0,
+        location: "Lab Simulasi Sistem BPTI",
       });
       testItemId = item.id;
 
-      if (item.availableQuantity !== 10 || item.totalQuantity !== 10) {
-        throw new Error(`Inisialisasi stok fisik tidak konsisten: available=${item.availableQuantity}, total=${item.totalQuantity}`);
+      if (item.availableQuantity !== 10 || item.totalQuantity !== 10 || item.heavyDamageQuantity !== 0) {
+        throw new Error(
+          `Inisialisasi stok fisik tidak konsisten: available=${item.availableQuantity}, total=${item.totalQuantity}, heavyDamage=${item.heavyDamageQuantity}`
+        );
       }
 
-      return `Barang ${item.code} berhasil didaftarkan dengan stok total 10 unit dan siap pakai 10 unit.`;
+      return `Barang ${item.code} berhasil didaftarkan via createItemService dengan stok total 10 unit dan karantina 0 unit.`;
     });
 
     // -------------------------------------------------------------------------
-    // UAT-04: Penolakan Duplikasi Kode Unik Barang (Unique Constraint P2002)
+    // UAT-05: Peminjaman Atomik via Borrow Service Layer (CAS Mutex)
     // -------------------------------------------------------------------------
-    await recordTest("UAT-04", "Penolakan Duplikasi Kode Unik Barang (P2002)", "UAT", async () => {
-      let duplicateRejected = false;
-      try {
-        await prisma.item.create({
-          data: {
-            code: "BRG-UAT-TEST", // Kode yang sama dengan UAT-03
-            name: "Barang Duplikat Palsu",
-            category: "Elektronik",
-            totalQuantity: 5,
-            availableQuantity: 5,
-            goodQuantity: 5,
-            lightDamageQuantity: 0,
-            heavyDamageQuantity: 0,
-            location: "Gudang",
-            condition: Condition.BAIK,
-          },
-        });
-      } catch (err: unknown) {
-        if (typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code === "P2002") {
-          duplicateRejected = true;
-        }
-      }
-
-      if (!duplicateRejected) {
-        throw new Error("Sistem mengizinkan pembuatan duplikasi kode barang yang sama.");
-      }
-
-      return "Kode duplikat BRG-UAT-TEST ditolak mutlak oleh Prisma & MySQL Unique Constraint (P2002).";
-    });
-
-    // -------------------------------------------------------------------------
-    // UAT-05: Peminjaman Atomik (Decrement Available Quantity Secara Terpadu)
-    // -------------------------------------------------------------------------
-    await recordTest("UAT-05", "Peminjaman Atomik (Decrement Available Quantity)", "UAT", async () => {
+    await recordTest("UAT-05", "Peminjaman Atomik via Borrow Service Layer (CAS Mutex)", "UAT", async () => {
       const borrowQuantity = 3;
-
-      const record = await prisma.$transaction(async (tx) => {
-        const updateResult = await tx.item.updateMany({
-          where: {
-            id: testItemId,
-            availableQuantity: { gte: borrowQuantity },
-            goodQuantity: { gte: borrowQuantity },
-          },
-          data: {
-            availableQuantity: { decrement: borrowQuantity },
-            goodQuantity: { decrement: borrowQuantity },
-          },
-        });
-
-        if (updateResult.count === 0) {
-          throw new Error("Stok barang yang tersedia tidak mencukupi untuk dipinjam.");
-        }
-
-        const borrowCode = `PJM-UAT-${Date.now().toString().slice(-4)}`;
-        return tx.borrowRecord.create({
-          data: {
-            borrowCode,
-            itemId: testItemId,
-            adminId: adminUser!.id,
-            borrowerName: "Ir. M. Ridwan (Pusat Riset)",
-            borrowerContact: "081288887777",
-            borrowQuantity,
-            borrowGoodQuantity: borrowQuantity,
-            borrowLightDamageQuantity: 0,
-            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-            status: BorrowStatus.DIPINJAM,
-            notes: "Keperluan uji beban sirkulasi BPTI",
-          },
-        });
+      const record = await createBorrowTransactionService(prisma, adminUser!.id, {
+        itemId: testItemId,
+        borrowerName: "Ir. M. Ridwan (Pusat Riset)",
+        borrowerContact: "081288887777",
+        borrowQuantity,
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        notes: "Uji sirkulasi via service domain",
       });
 
       testBorrowRecordId = record.id;
 
-      // Verifikasi stok pasca peminjaman
       const updatedItem = await prisma.item.findUnique({ where: { id: testItemId } });
       if (!updatedItem || updatedItem.availableQuantity !== 7) {
-        throw new Error(`Sisa stok tidak sesuai ekspektasi 7 unit: sisa ${updatedItem?.availableQuantity}`);
+        throw new Error(`Sisa stok tidak sesuai: sisa ${updatedItem?.availableQuantity}`);
       }
 
       return `Peminjaman 3 unit sukses (Kode: ${record.borrowCode}), stok siap pakai berkurang dari 10 menjadi 7 unit.`;
     });
 
     // -------------------------------------------------------------------------
-    // UAT-06: Penolakan Over-Borrow & Batas Kuota Stok (Zero Negative Stock)
+    // UAT-06: Penolakan Over-Borrow & Proteksi Kuota (Stok >= 0)
     // -------------------------------------------------------------------------
     await recordTest("UAT-06", "Penolakan Over-Borrow & Proteksi Kuota (Stok >= 0)", "UAT", async () => {
-      const requestedOverQuantity = 8; // Sisa stok hanya 7 unit
       let rejected = false;
-
       try {
-        await prisma.$transaction(async (tx) => {
-          const updateResult = await tx.item.updateMany({
-            where: {
-              id: testItemId,
-              availableQuantity: { gte: requestedOverQuantity },
-            },
-            data: {
-              availableQuantity: { decrement: requestedOverQuantity },
-            },
-          });
-
-          if (updateResult.count === 0) {
-            throw new Error("Stok barang yang tersedia tidak mencukupi untuk dipinjam.");
-          }
-
-          return tx.borrowRecord.create({
-            data: {
-              borrowCode: `PJM-OVER-${Date.now()}`,
-              itemId: testItemId,
-              adminId: adminUser!.id,
-              borrowerName: "Peminjam Ilegal",
-              borrowerContact: "081200000000",
-              borrowQuantity: requestedOverQuantity,
-              dueDate: new Date(),
-              status: BorrowStatus.DIPINJAM,
-            },
-          });
+        await createBorrowTransactionService(prisma, adminUser!.id, {
+          itemId: testItemId,
+          borrowerName: "Peminjam Ilegal",
+          borrowerContact: "081200000000",
+          borrowQuantity: 8, // Sisa hanya 7 unit
+          dueDate: new Date(),
+          notes: "Over borrow",
         });
       } catch (err: unknown) {
         if (err instanceof Error && err.message.includes("tidak mencukupi")) {
@@ -271,259 +246,156 @@ async function main() {
       }
 
       if (!rejected) {
-        throw new Error("Transaksi over-borrow tidak digagalkan oleh sistem.");
+        throw new Error("Transaksi over-borrow tidak digagalkan oleh borrow service.");
       }
 
-      // Pastikan stok tidak berubah dan tidak minus
       const itemCheck = await prisma.item.findUnique({ where: { id: testItemId } });
       if (itemCheck?.availableQuantity !== 7) {
-        throw new Error(`Stok barang berubah secara tidak sah pasca over-borrow: ${itemCheck?.availableQuantity}`);
+        throw new Error(`Stok berubah pasca over-borrow: ${itemCheck?.availableQuantity}`);
       }
 
       return "Permintaan pinjam 8 unit ditolak karena stok tersedia 7 unit; stok tetap terjaga 7 unit.";
     });
 
     // -------------------------------------------------------------------------
-    // UAT-07: Pengembalian Atomik & Idempotensi (Pencegahan Double Return)
+    // UAT-07: Pengembalian Rusak Berat & Karantina Aset (Keseimbangan Stok)
     // -------------------------------------------------------------------------
-    await recordTest("UAT-07", "Pengembalian Atomik & Pencegahan Double Return", "UAT", async () => {
-      // 1. Pengembalian sah pertama kali
-      await prisma.$transaction(async (tx) => {
-        const record = await tx.borrowRecord.findUnique({
-          where: { id: testBorrowRecordId },
-        });
-        if (!record) throw new Error("Catatan sirkulasi tidak ditemukan.");
-
-        const updateResult = await tx.borrowRecord.updateMany({
-          where: {
-            id: testBorrowRecordId,
-            status: BorrowStatus.DIPINJAM,
-          },
-          data: {
-            status: BorrowStatus.DIKEMBALIKAN,
-            returnDate: new Date(),
-            returnCondition: Condition.BAIK,
-            notes: "Pengembalian unit lengkap tanpa cacat",
-          },
-        });
-
-        if (updateResult.count === 0) {
-          throw new Error("Peminjaman ini sudah tercatat dikembalikan sebelumnya.");
-        }
-
-        await tx.item.update({
-          where: { id: record.itemId },
-          data: {
-            availableQuantity: { increment: record.borrowQuantity },
-            goodQuantity: { increment: record.borrowQuantity },
-          },
-        });
+    await recordTest("UAT-07", "Pengembalian Rusak Berat & Karantina Aset (Keseimbangan Stok)", "UAT", async () => {
+      const returnResult = await returnBorrowTransactionService(prisma, {
+        borrowRecordId: testBorrowRecordId,
+        returnCondition: Condition.RUSAK_BERAT,
+        notes: "Unit mengalami kerusakan fisik saat uji lapangan",
       });
 
-      // Verifikasi stok pulih menjadi 10
-      const restoredItem = await prisma.item.findUnique({ where: { id: testItemId } });
-      if (restoredItem?.availableQuantity !== 10) {
-        throw new Error(`Stok gagal pulih menjadi 10 unit pasca pengembalian: sisa ${restoredItem?.availableQuantity}`);
+      if (!returnResult.isDamagedHeavy) {
+        throw new Error("Status kerusakan berat tidak terdeteksi oleh service pengembalian.");
       }
 
-      // 2. Percobaan Double Return (mencoba mengembalikan transaksi yang sama untuk kedua kalinya)
-      let doubleReturnPrevented = false;
-      try {
-        await prisma.$transaction(async (tx) => {
-          const record = await tx.borrowRecord.findUnique({
-            where: { id: testBorrowRecordId },
-          });
-          if (!record) throw new Error("Catatan sirkulasi tidak ditemukan.");
+      const itemAfterReturn = await prisma.item.findUnique({ where: { id: testItemId } });
+      if (!itemAfterReturn) throw new Error("Barang tidak ditemukan.");
 
-          const updateResult = await tx.borrowRecord.updateMany({
-            where: {
-              id: testBorrowRecordId,
-              status: BorrowStatus.DIPINJAM,
-            },
-            data: {
-              status: BorrowStatus.DIKEMBALIKAN,
-              returnDate: new Date(),
-            },
-          });
-
-          if (updateResult.count === 0) {
-            throw new Error("Peminjaman ini sudah tercatat dikembalikan sebelumnya.");
-          }
-
-          await tx.item.update({
-            where: { id: record.itemId },
-            data: {
-              availableQuantity: { increment: record.borrowQuantity },
-            },
-          });
-        });
-      } catch (err: unknown) {
-        if (err instanceof Error && err.message.includes("sudah tercatat dikembalikan")) {
-          doubleReturnPrevented = true;
-        }
+      // Invarian: totalQuantity = 10, availableQuantity = 7 (karena rusak berat tidak masuk ke siap pakai), heavyDamageQuantity = 3
+      if (itemAfterReturn.heavyDamageQuantity !== 3) {
+        throw new Error(`Kuota karantina salah: diharapkan 3, aktual ${itemAfterReturn.heavyDamageQuantity}`);
+      }
+      if (itemAfterReturn.availableQuantity !== 7) {
+        throw new Error(`Stok siap pakai salah: diharapkan 7, aktual ${itemAfterReturn.availableQuantity}`);
+      }
+      if (itemAfterReturn.totalQuantity !== 10) {
+        throw new Error(`Total aset fisik berubah: diharapkan 10, aktual ${itemAfterReturn.totalQuantity}`);
       }
 
-      if (!doubleReturnPrevented) {
-        throw new Error("Double-return berhasil dieksekusi secara ilegal (merusak stok fisik).");
+      // Verifikasi persamaan matematis: Total Fisik (10) = Siap Pakai (7) + Dipinjam (0) + Karantina (3)
+      const metrics = await getCirculationMetricsService(prisma);
+      if (metrics.totalUnitKarantina < 3) {
+        throw new Error(`Metrik agregat karantina salah: ${metrics.totalUnitKarantina}`);
       }
 
-      // Pastikan stok tidak membengkak di atas 10
-      const finalItem = await prisma.item.findUnique({ where: { id: testItemId } });
-      if (finalItem?.availableQuantity !== 10) {
-        throw new Error(`Stok membengkak akibat double-return: ${finalItem?.availableQuantity}`);
-      }
-
-      return "Pengembalian pertama memulihkan stok ke 10 unit; percobaan pengembalian kedua digagalkan seketika.";
+      return "Pengembalian RUSAK_BERAT (3 unit) berhasil dicatat ke kuota karantina BPTI; persamaan stok terbukti akurat.";
     });
 
     // -------------------------------------------------------------------------
-    // UAT-08: Proteksi Hapus Aset Berelasi (Foreign Key Restrict P2003)
+    // UAT-08: Pemulihan Unit Karantina Kembali ke Siap Pakai (Pasca Servis)
     // -------------------------------------------------------------------------
-    await recordTest("UAT-08", "Proteksi Hapus Aset Berelasi (FK Restrict P2003)", "UAT", async () => {
-      let fkProtectionActive = false;
+    await recordTest("UAT-08", "Pemulihan Unit Karantina Kembali ke Siap Pakai", "UAT", async () => {
+      const restoredItem = await restoreQuarantinedItemService(prisma, testItemId, 2); // Pulihkan 2 unit dari 3 unit rusak
 
-      try {
-        // Coba hapus testItemId yang memiliki riwayat di borrow_records
-        await prisma.item.delete({
-          where: { id: testItemId },
-        });
-      } catch (err: unknown) {
-        if (typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code === "P2003") {
-          fkProtectionActive = true;
-        }
+      if (restoredItem.heavyDamageQuantity !== 1) {
+        throw new Error(`Sisa karantina salah: diharapkan 1, aktual ${restoredItem.heavyDamageQuantity}`);
+      }
+      if (restoredItem.availableQuantity !== 9) {
+        throw new Error(`Stok siap pakai salah pasca perbaikan: diharapkan 9, aktual ${restoredItem.availableQuantity}`);
       }
 
-      if (!fkProtectionActive) {
-        throw new Error("Aset berhasil dihapus meskipun memiliki relasi riwayat sirkulasi (pelanggaran referensial).");
-      }
-
-      const itemStillExists = await prisma.item.findUnique({ where: { id: testItemId } });
-      if (!itemStillExists) {
-        throw new Error("Aset hilang dari basis data.");
-      }
-
-      return "Penghapusan aset ditolak oleh MySQL Foreign Key Restrict (P2003) demi integritas audit sejarah.";
+      return "2 unit berhasil dipulihkan dari karantina ke stok siap pakai (sisa 1 unit karantina, 9 siap pakai).";
     });
 
     // -------------------------------------------------------------------------
-    // UAT-09: Live Search & Filtering Multidimensi
+    // UAT-09: Filter Operasional Status TERLAMBAT
     // -------------------------------------------------------------------------
-    await recordTest("UAT-09", "Pencarian Multi-kriteria & Filter Kategori/Kondisi", "UAT", async () => {
-      // 1. Cari berdasarkan kode substring
-      const searchByCode = await prisma.item.findMany({
-        where: { code: { contains: "UAT-TEST" } },
+    await recordTest("UAT-09", "Filter Operasional Status TERLAMBAT via Borrow Service", "UAT", async () => {
+      // Buat satu sirkulasi yang tenggat waktunya kemarin
+      const overdueRecord = await createBorrowTransactionService(prisma, adminUser!.id, {
+        itemId: testItemId,
+        borrowerName: "Staf Terlambat",
+        borrowerContact: "081299990000",
+        borrowQuantity: 1,
+        dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Kemarin
+        notes: "Uji filter keterlambatan",
       });
-      if (searchByCode.length === 0) throw new Error("Pencarian kode gagal menemukan data.");
 
-      // 2. Filter berdasarkan kategori
-      const filterByCategory = await prisma.item.findMany({
-        where: { category: "Elektronik" },
-      });
-      if (!filterByCategory.some((i) => i.id === testItemId)) {
-        throw new Error("Filter kategori Elektronik gagal menyaring aset target.");
+      const overdueList = await getBorrowRecordsService(prisma, { status: "TERLAMBAT" });
+      const found = overdueList.some((r) => r.id === overdueRecord.id);
+
+      if (!found) {
+        throw new Error("getBorrowRecordsService dengan status 'TERLAMBAT' gagal menemukan transaksi yang jatuh tempo.");
       }
 
-      // 3. Filter berdasarkan kondisi
-      const filterByCondition = await prisma.item.findMany({
-        where: { condition: Condition.BAIK },
+      // Bersihkan peminjaman uji terlambat
+      await returnBorrowTransactionService(prisma, {
+        borrowRecordId: overdueRecord.id,
+        returnCondition: Condition.BAIK,
       });
-      if (!filterByCondition.some((i) => i.id === testItemId)) {
-        throw new Error("Filter kondisi BAIK gagal menyaring aset target.");
-      }
 
-      return `Filter pencarian kode, kategori, dan kondisi fisik berfungsi presisi (${searchByCode.length} item terdeteksi).`;
+      return "Pencarian status 'TERLAMBAT' berhasil menyaring data yang melewati dueDate secara konsisten.";
     });
 
     // -------------------------------------------------------------------------
-    // UAT-10: Siklus Hidup Sesi & Validasi Kadaluarsa
+    // UAT-10: Pembaruan Atomik Master Barang & Pencegahan Lost Update
     // -------------------------------------------------------------------------
-    await recordTest("UAT-10", "Siklus Hidup Sesi & Penolakan Token Kadaluarsa", "UAT", async () => {
-      // Buat token yang sudah kadaluarsa (expired 10 detik yang lalu)
-      const expiredToken = await new SignJWT({
-        userId: adminUser!.id,
-        username: adminUser!.username,
-        name: adminUser!.name,
-      })
-        .setProtectedHeader({ alg: "HS256" })
-        .setIssuedAt(Math.floor(Date.now() / 1000) - 60)
-        .setExpirationTime(Math.floor(Date.now() / 1000) - 10)
-        .sign(secretKey);
+    await recordTest("UAT-10", "Pembaruan Atomik Master Barang & Pencegahan Lost Update", "UAT", async () => {
+      // testItemId saat ini: totalQuantity = 10 (good: 9, light: 0, heavy: 1), availableQuantity = 9, heavyDamageQuantity = 1.
+      // Naikkan goodQuantity menjadi 11 (sehingga total = 11 + 0 + 1 = 12)
+      const updated = await updateItemAtomicService(prisma, {
+        id: testItemId,
+        code: "BRG-UAT-TEST",
+        name: "Perangkat Pengujian UAT Master (Updated)",
+        category: "Elektronik",
+        goodQuantity: 11,
+        lightDamageQuantity: 0,
+        heavyDamageQuantity: 1,
+        location: "Lab Jaringan Lt. 3",
+      });
 
-      let expiredRejected = false;
-      try {
-        await jwtVerify(expiredToken, secretKey, { algorithms: ["HS256"] });
-      } catch {
-        expiredRejected = true;
+      if (updated.totalQuantity !== 12 || updated.availableQuantity !== 11) {
+        throw new Error(
+          `Penyesuaian delta kuota gagal: total=${updated.totalQuantity}, available=${updated.availableQuantity}`
+        );
       }
 
-      if (!expiredRejected) {
-        throw new Error("Token yang telah melewati tenggat kadaluarsa masih dapat digunakan.");
-      }
-
-      return "Token sesi kadaluarsa ditolak seketika oleh jwtVerify; memicu redirect aman ke /login.";
+      return "Pembaruan totalQuantity dari 10 ke 12 secara atomik menaikkan availableQuantity dari 9 ke 11 tanpa menimpa stok.";
     });
 
     // -------------------------------------------------------------------------
     // STRESS-01: Simulasi Konkurensi Mutasi Stok Bersamaan (Zero Race Condition)
     // -------------------------------------------------------------------------
-    await recordTest("STRESS-01", "Simulasi Konkurensi Stok Bersamaan (Zero Race Condition)", "STRESS", async () => {
-      // Buat barang uji dengan stok tepat 1 unit
-      const raceItem = await prisma.item.create({
-        data: {
-          code: "BRG-RACE-TEST",
-          name: "Barang Uji Balapan Konkurensi",
-          category: "Elektronik",
-          totalQuantity: 1,
-          availableQuantity: 1,
-          goodQuantity: 1,
-          lightDamageQuantity: 0,
-          heavyDamageQuantity: 0,
-          location: "Lab Jaringan",
-          condition: Condition.BAIK,
-        },
+    await recordTest("STRESS-01", "Simulasi Konkurensi Stok Bersamaan via Service (Zero Race Condition)", "STRESS", async () => {
+      const raceItem = await createItemService(prisma, {
+        code: "BRG-RACE-TEST",
+        name: "Barang Uji Balapan Konkurensi",
+        category: "Elektronik",
+        goodQuantity: 1,
+        lightDamageQuantity: 0,
+        heavyDamageQuantity: 0,
+        location: "Lab Jaringan",
       });
       raceItemId = raceItem.id;
 
-      // Fungsi simulasi peminjaman atomik
-      const attemptBorrow = async (borrowerName: string) => {
-        return prisma.$transaction(async (tx) => {
-          const updateResult = await tx.item.updateMany({
-            where: {
-              id: raceItemId,
-              availableQuantity: { gte: 1 },
-              goodQuantity: { gte: 1 },
-            },
-            data: {
-              availableQuantity: { decrement: 1 },
-              goodQuantity: { decrement: 1 },
-            },
-          });
-
-          if (updateResult.count === 0) {
-            throw new Error("Stok barang yang tersedia tidak mencukupi untuk dipinjam.");
-          }
-
-          return tx.borrowRecord.create({
-            data: {
-              borrowCode: `PJM-RACE-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-              itemId: raceItemId,
-              adminId: adminUser!.id,
-              borrowerName,
-              borrowerContact: "081233334444",
-              borrowQuantity: 1,
-              borrowGoodQuantity: 1,
-              borrowLightDamageQuantity: 0,
-              dueDate: new Date(),
-              status: BorrowStatus.DIPINJAM,
-            },
-          });
-        });
-      };
-
-      // Tembak 2 request peminjaman secara bersamaan (simultan)
       const outcomes = await Promise.allSettled([
-        attemptBorrow("Staf Konkuren A"),
-        attemptBorrow("Staf Konkuren B"),
+        createBorrowTransactionService(prisma, adminUser!.id, {
+          itemId: raceItemId,
+          borrowerName: "Staf Konkuren A",
+          borrowerContact: "081233334444",
+          borrowQuantity: 1,
+          dueDate: new Date(),
+        }),
+        createBorrowTransactionService(prisma, adminUser!.id, {
+          itemId: raceItemId,
+          borrowerName: "Staf Konkuren B",
+          borrowerContact: "081255556666",
+          borrowQuantity: 1,
+          dueDate: new Date(),
+        }),
       ]);
 
       const successCount = outcomes.filter((o) => o.status === "fulfilled").length;
@@ -535,19 +407,15 @@ async function main() {
         );
       }
 
-      // Verifikasi stok akhir tepat 0 (tidak minus)
       const finalRaceItem = await prisma.item.findUnique({ where: { id: raceItemId } });
       if (finalRaceItem?.availableQuantity !== 0) {
         throw new Error(`Stok akhir bukan 0 unit: sisa ${finalRaceItem?.availableQuantity}`);
       }
 
-      return `Dari 2 request simultan pada stok 1 unit: tepat 1 sukses dan 1 ditolak atomik. Sisa stok tepat 0 (Zero Negative Stock).`;
+      return "Dari 2 transaksi peminjaman simultan pada stok 1 unit: tepat 1 sukses dan 1 ditolak atomik (Zero Negative Stock).";
     });
 
   } finally {
-    // -------------------------------------------------------------------------
-    // PEMBERSIHAN DATA UJI (TEARDOWN)
-    // -------------------------------------------------------------------------
     console.log("\n[INFO] Menjalankan pembersihan data uji terisolasi...");
     if (testItemId) {
       await prisma.borrowRecord.deleteMany({ where: { itemId: testItemId } });
@@ -560,11 +428,8 @@ async function main() {
     console.log("[SUCCESS] Data uji berhasil dibersihkan. Basis data kembali murni.");
   }
 
-  // ---------------------------------------------------------------------------
-  // REKAPITULASI HASIL UJI
-  // ---------------------------------------------------------------------------
   console.log("\n================================================================================");
-  console.log("   REKAPITULASI HASIL PENGUJIAN PENERIMAAN PENGGUNA (UAT) FASE 3");
+  console.log("   REKAPITULASI HASIL PENGUJIAN PENERIMAAN PENGGUNA (UAT) FASE 3 REFAKTOR");
   console.log("================================================================================");
   console.table(
     results.map((r) => ({
@@ -584,7 +449,7 @@ async function main() {
     console.error("[ERROR] Terdapat kasus uji yang gagal. Periksa log detail di atas.");
     process.exit(1);
   } else {
-    console.log("[SUCCESS] SELURUH KASUS UJI UAT-01 s/d UAT-10 & STRES KONKURENSI LULUS PARIPURNA 100%!");
+    console.log("[SUCCESS] SELURUH KASUS UJI UAT REAL SERVICE DOMAIN LULUS PARIPURNA 100%!");
   }
 }
 

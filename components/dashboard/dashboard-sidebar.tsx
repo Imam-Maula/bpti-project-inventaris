@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useTransition } from "react";
 import { logoutAction } from "@/actions/auth-actions";
@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Package,
   ArrowLeftRight,
+  History,
   LogOut,
   ShieldCheck,
   Menu,
@@ -32,6 +33,11 @@ const navigationItems = [
     href: "/sirkulasi",
     icon: ArrowLeftRight,
   },
+  {
+    name: "Log Aktivitas",
+    href: "/aktivitas",
+    icon: History,
+  },
 ];
 
 export function DashboardSidebar() {
@@ -50,13 +56,16 @@ export function DashboardSidebar() {
       {/* Brand Header */}
       <div>
         <div className="flex items-center gap-3 border-b border-sidebar-border px-6 py-5">
-          <Image
-            src="/logo-bpti.png"
-            alt="Logo BPTI"
-            width={36}
-            height={36}
-            className="h-9 w-9 shrink-0 object-contain"
-          />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-card p-1 shadow-xs border border-sidebar-border">
+            <Image
+              src="/bpti-logo.png"
+              alt="Logo BPTI"
+              width={36}
+              height={36}
+              className="h-full w-full object-contain"
+              priority
+            />
+          </div>
           <div className="min-w-0 flex-1">
             <span className="block truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
               Inventaris BPTI

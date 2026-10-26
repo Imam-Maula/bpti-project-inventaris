@@ -7,11 +7,14 @@ import {
   deleteItemAction,
   archiveItemAction,
   unarchiveItemAction,
+  bulkArchiveItemsAction,
+  bulkUnarchiveItemsAction,
 } from "@/actions/item-actions";
 import { ItemModal } from "./item-modal";
 import { ItemDetailModal } from "./item-detail-modal";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { LiveSearch } from "@/components/tables/live-search";
+import { Pagination } from "@/components/tables/pagination";
 import { useToast } from "@/components/ui/toast";
 import {
   Plus,
@@ -23,29 +26,12 @@ import {
   Eye,
   Archive,
   RotateCcw,
+  Download,
 } from "lucide-react";
 
 interface ItemListClientProps {
-  initialItems: (Item & {
-    borrowedQuantity: number;
-    borrowedGoodQuantity: number;
-    borrowedLightDamageQuantity: number;
-    goodQuantity: number;
-    lightDamageQuantity: number;
-    heavyDamageQuantity: number;
-    damagedQuantity: number;
-  })[];
+  initialItems: Item[];
 }
-
-type ItemWithStockSummary = Item & {
-  borrowedQuantity: number;
-  borrowedGoodQuantity: number;
-  borrowedLightDamageQuantity: number;
-  goodQuantity: number;
-  lightDamageQuantity: number;
-  heavyDamageQuantity: number;
-  damagedQuantity: number;
-};
 
 export function ItemListClient({ initialItems }: ItemListClientProps) {
   const router = useRouter();
@@ -57,8 +43,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingItem, setEditingItem] =
-    useState<ItemWithStockSummary | null>(null);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
 
   const [detailItemId, setDetailItemId] = useState<string | null>(null);
 
@@ -112,18 +97,93 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
     });
   }, [initialItems, search, selectedCategory, selectedCondition, selectedStatus]);
 
+  // State Paginasi
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // State Pilihan Massal (Bulk Selection)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Kalkulasi data terpaginasi
+  const totalPages = Math.ceil(filteredItems.length / pageSize);
+  const safeCurrentPage = totalPages > 0 ? Math.min(currentPage, totalPages) : 1;
+  const paginatedItems = useMemo(() => {
+    const start = (safeCurrentPage - 1) * pageSize;
+    return filteredItems.slice(start, start + pageSize);
+  }, [filteredItems, safeCurrentPage, pageSize]);
+
+  // Handler perubahan filter yang sekaligus mereset halaman dan seleksi
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setCurrentPage(1);
+    setSelectedIds(new Set());
+  };
+
+  const handleStatusChange = (val: string) => {
+    setSelectedStatus(val);
+    setCurrentPage(1);
+    setSelectedIds(new Set());
+  };
+
+  const handleCategoryChange = (val: string) => {
+    setSelectedCategory(val);
+    setCurrentPage(1);
+    setSelectedIds(new Set());
+  };
+
+  const handleConditionChange = (val: string) => {
+    setSelectedCondition(val);
+    setCurrentPage(1);
+    setSelectedIds(new Set());
+  };
+
+  // Helper seleksi massal
+  const isAllPageSelected =
+    paginatedItems.length > 0 &&
+    paginatedItems.every((item) => selectedIds.has(item.id));
+  const isSomePageSelected =
+    paginatedItems.some((item) => selectedIds.has(item.id)) && !isAllPageSelected;
+
+  const handleToggleSelectAllPage = () => {
+    const next = new Set(selectedIds);
+    if (isAllPageSelected) {
+      paginatedItems.forEach((i) => next.delete(i.id));
+    } else {
+      paginatedItems.forEach((i) => next.add(i.id));
+    }
+    setSelectedIds(next);
+  };
+
+  const handleToggleSelectItem = (id: string) => {
+    const next = new Set(selectedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setSelectedIds(next);
+  };
+
+  const handleSelectAllFiltered = () => {
+    setSelectedIds(new Set(filteredItems.map((i) => i.id)));
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
   const handleOpenCreate = () => {
     setEditingItem(null);
     setModalOpen(true);
   };
 
-  const handleOpenEdit = (item: ItemWithStockSummary) => {
+  const handleOpenEdit = (item: Item) => {
     setEditingItem(item);
     setModalOpen(true);
   };
 
-  const handlePromptDelete = (item: ItemWithStockSummary) => {
-    if (item.borrowedQuantity > 0) {
+  const handlePromptDelete = (item: Item) => {
+    if (item.availableQuantity < item.totalQuantity) {
       const msg = `Tidak dapat menghapus "${item.name}" karena ada unit yang sedang aktif dipinjam.`;
       setNotice({
         type: "error",
@@ -164,8 +224,8 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
     });
   };
 
-  const handlePromptArchive = (item: ItemWithStockSummary) => {
-    if (item.borrowedQuantity > 0) {
+  const handlePromptArchive = (item: Item) => {
+    if (item.availableQuantity < item.totalQuantity) {
       const msg = `Tidak dapat mengarsipkan "${item.name}" karena ada unit yang sedang aktif dipinjam.`;
       setNotice({
         type: "error",
@@ -243,6 +303,135 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
     router.refresh();
   };
 
+  const exportItemsToCSV = (itemsToExport: Item[], filenameSuffix: string) => {
+    if (itemsToExport.length === 0) {
+      toast.warning("Tidak Ada Data", "Tidak ada data barang untuk diekspor.");
+      return;
+    }
+
+    const headers = [
+      "Kode Barang",
+      "Nama Barang",
+      "Kategori",
+      "Total Unit",
+      "Siap Pakai",
+      "Baik",
+      "Rusak Ringan",
+      "Rusak Berat",
+      "Lokasi Simpan",
+      "Kondisi Dominan",
+      "Status",
+    ];
+
+    const rows = itemsToExport.map((item) => [
+      `"${item.code.replace(/"/g, '""')}"`,
+      `"${item.name.replace(/"/g, '""')}"`,
+      `"${item.category.replace(/"/g, '""')}"`,
+      item.totalQuantity,
+      item.availableQuantity,
+      item.goodQuantity,
+      item.lightDamageQuantity,
+      item.heavyDamageQuantity,
+      `"${item.location.replace(/"/g, '""')}"`,
+      item.condition,
+      item.status,
+    ]);
+
+    const csvContent =
+      "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const dateStr = new Date().toISOString().slice(0, 10);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `laporan_master_barang_${filenameSuffix}_${dateStr}.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Ekspor Berhasil", `${itemsToExport.length} data barang berhasil diunduh.`);
+  };
+
+  const handleExportCSV = () => {
+    exportItemsToCSV(filteredItems, "semua");
+  };
+
+  const handleExportSelectedCSV = () => {
+    const selectedItems = filteredItems.filter((i) => selectedIds.has(i.id));
+    exportItemsToCSV(selectedItems, "terpilih");
+  };
+
+  const handleBulkArchive = () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+
+    const selectedItems = initialItems.filter((i) => selectedIds.has(i.id));
+    const borrowedItems = selectedItems.filter(
+      (i) => i.availableQuantity < i.totalQuantity
+    );
+
+    if (borrowedItems.length > 0) {
+      const names = borrowedItems.map((i) => i.name).join(", ");
+      toast.error(
+        "Pengarsipan Ditolak",
+        `Terdapat unit yang sedang dipinjam pada barang: "${names}". Harap batalkan pilihan barang tersebut sebelum mengarsipkan.`
+      );
+      return;
+    }
+
+    setConfirmDialog({
+      open: true,
+      title: "Arsipkan Barang Terpilih Secara Massal",
+      description: `Apakah Anda yakin ingin mengarsipkan ${ids.length} master barang yang dipilih? Barang yang diarsipkan tidak akan muncul di form peminjaman baru.`,
+      confirmText: `Arsipkan ${ids.length} Barang`,
+      variant: "destructive",
+      action: async () => {
+        startTransition(async () => {
+          const res = await bulkArchiveItemsAction(ids);
+          setConfirmDialog((prev) => ({ ...prev, open: false }));
+
+          if (res.success) {
+            setSelectedIds(new Set());
+            router.refresh();
+            toast.success("Operasi Berhasil", res.message);
+          } else {
+            toast.error("Gagal Mengarsipkan", res.message);
+          }
+        });
+      },
+    });
+  };
+
+  const handleBulkUnarchive = () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+
+    setConfirmDialog({
+      open: true,
+      title: "Aktifkan Kembali Barang Terpilih Secara Massal",
+      description: `Apakah Anda yakin ingin mengaktifkan kembali ${ids.length} master barang yang dipilih ke katalog aktif BPTI?`,
+      confirmText: `Aktifkan ${ids.length} Barang`,
+      variant: "default",
+      action: async () => {
+        startTransition(async () => {
+          const res = await bulkUnarchiveItemsAction(ids);
+          setConfirmDialog((prev) => ({ ...prev, open: false }));
+
+          if (res.success) {
+            setSelectedIds(new Set());
+            router.refresh();
+            toast.success("Operasi Berhasil", res.message);
+          } else {
+            toast.error("Gagal Mengaktifkan", res.message);
+          }
+        });
+      },
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* Toast Notification Banner */}
@@ -278,7 +467,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
         <div className="flex flex-1 flex-wrap items-center gap-2">
           <LiveSearch
             value={search}
-            onChange={setSearch}
+            onChange={handleSearchChange}
             placeholder="Cari kode, nama, atau lokasi barang..."
             className="w-full sm:max-w-xs"
           />
@@ -286,7 +475,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
           {/* Filter Status */}
           <select
             value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
+            onChange={(e) => handleStatusChange(e.target.value)}
             className="rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
             aria-label="Filter Status Arsip"
           >
@@ -298,7 +487,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
           {/* Filter Kategori */}
           <select
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
+            onChange={(e) => handleCategoryChange(e.target.value)}
             className="rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
             aria-label="Filter Kategori"
           >
@@ -313,7 +502,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
           {/* Filter Kondisi */}
           <select
             value={selectedCondition}
-            onChange={(e) => setSelectedCondition(e.target.value)}
+            onChange={(e) => handleConditionChange(e.target.value)}
             className="rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
             aria-label="Filter Kondisi Fisik"
           >
@@ -324,16 +513,89 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
           </select>
         </div>
 
-        {/* Tombol Tambah Barang */}
-        <button
-          type="button"
-          onClick={handleOpenCreate}
-          className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 focus:outline-hidden focus:ring-1 focus:ring-ring"
-        >
-          <Plus className="h-4 w-4" />
-          <span>Tambah Barang</span>
-        </button>
+        {/* Tombol Aksi Kanan */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-foreground shadow-2xs hover:bg-muted focus:outline-hidden"
+            title="Unduh seluruh data tabel dalam format CSV/Excel"
+          >
+            <Download className="h-3.5 w-3.5" />
+            <span>Ekspor CSV / Excel</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 focus:outline-hidden focus:ring-1 focus:ring-ring"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Tambah Barang</span>
+          </button>
+        </div>
       </div>
+
+      {/* Bilah Aksi Massal (Bulk Action Bar) */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3.5 shadow-xs transition-all">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+              {selectedIds.size}
+            </span>
+            <span className="text-xs font-medium text-foreground">
+              barang terpilih
+            </span>
+
+            {selectedIds.size < filteredItems.length && (
+              <button
+                type="button"
+                onClick={handleSelectAllFiltered}
+                className="text-xs font-semibold text-primary underline hover:opacity-80"
+              >
+                Pilih Seluruh Hasil Filter ({filteredItems.length} data)
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={handleClearSelection}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Batal Pilih
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleExportSelectedCSV}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Ekspor Terpilih CSV</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleBulkArchive}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Archive className="h-3.5 w-3.5" />
+              <span>Arsipkan Massal</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleBulkUnarchive}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Aktifkan Massal</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tabel Master Barang */}
       <div className="overflow-hidden rounded-md border border-border bg-card shadow-xs">
@@ -341,6 +603,18 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
           <table className="w-full text-left text-sm">
             <thead className="border-b border-border bg-muted/40 text-xs font-medium text-muted-foreground">
               <tr>
+                <th scope="col" className="w-10 px-3 py-3 text-center">
+                  <input
+                    type="checkbox"
+                    checked={isAllPageSelected}
+                    ref={(el) => {
+                      if (el) el.indeterminate = isSomePageSelected;
+                    }}
+                    onChange={handleToggleSelectAllPage}
+                    className="h-4 w-4 rounded border-input text-primary focus:ring-1 focus:ring-primary"
+                    aria-label="Pilih semua barang di halaman ini"
+                  />
+                </th>
                 <th scope="col" className="px-4 py-3">
                   Kode & Nama Barang
                 </th>
@@ -365,7 +639,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
               {filteredItems.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-8 text-center text-muted-foreground"
                   >
                     <Package className="mx-auto mb-2 h-8 w-8 text-muted-foreground/60" />
@@ -381,17 +655,27 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
                   </td>
                 </tr>
               ) : (
-                filteredItems.map((item) => {
+                paginatedItems.map((item) => {
                   const isAvailable = item.availableQuantity > 0;
                   const isArchived = item.status === ItemStatus.DIARSIPKAN;
+                  const isSelected = selectedIds.has(item.id);
 
                   return (
                     <tr
                       key={item.id}
                       className={`transition-colors hover:bg-muted/30 ${
-                        isArchived ? "opacity-75 bg-muted/10" : ""
+                        isSelected ? "bg-primary/5" : isArchived ? "opacity-75 bg-muted/10" : ""
                       }`}
                     >
+                      <td className="w-10 px-3 py-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelectItem(item.id)}
+                          className="h-4 w-4 rounded border-input text-primary focus:ring-1 focus:ring-primary"
+                          aria-label={`Pilih ${item.name}`}
+                        />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-foreground">
                           {item.name}
@@ -417,25 +701,31 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
                               : "text-destructive"
                           }`}
                         >
-                          <span className="block">
-                            {item.availableQuantity} / {item.totalQuantity} unit
-                          </span>
-                          <span className="block text-[10px] font-normal text-muted-foreground">
-                            Dipinjam {item.borrowedQuantity}
-                          </span>
+                          {item.availableQuantity} / {item.totalQuantity} unit
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="inline-block rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
-                            Baik: {item.goodQuantity}
-                          </span>
-                          <span className="inline-block rounded border border-border bg-muted/80 px-2 py-0.5 text-[11px] font-medium text-foreground">
-                            Ringan: {item.lightDamageQuantity}
-                          </span>
-                          <span className="inline-block rounded border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
-                            Berat: {item.heavyDamageQuantity}
-                          </span>
+                          {item.condition === Condition.BAIK && (
+                            <span className="inline-block rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
+                              Baik
+                            </span>
+                          )}
+                          {item.condition === Condition.RUSAK_RINGAN && (
+                            <span className="inline-block rounded border border-border bg-muted/80 px-2 py-0.5 text-[11px] font-medium text-foreground">
+                              Rusak Ringan
+                            </span>
+                          )}
+                          {item.condition === Condition.RUSAK_BERAT && (
+                            <span className="inline-block rounded border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
+                              Rusak Berat
+                            </span>
+                          )}
+                          {(item.heavyDamageQuantity ?? 0) > 0 && (
+                            <span className="inline-block rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
+                              {item.heavyDamageQuantity} Rusak Berat
+                            </span>
+                          )}
                           {isArchived && (
                             <span className="inline-flex items-center gap-1 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                               <Archive className="h-2.5 w-2.5" />
@@ -510,6 +800,16 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
             </tbody>
           </table>
         </div>
+
+        {/* Kontrol Paginasi Tabel */}
+        <Pagination
+          currentPage={safeCurrentPage}
+          totalPages={totalPages}
+          totalItems={filteredItems.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </div>
 
       {/* Modal Edit / Tambah */}

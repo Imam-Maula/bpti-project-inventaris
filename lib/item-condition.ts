@@ -1,5 +1,9 @@
 import { Condition } from "@prisma/client";
 
+/**
+ * Menghitung kondisi dominan dari suatu jenis barang
+ * berdasarkan perbandingan kuantitas kondisi fisiknya.
+ */
 export function getDominantCondition(
   goodQuantity: number,
   lightDamageQuantity: number,

@@ -1,17 +1,22 @@
 "use server";
 
-import crypto from "crypto";
 import { revalidatePath } from "next/cache";
-import { Prisma, BorrowStatus } from "@prisma/client";
+import { BorrowStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/dal";
-import { getDominantCondition } from "@/lib/item-condition";
 import {
   createBorrowSchema,
   returnBorrowSchema,
   CreateBorrowInput,
   ReturnBorrowInput,
 } from "@/lib/validations/borrow";
+import {
+  getBorrowRecordsService,
+  getCirculationMetricsService,
+  createBorrowTransactionService,
+  returnBorrowTransactionService,
+} from "@/lib/services/borrow-service";
+import { recordAuditLogService } from "@/lib/services/audit-service";
 
 export interface BorrowActionResult<T = unknown> {
   success: boolean;
@@ -21,149 +26,32 @@ export interface BorrowActionResult<T = unknown> {
 }
 
 /**
- * Menghasilkan kode unik transaksi peminjaman (contoh: PJM-20261006-A1B2)
- */
-function generateBorrowCode(): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const randomSuffix = crypto.randomBytes(2).toString("hex").toUpperCase();
-  return `PJM-${dateStr}-${randomSuffix}`;
-}
-
-/**
  * Mengambil daftar seluruh catatan sirkulasi peminjaman.
+ * Mendukung filter status operasional termasuk TERLAMBAT/OVERDUE.
  */
 export async function getBorrowRecordsAction(params?: {
-  status?: BorrowStatus;
+  status?: BorrowStatus | "OVERDUE";
   search?: string;
 }) {
   await requireAuth();
-
-  const where: Prisma.BorrowRecordWhereInput = {};
-
-  if (params?.status) {
-    where.status = params.status;
-  }
-
-  if (params?.search) {
-    where.OR = [
-      { borrowCode: { contains: params.search } },
-      { borrowerName: { contains: params.search } },
-      { borrowerContact: { contains: params.search } },
-      { item: { name: { contains: params.search } } },
-      { item: { code: { contains: params.search } } },
-    ];
-  }
-
-  return prisma.borrowRecord.findMany({
-    where,
-    include: {
-      item: {
-        select: {
-          id: true,
-          code: true,
-          name: true,
-          category: true,
-          location: true,
-          condition: true,
-        },
-      },
-      admin: {
-        select: {
-          id: true,
-          name: true,
-          username: true,
-        },
-      },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  return getBorrowRecordsService(prisma, params);
 }
 
 /**
  * Mengambil ringkasan statistik metrik sirkulasi dan fisik aset untuk Dasbor (FR-UI-01).
- * Mendukung filter rentang tanggal opsional untuk analisis sirkulasi berkala.
+ * Mematuhi invarian: Total Fisik = Siap Pakai + Dipinjam + Karantina/Perbaikan.
  */
 export async function getCirculationMetricsAction(params?: {
   startDate?: Date;
   endDate?: Date;
 }) {
   await requireAuth();
-
-  const now = new Date();
-  const dateFilter: Prisma.BorrowRecordWhereInput = {};
-  if (params?.startDate || params?.endDate) {
-    dateFilter.borrowDate = {};
-    if (params.startDate) dateFilter.borrowDate.gte = params.startDate;
-    if (params.endDate) dateFilter.borrowDate.lte = params.endDate;
-  }
-
-  const [
-    itemAggregates,
-    borrowedUnitAggregate,
-    damagedUnitAggregate,
-    totalJenisAset,
-    totalTransaksiDipinjam,
-    totalTerlambat,
-    totalDikembalikan,
-  ] = await Promise.all([
-    prisma.item.aggregate({
-      where: { status: "AKTIF" },
-      _sum: {
-        totalQuantity: true,
-        availableQuantity: true,
-      },
-    }),
-    prisma.borrowRecord.aggregate({
-      where: {
-        status: "DIPINJAM",
-        item: { status: "AKTIF" },
-      },
-      _sum: { borrowQuantity: true },
-    }),
-    prisma.item.aggregate({
-      where: { status: "AKTIF" },
-      _sum: { heavyDamageQuantity: true },
-    }),
-    prisma.item.count({
-      where: { status: "AKTIF" },
-    }),
-    prisma.borrowRecord.count({
-      where: { ...dateFilter, status: "DIPINJAM" },
-    }),
-    prisma.borrowRecord.count({
-      where: {
-        ...dateFilter,
-        status: "DIPINJAM",
-        dueDate: { lt: now },
-      },
-    }),
-    prisma.borrowRecord.count({
-      where: { ...dateFilter, status: "DIKEMBALIKAN" },
-    }),
-  ]);
-
-  const totalUnitFisik = itemAggregates._sum.totalQuantity ?? 0;
-  const totalUnitSiapPakai = itemAggregates._sum.availableQuantity ?? 0;
-  const totalUnitDipinjam = borrowedUnitAggregate._sum.borrowQuantity ?? 0;
-  const totalUnitRusakBerat =
-    damagedUnitAggregate._sum.heavyDamageQuantity ?? 0;
-
-  return {
-    totalJenisAset,
-    totalUnitFisik,
-    totalUnitDipinjam,
-    totalUnitRusakBerat,
-    totalUnitSiapPakai,
-    totalTransaksiDipinjam,
-    totalTerlambat,
-    totalDikembalikan,
-  };
+  return getCirculationMetricsService(prisma, params);
 }
 
 /**
  * Membuat transaksi peminjaman barang baru secara atomik.
- * Mencegah race-condition penurunan stok dengan updateMany bersyarat (availableQuantity >= borrowQuantity).
- * Mengambil adminId langsung dari sesi terautentikasi (mencegah impersonation).
+ * Mencegah race-condition penurunan stok dengan updateMany bersyarat (CAS).
  */
 export async function createBorrowAction(
   data: CreateBorrowInput
@@ -179,103 +67,42 @@ export async function createBorrowAction(
     };
   }
 
-  const { itemId, borrowerName, borrowerContact, borrowQuantity, dueDate, notes } =
-    validated.data;
-
   try {
-    const borrowRecord = await prisma.$transaction(async (tx) => {
-      const item = await tx.item.findUnique({
-        where: { id: itemId },
-        select: {
-          name: true,
-          code: true,
-          goodQuantity: true,
-          lightDamageQuantity: true,
-        },
-      });
-      if (!item) {
-        throw new Error("Barang tidak ditemukan.");
-      }
+    const record = await createBorrowTransactionService(
+      prisma,
+      session.userId,
+      validated.data
+    );
 
-      const borrowGoodQuantity = Math.min(
-        item.goodQuantity,
-        borrowQuantity
-      );
-      const borrowLightDamageQuantity =
-        borrowQuantity - borrowGoodQuantity;
-
-      // 1. Pengurangan stok dan alokasi kondisi dilakukan secara atomik.
-      const updateResult = await tx.item.updateMany({
-        where: {
-          id: itemId,
-          availableQuantity: { gte: borrowQuantity },
-          goodQuantity: { gte: borrowGoodQuantity },
-          lightDamageQuantity: { gte: borrowLightDamageQuantity },
-        },
-        data: {
-          availableQuantity: { decrement: borrowQuantity },
-          goodQuantity: { decrement: borrowGoodQuantity },
-          lightDamageQuantity: { decrement: borrowLightDamageQuantity },
-        },
-      });
-
-      if (updateResult.count === 0) {
-        throw new Error("Stok barang yang tersedia tidak mencukupi untuk dipinjam.");
-      }
-
-      // 2. Buat kode transaksi unik
-      let borrowCode = generateBorrowCode();
-      let isUnique = false;
-      let attempts = 0;
-
-      while (!isUnique && attempts < 5) {
-        const existing = await tx.borrowRecord.findUnique({
-          where: { borrowCode },
-        });
-        if (!existing) {
-          isUnique = true;
-        } else {
-          borrowCode = generateBorrowCode();
-          attempts++;
-        }
-      }
-
-      // 3. Catat rekaman peminjaman (tenggat waktu diatur ke akhir hari 23:59:59.999 agar adil)
-      const adjustedDueDate = new Date(dueDate);
-      adjustedDueDate.setHours(23, 59, 59, 999);
-
-      const record = await tx.borrowRecord.create({
-        data: {
-          borrowCode,
-          itemId,
-          adminId: session.userId,
-          borrowerName,
-          borrowerContact,
-          borrowQuantity,
-          borrowGoodQuantity,
-          borrowLightDamageQuantity,
-          dueDate: adjustedDueDate,
-          notes: notes || null,
-          status: "DIPINJAM",
-        },
-        include: {
-          item: {
-            select: { name: true, code: true },
-          },
-        },
-      });
-
-      return record;
+    await recordAuditLogService(prisma, {
+      action: "CATAT_PEMINJAMAN",
+      entityType: "BORROW_RECORD",
+      entityId: record.id,
+      adminId: session.userId,
+      details: `Mencatat peminjaman ${record.borrowQuantity} unit aset "${record.item.name}" (${record.item.code}) oleh ${record.borrowerName} (${record.borrowerContact}) dengan kode ${record.borrowCode}.`,
+      newValue: {
+        id: record.id,
+        borrowCode: record.borrowCode,
+        itemId: record.itemId,
+        itemName: record.item.name,
+        borrowerName: record.borrowerName,
+        borrowerContact: record.borrowerContact,
+        borrowQuantity: record.borrowQuantity,
+        borrowDate: record.borrowDate,
+        dueDate: record.dueDate,
+        status: record.status,
+      },
     });
 
     revalidatePath("/sirkulasi");
     revalidatePath("/barang");
+    revalidatePath("/aktivitas");
     revalidatePath("/");
 
     return {
       success: true,
-      message: `Peminjaman "${borrowRecord.item.name}" berhasil dicatat dengan kode ${borrowRecord.borrowCode}.`,
-      data: borrowRecord,
+      message: `Peminjaman "${record.item.name}" berhasil dicatat dengan kode ${record.borrowCode}.`,
+      data: record,
     };
   } catch (error) {
     const errorMessage =
@@ -292,13 +119,12 @@ export async function createBorrowAction(
 
 /**
  * Memproses pengembalian barang secara atomik.
- * Mencegah duplikasi pengembalian (double return) dengan updateMany bersyarat (status = DIPINJAM).
- * Mengembalikan unit layak pakai ke stok tersedia dan mengarantina unit rusak berat.
+ * Mencegah double return dan memulihkan stok atau mencatat ke karantina jika rusak berat.
  */
 export async function returnBorrowAction(
   data: ReturnBorrowInput
 ): Promise<BorrowActionResult> {
-  await requireAuth();
+  const session = await requireAuth();
 
   const validated = returnBorrowSchema.safeParse(data);
   if (!validated.success) {
@@ -309,94 +135,34 @@ export async function returnBorrowAction(
     };
   }
 
-  const { borrowRecordId, returnCondition, notes } = validated.data;
-
   try {
-    const result = await prisma.$transaction(async (tx) => {
-      // 1. Dapatkan informasi rekaman peminjaman
-      const record = await tx.borrowRecord.findUnique({
-        where: { id: borrowRecordId },
-        include: { item: true },
-      });
+    const result = await returnBorrowTransactionService(prisma, validated.data);
 
-      if (!record) {
-        throw new Error("Catatan peminjaman tidak ditemukan.");
-      }
-
-      // 2. Tandai pengembalian secara atomik bersyarat untuk mencegah double-return
-      const updateResult = await tx.borrowRecord.updateMany({
-        where: {
-          id: borrowRecordId,
-          status: "DIPINJAM",
-        },
-        data: {
-          status: "DIKEMBALIKAN",
-          returnDate: new Date(),
-          returnCondition,
-          notes: notes
-            ? record.notes
-              ? `${record.notes} | Catatan Kembali: ${notes}`
-              : `Catatan Kembali: ${notes}`
-            : record.notes,
-        },
-      });
-
-      if (updateResult.count === 0) {
-        throw new Error("Peminjaman ini sudah tercatat dikembalikan sebelumnya.");
-      }
-
-      // 3. Kembalikan stok barang yang dipinjam atau karantina jika rusak berat
-      const isDamagedHeavy = returnCondition === "RUSAK_BERAT";
-      const nextGoodQuantity =
-        record.item.goodQuantity +
-        (returnCondition === "BAIK" ? record.borrowQuantity : 0);
-      const nextLightDamageQuantity =
-        record.item.lightDamageQuantity +
-        (returnCondition === "RUSAK_RINGAN" ? record.borrowQuantity : 0);
-      const nextHeavyDamageQuantity =
-        record.item.heavyDamageQuantity +
-        (isDamagedHeavy ? record.borrowQuantity : 0);
-      const remainingBorrowSummary = await tx.borrowRecord.aggregate({
-        where: {
-          itemId: record.itemId,
-          status: "DIPINJAM",
-          id: { not: borrowRecordId },
-        },
-        _sum: {
-          borrowGoodQuantity: true,
-          borrowLightDamageQuantity: true,
-        },
-      });
-      const itemCondition = getDominantCondition(
-        nextGoodQuantity +
-          (remainingBorrowSummary._sum.borrowGoodQuantity ?? 0),
-        nextLightDamageQuantity +
-          (remainingBorrowSummary._sum.borrowLightDamageQuantity ?? 0),
-        nextHeavyDamageQuantity
-      );
-
-      await tx.item.update({
-        where: { id: record.itemId },
-        data: {
-          goodQuantity: nextGoodQuantity,
-          lightDamageQuantity: nextLightDamageQuantity,
-          heavyDamageQuantity: nextHeavyDamageQuantity,
-          ...(!isDamagedHeavy && {
-            availableQuantity: { increment: record.borrowQuantity },
-          }),
-          condition: itemCondition,
-        },
-      });
-
-      return { record, isDamagedHeavy };
+    await recordAuditLogService(prisma, {
+      action: "PENGEMBALIAN_BARANG",
+      entityType: "BORROW_RECORD",
+      entityId: result.record.id,
+      adminId: session.userId,
+      details: `Mencatat pengembalian aset "${result.record.item.name}" (${result.record.borrowCode}) oleh ${result.record.borrowerName}. Kondisi: ${validated.data.returnCondition}.${result.isDamagedHeavy ? " Teridentifikasi rusak berat dan dipindahkan ke karantina/perbaikan." : " Unit dipulihkan ke stok siap pakai."}`,
+      newValue: {
+        id: result.record.id,
+        borrowCode: result.record.borrowCode,
+        itemName: result.record.item.name,
+        borrowerName: result.record.borrowerName,
+        returnDate: result.record.returnDate,
+        returnCondition: result.record.returnCondition,
+        status: result.record.status,
+        isDamagedHeavy: result.isDamagedHeavy,
+      },
     });
 
     revalidatePath("/sirkulasi");
     revalidatePath("/barang");
+    revalidatePath("/aktivitas");
     revalidatePath("/");
 
     const quarantineNote = result.isDamagedHeavy
-      ? " Unit teridentifikasi RUSAK BERAT dan otomatis dikarantina (tidak dimasukkan ke stok siap pakai)."
+      ? ` ${result.record.borrowQuantity} unit teridentifikasi RUSAK BERAT dan otomatis dicatat ke kuota karantina/perbaikan aset BPTI.`
       : " Unit berhasil dipulihkan ke stok siap pakai.";
 
     return {

@@ -24,7 +24,7 @@ const itemFieldsSchema = z.object({
     .trim(),
   goodQuantity: z.coerce
     .number()
-    .int("Jumlah total unit harus berupa bilangan bulat")
+    .int("Jumlah unit baik harus berupa bilangan bulat")
     .min(0, "Jumlah unit baik tidak boleh kurang dari 0")
     .max(100000, "Jumlah unit melebihi batas wajar"),
   lightDamageQuantity: z.coerce
@@ -55,15 +55,15 @@ function validateQuantities(
   if (totalQuantity < 1) {
     ctx.addIssue({
       code: "custom",
-      path: ["totalQuantity"],
-      message: "Jumlah total barang minimal 1 unit",
+      path: ["goodQuantity"],
+      message: "Total unit fisik minimal 1 unit (jumlahkan unit baik, rusak ringan, atau berat)",
     });
   }
   if (totalQuantity > 100000) {
     ctx.addIssue({
       code: "custom",
-      path: ["totalQuantity"],
-      message: "Jumlah total barang melebihi batas wajar",
+      path: ["goodQuantity"],
+      message: "Jumlah total unit melebihi batas wajar",
     });
   }
 }

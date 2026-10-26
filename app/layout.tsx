@@ -13,6 +13,8 @@ export const metadata: Metadata = {
     "Sistem Manajemen Inventaris & Sirkulasi Aset Badan Pengembangan Teknologi Informasi (BPTI)",
   icons: {
     icon: "/logo-bpti.png",
+    shortcut: "/logo-bpti.png",
+    apple: "/logo-bpti.png",
   },
 };
 

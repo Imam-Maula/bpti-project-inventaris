@@ -19,7 +19,7 @@ Sistem dibangun dengan memisahkan tanggung jawab secara tegas (*Separation of Co
 ```mermaid
 graph TD
     subgraph Client [Tingkat Klien / Browser]
-        UI[Antarmuka Responsif Shadcn UI]
+        UI[Antarmuka Responsif Tailwind CSS Native]
         Toast[Toast Notification Global]
         Search[Live Search & Filter Multi-Kriteria]
     end
@@ -28,18 +28,20 @@ graph TD
         Proxy[Proxy Guard & Middleware Sesi JWT]
         Actions[Server Actions: Auth, Item, Borrow Engine]
         Zod[Skema Validasi & Sanitasi Input Zod]
+        Services[Service Layer Terisolasi: ItemService & BorrowService]
     end
 
     subgraph DataTier [Tingkat Basis Data / Persistence]
         Prisma[Prisma ORM Client]
         MySQL[(MySQL Server 8.0 - db_inventaris_bpti)]
-        ACID[Blok Transaksi Atomik CAS: Zero Race Condition]
+        ACID[Transaksi Atomik CAS Mutex & Proteksi Kuantitas]
     end
 
     UI -->|HTTP / React 19 Form Action| Proxy
     Proxy --> Actions
     Actions --> Zod
-    Actions --> Prisma
+    Actions --> Services
+    Services --> Prisma
     Prisma --> ACID
     ACID --> MySQL
 ```
@@ -47,7 +49,7 @@ graph TD
 ### Spesifikasi Tumpukan Teknologi (*Tech Stack*):
 - **Framework Aplikasi:** Next.js 16.3.7 (App Router, Turbopack, React 19.2 Server Components & Actions)
 - **Bahasa Pemrograman:** TypeScript 5.x (Strict Type Checking)
-- **Styling & Desain:** Tailwind CSS v4 (Shadcn UI)
+- **Styling & Desain:** Vanilla Tailwind CSS (Sistem Desain Khusus BPTI, Dark/Light Mode Adaptif)
 - **Tipografi:** Geist Sans & Geist Mono (Vercel)
 - **Basis Data:** MySQL Server v8.0 / MariaDB (Port 3306)
 - **Object-Relational Mapping (ORM):** Prisma ORM v5.22.0
@@ -105,11 +107,6 @@ Terapkan skema tabel relasional ke basis data MySQL:
 pnpm db:push
 ```
 
-Pada peningkatan dari versi lama, jalankan backfill satu kali untuk menginisialisasi jumlah kondisi dan alokasi peminjaman yang sudah ada:
-```bash
-pnpm db:backfill-condition-quantities
-```
-
 ### Langkah 5: Seeding Data Awal (Akun Admin & Master Aset)
 Inisialisasi akun administrator dan data master barang bawaan BPTI:
 ```bash
@@ -130,7 +127,7 @@ Gunakan akun berikut untuk masuk ke sistem:
 - **URL Login:** `http://localhost:3000/login`
 - **Username:** `admin`
 - **Password:** `admin123`
-- **Masa Berlaku Sesi:** 7 hari kalender (diperbarui otomatis).
+- **Masa Berlaku Sesi:** 7 hari kalender (JWT HS256 HttpOnly Cookie).
 
 ---
 
@@ -157,11 +154,10 @@ erDiagram
         string category "Kategori Logistik"
         int totalQuantity "Total Kuota Unit Fisik"
         int availableQuantity "Unit Fisik Siap Pakai"
-        int goodQuantity "Unit Baik Tersedia"
-        int lightDamageQuantity "Unit Rusak Ringan Tersedia"
-        int heavyDamageQuantity "Unit Rusak Berat Tidak Siap Dipinjam"
+        int quarantinedQuantity "Unit Karantina / Perbaikan"
         string location "Lokasi Rak/Gudang Penyimpanan"
         enum condition "BAIK | RUSAK_RINGAN | RUSAK_BERAT"
+        enum status "AKTIF | DIARSIPKAN"
         datetime createdAt
         datetime updatedAt
     }
@@ -174,8 +170,6 @@ erDiagram
         string borrowerName "Nama Staf Peminjam"
         string borrowerContact "Nomor WhatsApp/HP Peminjam"
         int borrowQuantity "Jumlah Unit Dipinjam"
-        int borrowGoodQuantity "Unit Baik yang Dipinjam"
-        int borrowLightDamageQuantity "Unit Rusak Ringan yang Dipinjam"
         datetime borrowDate "Tanggal Mulai Pinjam"
         datetime dueDate "Tenggat Waktu Pengembalian"
         datetime returnDate "Waktu Realisasi Pengembalian"
@@ -188,8 +182,8 @@ erDiagram
 ```
 
 ### Aturan Integritas Matematika Persamaan Stok:
-$$\text{Total Unit Fisik} = \text{Baik} + \text{Rusak Ringan} + \text{Rusak Berat}$$
-Jumlah kondisi yang ditampilkan di master sudah mencakup unit yang sedang dipinjam. Secara internal, `goodQuantity` dan `lightDamageQuantity` menyimpan unit tersedia, sedangkan unit yang sedang dipinjam tercatat per kondisi pada transaksi aktif. Unit baik dan rusak ringan dapat dipinjam; unit rusak berat dikarantina.
+$$\text{Total Unit Fisik} = \text{Unit Siap Pakai} + \text{Unit Sedang Dipinjam} + \text{Unit Karantina / Perbaikan}$$
+Persamaan ini dijaga secara mutlak oleh blok transaksi `prisma.$transaction`.
 
 ---
 
@@ -198,10 +192,8 @@ Jumlah kondisi yang ditampilkan di master sudah mencakup unit yang sedang dipinj
 ### SOP-01: Pendaftaran Master Aset Baru (FR-ITEM-01)
 1. Buka menu **Master Barang** (`/barang`).
 2. Klik tombol **Tambah Barang**.
-3. Isi Kode Barang (format alfanumerik bebas spasi, misal `BRG-006`), Kategori, Nama Barang, jumlah unit **Baik**, **Rusak Ringan**, **Rusak Berat**, dan Lokasi Simpan. Total unit fisik dihitung otomatis.
-4. Klik **Tambah Barang**. Toast notifikasi hijau akan mengonfirmasi pendaftaran aset. Hanya unit baik dan rusak ringan yang dihitung sebagai stok siap dipinjam.
-
-Saat mengedit master, sesuaikan jumlah pada ketiga kondisi dengan keadaan fisik terbaru. Jumlah total diperbarui otomatis; unit rusak berat yang telah diperbaiki dapat dipindahkan ke jumlah **Baik** atau **Rusak Ringan**.
+3. Isi kolom Kode Barang (format alfanumerik bebas spasi, misal `BRG-006`), Kategori, Nama Barang, Total Unit Fisik, Kondisi Fisik, dan Lokasi Simpan.
+4. Klik **Tambah Barang**. Toast notifikasi hijau akan mengonfirmasi pendaftaran aset. Unit siap pakai otomatis sama dengan total unit fisik.
 
 ### SOP-02: Transaksi Sirkulasi Peminjaman Aset (FR-TRX-01)
 1. Buka menu **Sirkulasi Peminjaman** (`/sirkulasi`).
@@ -239,24 +231,34 @@ Repositori ini dilengkapi dengan perintah skrip terstandardisasi pada `package.j
 | `pnpm start` | Menjalankan server build produksi lokal. |
 | `pnpm typecheck` | Memvalidasi seluruh tipe TypeScript secara ketat tanpa menghasilkan berkas keluaran. |
 | `pnpm lint` | Menjalankan pemeriksaan ESLint pada seluruh berkas proyek. |
-| `pnpm test:uat` | Menjalankan test runner otomatis 11 kasus uji (UAT-01 s/d UAT-10 + STRESS-01) secara terisolasi. |
+| `pnpm test:uat` | Menjalankan test runner otomatis 11 kasus uji (UAT-01 s/d UAT-10 + STRESS-01) dengan database safety guard. |
+| `pnpm test:audit` | Menjalankan test runner otomatis audit trail & telemetri log aktivitas (`scripts/run-audit-uat.ts`). |
 | `pnpm db:check` | Memeriksa agregat kuota stok fisik dan riwayat sirkulasi terkini langsung ke basis data MySQL. |
 | `pnpm db:push` | Menerapkan perubahan skema Prisma ke basis data MySQL secara langsung. |
-| `pnpm db:seed` | Menjalankan seeding akun default admin dan master barang BPTI. |
+| `pnpm db:seed` | Menjalankan seeding akun default admin (Bcrypt salt 12) dan master barang BPTI. |
 | `pnpm db:studio` | Membuka antarmuka grafis visual Prisma Studio untuk inspeksi basis data di peramban. |
+| `pnpm db:backup` / `scripts/backup-db.bat` | Membuat snapshot cadangan data relasional lengkap ke format JSON di folder `backups/`. |
+| `pnpm db:restore` / `scripts/restore-db.bat` | Memulihkan basis data secara utuh dari snapshot cadangan JSON (Clean & Repopulate Transaction). |
+
+> [!NOTE]
+> Laporan lengkap pemenuhan dan resolusi seluruh temuan audit teknis dapat ditinjau pada dokumen [Laporan Resolusi Audit Gap](docs/AUDIT_GAPS_RESOLUTION.md).
 
 ---
 
 ## 10. Jaminan Keamanan Sistem & Ketahanan Transaksi ACID
 
-1. **Zero Race Condition (Conditional CAS Mutex):**
-   Pengurangan kuota unit menggunakan klausa `WHERE availableQuantity >= borrowQuantity`. Transaksi gagal otomatis di tingkat basis data bila kuota tidak mencukupi, mencegah stok negatif (*zero negative stock*).
+1. **Pencegahan Kondisi Balapan (Conditional CAS Mutex):**
+   Pengurangan kuota unit menggunakan klausa `WHERE availableQuantity >= borrowQuantity AND status = 'AKTIF'`. Transaksi gagal otomatis di tingkat basis data bila kuota tidak mencukupi atau barang diarsipkan, mencegah stok bernilai negatif (*zero negative stock*).
 2. **Idempotensi Pengembalian (Anti Double-Return):**
-   Pengembalian dibatasi oleh predikat `WHERE status = 'DIPINJAM'`. Percobaan kedua pada transaksi yang sama ditolak seketika, mencegah manipulasi stok berlebih.
+   Pengembalian dibatasi oleh predikat `WHERE status = 'DIPINJAM'`. Percobaan kedua pada transaksi yang sama ditolak seketika, mencegah manipulasi pemulihan stok ganda.
 3. **Integritas Relasional MySQL (`onDelete: Restrict`):**
-   Barang yang memiliki riwayat transaksi peminjaman tidak dapat dihapus dari tabel master demi menjaga akuntabilitas audit sejarah aset negara.
+   Barang yang memiliki riwayat transaksi peminjaman tidak dapat dihapus dari tabel master demi menjaga akuntabilitas audit sejarah aset institusi.
 4. **Keamanan Kredensial & Sesi Admin:**
    Sandi di-hash dengan Bcrypt 12 rounds (kebal terhadap *rainbow table* dan *timing attack*). Token sesi JWT menggunakan algoritma `HS256` yang disimpan dalam cookie `HttpOnly`, `SameSite=Lax`, dan `Path=/`.
+5. **Keterbatasan Sistem Saat Ini (*Known Limitations*):**
+   - **Model Inventaris:** Berbasis kuantitas unit agregat per item (`totalQuantity`, `availableQuantity`), belum pelacakan per serial number individual fisik (RFID/Barcode).
+   - **Manajemen Sesi:** Daftar token sesi yang dicabut (*revocation list*) saat ini tersimpan di memori proses lokal (*In-Memory Set*), sehingga restart server akan mereset cache token yang dicabut.
+   - **Tingkat Akses Pengguna:** Menggunakan model administrator tunggal (*Single-Role Authentication*), belum mengimplementasikan hierarki multi-role (RBAC) bertingkat.
 
 ---
 

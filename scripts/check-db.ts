@@ -11,6 +11,9 @@ async function main() {
       name: true,
       totalQuantity: true,
       availableQuantity: true,
+      goodQuantity: true,
+      lightDamageQuantity: true,
+      heavyDamageQuantity: true,
       location: true,
       condition: true,
     },
@@ -20,7 +23,8 @@ async function main() {
 
   const totalPhysical = items.reduce((acc, i) => acc + i.totalQuantity, 0);
   const totalAvailable = items.reduce((acc, i) => acc + i.availableQuantity, 0);
-  console.log(`\nAggregated Physical Stock: Total = ${totalPhysical}, Siap Pakai = ${totalAvailable}`);
+  const totalQuarantined = items.reduce((acc, i) => acc + (i.heavyDamageQuantity ?? 0), 0);
+  console.log(`\nAggregated Physical Stock: Total = ${totalPhysical}, Siap Pakai = ${totalAvailable}, Karantina = ${totalQuarantined}`);
 
   const records = await prisma.borrowRecord.findMany({
     orderBy: { createdAt: "desc" },

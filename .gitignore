@@ -48,3 +48,6 @@ next-env.d.ts
 .claude
 .devin
 .cursor
+
+# Database Backups
+/backups
