@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
+import Image from "next/image";
 import { Item } from "@prisma/client";
 import { createItemAction, updateItemAction } from "@/actions/item-actions";
 import { useToast } from "@/components/ui/toast";
-import { X, Loader2, AlertCircle } from "lucide-react";
+import { X, Loader2, AlertCircle, ImagePlus } from "lucide-react";
 
 interface ItemModalProps {
   open: boolean;
@@ -25,6 +26,27 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const uploadImage = async (itemId: string) => {
+    if (!imageFile) return;
+
+    const uploadData = new FormData();
+    uploadData.set("image", imageFile);
+    const response = await fetch(`/api/items/${itemId}/image`, {
+      method: "POST",
+      body: uploadData,
+    });
+    const result = response.headers
+      .get("content-type")
+      ?.includes("application/json")
+      ? ((await response.json()) as { message?: string })
+      : {};
+
+    if (!response.ok) {
+      throw new Error(result.message || "Gagal mengunggah gambar barang.");
+    }
+  };
 
   const [formData, setFormData] = useState<{
     code: string;
@@ -73,7 +95,24 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
           if (res.errors) setFieldErrors(res.errors);
           toast.error("Gagal Memperbarui Aset", msg);
         } else {
-          toast.success("Data Barang Diperbarui", res.message);
+          if (imageFile) {
+            try {
+              await uploadImage(initialData.id);
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "Gagal mengunggah gambar barang.";
+              toast.error("Data tersimpan, gambar gagal diunggah", message);
+              onSuccess();
+              onClose();
+              return;
+            }
+          }
+          toast.success(
+            "Data Barang Diperbarui",
+            imageFile ? "Data dan gambar barang berhasil diperbarui." : res.message
+          );
           onSuccess();
           onClose();
         }
@@ -94,7 +133,24 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
           if (res.errors) setFieldErrors(res.errors);
           toast.error("Gagal Menyimpan Aset", msg);
         } else {
-          toast.success("Aset Berhasil Didaftarkan", res.message);
+          if (imageFile && res.data) {
+            try {
+              await uploadImage(res.data.id);
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "Gagal mengunggah gambar barang.";
+              toast.error("Barang tersimpan, gambar gagal diunggah", message);
+              onSuccess();
+              onClose();
+              return;
+            }
+          }
+          toast.success(
+            "Aset Berhasil Didaftarkan",
+            imageFile ? "Barang dan gambarnya berhasil didaftarkan." : res.message
+          );
           onSuccess();
           onClose();
         }
@@ -103,7 +159,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
   };
 
   return (
-    <div className="relative z-10 w-full max-w-lg rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm">
+    <div className="relative z-10 flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div>
@@ -138,10 +194,64 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
       )}
 
       {/* Form Body */}
-      <form onSubmit={handleSubmit} className="mt-4 space-y-3.5">
+      <form
+        onSubmit={handleSubmit}
+        className="mt-4 min-h-0 flex-1 space-y-3.5 overflow-y-auto overscroll-contain pr-2"
+      >
+        <div className="space-y-2">
+          <label
+            htmlFor="itemImage"
+            className="block text-xs font-medium text-foreground"
+          >
+            Gambar Barang (JPG, PNG, atau WebP; maksimal 5 MB)
+          </label>
+          <input
+            id="itemImage"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            disabled={isPending}
+            onChange={(event) => {
+              const file = event.target.files?.[0] ?? null;
+              if (file && file.size > 5 * 1024 * 1024) {
+                setErrorMessage("Ukuran gambar maksimal 5 MB.");
+                event.target.value = "";
+                setImageFile(null);
+                return;
+              }
+              setErrorMessage(null);
+              setImageFile(file);
+            }}
+            className="block w-full text-xs text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-foreground hover:file:bg-muted"
+          />
+          {imageFile && (
+            <p className="text-[11px] text-muted-foreground">
+              File terpilih: {imageFile.name}
+            </p>
+          )}
+          {isEdit && initialData ? (
+            <div className="relative h-40 w-full overflow-hidden rounded-md border border-border bg-muted/30">
+              <Image
+                src={`/api/items/${initialData.id}/image`}
+                alt={`Gambar ${initialData.name}`}
+                fill
+                unoptimized
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+                className="object-contain"
+              />
+            </div>
+          ) : !imageFile ? (
+            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <ImagePlus className="h-3.5 w-3.5" />
+              Pilih gambar untuk melampirkannya pada data barang.
+            </p>
+          ) : null}
+        </div>
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* Kode Barang */}
-          <div className="space-y-1.5">
+          <div className="ml-0.5 space-y-1.5">
             <label
               htmlFor="code"
               className="block text-xs font-medium text-foreground"
@@ -196,7 +306,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
         </div>
 
         {/* Nama Barang */}
-        <div className="space-y-1.5">
+        <div className="ml-0.5 space-y-1.5">
           <label
             htmlFor="name"
             className="block text-xs font-medium text-foreground"
@@ -312,7 +422,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
         </div>
 
         {/* Lokasi Gudang / Rak */}
-        <div className="space-y-1.5">
+        <div className="ml-0.5 space-y-1.5">
           <label
             htmlFor="location"
             className="block text-xs font-medium text-foreground"

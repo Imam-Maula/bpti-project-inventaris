@@ -70,8 +70,10 @@ export function DashboardSidebar() {
             <span className="block truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
               Inventaris BPTI
             </span>
-            <p className="truncate text-xs text-muted-foreground" title="Badan Pengembangan Teknologi Informasi">
-              Badan Pengemb. Tek. Informasi
+            <p className="text-[11px] leading-tight text-muted-foreground">
+              Badan Pengembangan
+              <br />
+              Teknologi Informasi UHAMKA
             </p>
           </div>
         </div>

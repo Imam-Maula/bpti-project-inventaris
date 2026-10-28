@@ -61,7 +61,17 @@ async function runRestore() {
     throw new Error("Format berkas cadangan tidak valid atau rusak.");
   }
 
+<<<<<<< HEAD
   const { users, items, borrow_records: borrowRecords, audit_logs: auditLogs = [] } = parsed.tables;
+=======
+  const {
+    users,
+    items,
+    borrow_records: borrowRecords,
+    audit_logs: auditLogs = [],
+    item_images: itemImages = [],
+  } = parsed.tables;
+>>>>>>> origin/main
 
   console.log(`[2/4] Metadata arsip:`);
   console.log(`      - Dibuat pada : ${parsed.metadata.generatedAt}`);
@@ -106,6 +116,11 @@ interface BackupItem {
   quarantinedQuantity?: number;
   resolvedDamagedQuantity?: number;
   location: string;
+<<<<<<< HEAD
+=======
+  photoCaption?: string | null;
+  photoPath?: string | null;
+>>>>>>> origin/main
   condition: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT";
   status: "AKTIF" | "DIARSIPKAN";
   createdAt: string | Date;
@@ -133,6 +148,33 @@ interface BackupItem {
           updatedAt: new Date(it.updatedAt),
         },
       });
+<<<<<<< HEAD
+=======
+      if (it.photoCaption !== undefined || it.photoPath !== undefined) {
+        await tx.$executeRaw`
+          UPDATE items
+          SET photoCaption = ${it.photoCaption ?? null},
+              photoPath = ${it.photoPath ?? null}
+          WHERE id = ${it.id}
+        `;
+      }
+    }
+
+    for (const image of itemImages as {
+      itemId: string;
+      imageData: string;
+      mimeType: string;
+      updatedAt: string | Date;
+    }[]) {
+      await tx.itemImage.create({
+        data: {
+          itemId: image.itemId,
+          imageData: Buffer.from(image.imageData, "base64"),
+          mimeType: image.mimeType,
+          updatedAt: new Date(image.updatedAt),
+        },
+      });
+>>>>>>> origin/main
     }
 
     // 3. Pulihkan Transaksi Sirkulasi
@@ -155,6 +197,20 @@ interface BackupItem {
           updatedAt: new Date(br.updatedAt),
         },
       });
+<<<<<<< HEAD
+=======
+      if (
+        br.borrowGoodQuantity !== undefined ||
+        br.borrowLightDamageQuantity !== undefined
+      ) {
+        await tx.$executeRaw`
+          UPDATE borrow_records
+          SET borrowGoodQuantity = ${br.borrowGoodQuantity ?? 0},
+              borrowLightDamageQuantity = ${br.borrowLightDamageQuantity ?? 0}
+          WHERE id = ${br.id}
+        `;
+      }
+>>>>>>> origin/main
     }
 
     // 4. Pulihkan Catatan Audit Trail (jika ada di arsip)

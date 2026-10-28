@@ -27,7 +27,12 @@ import {
   Archive,
   RotateCcw,
   Download,
+<<<<<<< HEAD
+=======
+  Image as ImageIcon,
+>>>>>>> origin/main
 } from "lucide-react";
+import { ItemImageModal } from "./item-image-modal";
 
 interface ItemListClientProps {
   initialItems: Item[];
@@ -46,6 +51,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
   const [editingItem, setEditingItem] = useState<Item | null>(null);
 
   const [detailItemId, setDetailItemId] = useState<string | null>(null);
+  const [imageItem, setImageItem] = useState<Item | null>(null);
 
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
@@ -736,6 +742,17 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="inline-flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setImageItem(item)}
+                            className="inline-flex h-7 items-center justify-center gap-1 rounded-md border border-border bg-background px-2 text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-hidden"
+                            title={`Lihat gambar ${item.name}`}
+                            aria-label={`Lihat gambar ${item.name}`}
+                          >
+                            <ImageIcon className="h-3.5 w-3.5" />
+                            <span className="text-[11px]">Lihat Gambar</span>
+                          </button>
+
                           {/* Tombol Detail Modal */}
                           <button
                             type="button"
@@ -829,6 +846,12 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
           setDetailItemId(null);
           handleOpenEdit(item);
         }}
+      />
+
+      <ItemImageModal
+        key={imageItem?.id ?? "no-image-item"}
+        item={imageItem}
+        onClose={() => setImageItem(null)}
       />
 
       {/* Dialog Konfirmasi Operasi */}

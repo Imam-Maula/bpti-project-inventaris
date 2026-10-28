@@ -25,7 +25,11 @@ async function runBackup() {
 
   console.log(`[1/4] Mengambil seluruh data relasional dari MySQL...`);
 
+<<<<<<< HEAD
   const [users, items, borrowRecords, auditLogs] = await Promise.all([
+=======
+  const [users, items, borrowRecords, auditLogs, itemImages] = await Promise.all([
+>>>>>>> origin/main
     prisma.user.findMany({
       orderBy: { createdAt: "asc" },
       select: {
@@ -46,6 +50,12 @@ async function runBackup() {
     prisma.auditLog.findMany({
       orderBy: { createdAt: "asc" },
     }),
+<<<<<<< HEAD
+=======
+    prisma.itemImage.findMany({
+      orderBy: { itemId: "asc" },
+    }),
+>>>>>>> origin/main
   ]);
 
   const totalPhysical = items.reduce((acc, i) => acc + i.totalQuantity, 0);
@@ -61,6 +71,10 @@ async function runBackup() {
       totalItems: items.length,
       totalBorrowRecords: borrowRecords.length,
       totalAuditLogs: auditLogs.length,
+<<<<<<< HEAD
+=======
+      totalItemImages: itemImages.length,
+>>>>>>> origin/main
       stockSummary: {
         totalPhysical,
         totalAvailable,
@@ -72,6 +86,13 @@ async function runBackup() {
       items,
       borrow_records: borrowRecords,
       audit_logs: auditLogs,
+<<<<<<< HEAD
+=======
+      item_images: itemImages.map(({ imageData, ...image }) => ({
+        ...image,
+        imageData: Buffer.from(imageData).toString("base64"),
+      })),
+>>>>>>> origin/main
     },
   };
 
@@ -80,6 +101,10 @@ async function runBackup() {
   console.log(`      - Total Jenis Barang   : ${items.length}`);
   console.log(`      - Total Riwayat Pinjam : ${borrowRecords.length}`);
   console.log(`      - Total Log Aktivitas  : ${auditLogs.length}`);
+<<<<<<< HEAD
+=======
+  console.log(`      - Total Gambar Barang  : ${itemImages.length}`);
+>>>>>>> origin/main
   console.log(`      - Total Unit Fisik Aset: ${totalPhysical} unit`);
 
   console.log(`[3/4] Menulis berkas cadangan ke ${backupFilePath}...`);
