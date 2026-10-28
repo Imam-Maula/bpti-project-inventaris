@@ -192,16 +192,12 @@ Persamaan ini dijaga secara mutlak oleh blok transaksi `prisma.$transaction`.
 ### SOP-01: Pendaftaran Master Aset Baru (FR-ITEM-01)
 1. Buka menu **Master Barang** (`/barang`).
 2. Klik tombol **Tambah Barang**.
-<<<<<<< HEAD
-3. Isi kolom Kode Barang (format alfanumerik bebas spasi, misal `BRG-006`), Kategori, Nama Barang, Total Unit Fisik, Kondisi Fisik, dan Lokasi Simpan.
-4. Klik **Tambah Barang**. Toast notifikasi hijau akan mengonfirmasi pendaftaran aset. Unit siap pakai otomatis sama dengan total unit fisik.
-=======
 3. Isi Kode Barang, Kategori, Nama Barang, jumlah unit, dan Lokasi Simpan. Gambar barang bersifat opsional; format yang didukung JPG, PNG, atau WebP dengan ukuran maksimal 5 MB.
 4. Klik **Tambah Barang**. Tombol **Lihat Gambar** pada baris tabel membuka gambar beserta keterangan nama, kode, kategori, dan lokasi barang.
 
 Gambar disimpan sebagai data biner di tabel `item_images` pada MySQL dan ikut dimasukkan ke berkas backup/restore basis data.
 Setelah memperbarui skema pada instalasi yang sudah ada, jalankan `pnpm db:push` untuk membuat tabel tersebut.
->>>>>>> origin/main
+
 
 ### SOP-02: Transaksi Sirkulasi Peminjaman Aset (FR-TRX-01)
 1. Buka menu **Sirkulasi Peminjaman** (`/sirkulasi`).

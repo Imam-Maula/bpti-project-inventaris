@@ -61,9 +61,6 @@ async function runRestore() {
     throw new Error("Format berkas cadangan tidak valid atau rusak.");
   }
 
-<<<<<<< HEAD
-  const { users, items, borrow_records: borrowRecords, audit_logs: auditLogs = [] } = parsed.tables;
-=======
   const {
     users,
     items,
@@ -71,7 +68,7 @@ async function runRestore() {
     audit_logs: auditLogs = [],
     item_images: itemImages = [],
   } = parsed.tables;
->>>>>>> origin/main
+
 
   console.log(`[2/4] Metadata arsip:`);
   console.log(`      - Dibuat pada : ${parsed.metadata.generatedAt}`);
@@ -116,11 +113,9 @@ interface BackupItem {
   quarantinedQuantity?: number;
   resolvedDamagedQuantity?: number;
   location: string;
-<<<<<<< HEAD
-=======
   photoCaption?: string | null;
   photoPath?: string | null;
->>>>>>> origin/main
+
   condition: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT";
   status: "AKTIF" | "DIARSIPKAN";
   createdAt: string | Date;
@@ -148,8 +143,6 @@ interface BackupItem {
           updatedAt: new Date(it.updatedAt),
         },
       });
-<<<<<<< HEAD
-=======
       if (it.photoCaption !== undefined || it.photoPath !== undefined) {
         await tx.$executeRaw`
           UPDATE items
@@ -174,7 +167,7 @@ interface BackupItem {
           updatedAt: new Date(image.updatedAt),
         },
       });
->>>>>>> origin/main
+
     }
 
     // 3. Pulihkan Transaksi Sirkulasi
@@ -197,8 +190,6 @@ interface BackupItem {
           updatedAt: new Date(br.updatedAt),
         },
       });
-<<<<<<< HEAD
-=======
       if (
         br.borrowGoodQuantity !== undefined ||
         br.borrowLightDamageQuantity !== undefined
@@ -210,7 +201,7 @@ interface BackupItem {
           WHERE id = ${br.id}
         `;
       }
->>>>>>> origin/main
+
     }
 
     // 4. Pulihkan Catatan Audit Trail (jika ada di arsip)

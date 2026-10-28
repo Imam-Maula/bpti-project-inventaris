@@ -288,10 +288,8 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
               <option value="ALL">Semua Jenis Aksi</option>
               <option value="TAMBAH_BARANG">TAMBAH_BARANG</option>
               <option value="UBAH_BARANG">UBAH_BARANG</option>
-<<<<<<< HEAD
-=======
               <option value="UBAH_GAMBAR_BARANG">UBAH_GAMBAR_BARANG</option>
->>>>>>> origin/main
+
               <option value="PULIHKAN_KARANTINA">PULIHKAN_KARANTINA</option>
               <option value="ARSIPKAN_BARANG">ARSIPKAN_BARANG</option>
               <option value="AKTIFKAN_BARANG">AKTIFKAN_BARANG</option>

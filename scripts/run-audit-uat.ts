@@ -153,8 +153,6 @@ async function runAuditUat() {
     throw new Error("Riwayat entitas spesifik barang tidak lengkap");
   }
 
-<<<<<<< HEAD
-=======
   console.log("\n[TEST 6] Verifikasi Persistensi Gambar Master Barang...");
   const imageData = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jf5cAAAAASUVORK5CYII=",
@@ -180,7 +178,7 @@ async function runAuditUat() {
   await prisma.itemImage.delete({ where: { itemId: updatedItem.id } });
   console.log("[PASS] Gambar tersimpan dan dapat dibaca kembali dari database.");
 
->>>>>>> origin/main
+
   // Cleanup testing item
   await deleteItemService(prisma, updatedItem.id);
   console.log(`[CLEANUP] Item pengujian berhasil dihapus/diarsipkan.`);

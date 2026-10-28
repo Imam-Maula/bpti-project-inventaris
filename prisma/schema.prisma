@@ -53,21 +53,15 @@ model Item {
   status                  ItemStatus     @default(AKTIF)
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
-<<<<<<< HEAD
-  borrowRecords           BorrowRecord[]
-=======
   photoCaption            String?        @db.VarChar(500)
   photoPath               String?        @db.VarChar(255)
   borrowRecords           BorrowRecord[]
   image                   ItemImage?
->>>>>>> origin/main
 
   @@index([status, category])
   @@map("items")
 }
 
-<<<<<<< HEAD
-=======
 model ItemImage {
   itemId    String   @id
   imageData Bytes    @db.LongBlob
@@ -78,30 +72,26 @@ model ItemImage {
   @@map("item_images")
 }
 
->>>>>>> origin/main
 model BorrowRecord {
-  id              String       @id @default(uuid())
-  borrowCode      String       @unique
-  itemId          String
-  item            Item         @relation(fields: [itemId], references: [id], onDelete: Restrict)
-  adminId         String
-  admin           User         @relation(fields: [adminId], references: [id], onDelete: Restrict)
-  borrowerName    String
-  borrowerContact String
-  borrowQuantity  Int
-  borrowDate      DateTime     @default(now())
-  dueDate         DateTime
-  returnDate      DateTime?
-  status          BorrowStatus @default(DIPINJAM)
-  returnCondition Condition?
-  notes           String?      @db.Text
-<<<<<<< HEAD
-=======
+  id                        String       @id @default(uuid())
+  borrowCode                String       @unique
+  itemId                    String
+  item                      Item         @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  adminId                   String
+  admin                     User         @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  borrowerName              String
+  borrowerContact           String
+  borrowQuantity            Int
+  borrowDate                DateTime     @default(now())
+  dueDate                   DateTime
+  returnDate                DateTime?
+  status                    BorrowStatus @default(DIPINJAM)
+  returnCondition           Condition?
+  notes                     String?      @db.Text
   borrowGoodQuantity        Int          @default(0)
   borrowLightDamageQuantity Int          @default(0)
->>>>>>> origin/main
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt                 DateTime     @default(now())
+  updatedAt                 DateTime     @updatedAt
 
   @@index([status, dueDate])
   @@index([createdAt])
@@ -124,4 +114,4 @@ model AuditLog {
   @@index([adminId])
   @@index([createdAt])
   @@map("audit_logs")
-}
+}

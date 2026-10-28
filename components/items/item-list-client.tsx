@@ -27,10 +27,8 @@ import {
   Archive,
   RotateCcw,
   Download,
-<<<<<<< HEAD
-=======
   Image as ImageIcon,
->>>>>>> origin/main
+
 } from "lucide-react";
 import { ItemImageModal } from "./item-image-modal";
 
