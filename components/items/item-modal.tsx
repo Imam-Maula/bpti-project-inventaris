@@ -9,21 +9,15 @@ import { X, Loader2, AlertCircle } from "lucide-react";
 interface ItemModalProps {
   open: boolean;
   onClose: () => void;
-  initialData?: InventoryItem | null;
+  initialData?: Item | null;
   onSuccess: () => void;
 }
 
 interface ItemFormProps {
-  initialData?: InventoryItem | null;
+  initialData?: Item | null;
   onClose: () => void;
   onSuccess: () => void;
 }
-
-type InventoryItem = Item & {
-  goodQuantity: number;
-  lightDamageQuantity: number;
-  heavyDamageQuantity: number;
-};
 
 function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
   const isEdit = Boolean(initialData);
@@ -49,10 +43,11 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
     heavyDamageQuantity: initialData?.heavyDamageQuantity ?? 0,
     location: initialData?.location || "",
   });
-  const totalQuantity =
-    formData.goodQuantity +
-    formData.lightDamageQuantity +
-    formData.heavyDamageQuantity;
+
+  const totalCalculated =
+    Number(formData.goodQuantity || 0) +
+    Number(formData.lightDamageQuantity || 0) +
+    Number(formData.heavyDamageQuantity || 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -225,41 +220,21 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
           )}
         </div>
 
-        <div className="space-y-3 rounded-md border border-border p-3">
+        {/* Rincian Kuantitas Kondisi Fisik */}
+        <div className="space-y-2 rounded-lg border border-border bg-muted/20 p-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-foreground">
-              Jumlah Unit per Kondisi
+              Rincian Kuantitas Kondisi Fisik *
+            </span>
+            <span className="text-xs font-medium text-muted-foreground">
+              Total Fisik: <strong className="text-foreground">{totalCalculated} unit</strong>
             </span>
           </div>
-          <p className="text-[11px] text-muted-foreground">
-            Unit baik dan rusak ringan dapat dipinjam. Rusak berat tidak dapat
-            dipinjam. Total fisik dihitung otomatis.
-          </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <label
-                htmlFor="totalQuantity"
-                className="block text-xs font-medium text-foreground"
-              >
-                Total Unit Fisik
-              </label>
-              <input
-                id="totalQuantity"
-                type="number"
-                value={totalQuantity}
-                readOnly
-                aria-readonly="true"
-                className="w-full rounded-md border border-input bg-muted px-3 py-1.5 text-sm text-foreground"
-              />
-            </div>
-
-            {/* Unit baik */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="goodQuantity"
-                className="block text-xs font-medium text-foreground"
-              >
-                Baik *
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            {/* Unit Baik */}
+            <div className="space-y-1">
+              <label htmlFor="goodQuantity" className="block text-[11px] font-medium text-foreground">
+                Kondisi Baik *
               </label>
               <input
                 id="goodQuantity"
@@ -274,22 +249,17 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
                     goodQuantity: Math.max(0, Number(e.target.value)),
                   })
                 }
-                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+                className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
               />
               {fieldErrors.goodQuantity && (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.goodQuantity[0]}
-                </p>
+                <p className="text-[11px] text-destructive">{fieldErrors.goodQuantity[0]}</p>
               )}
             </div>
 
-            {/* Unit rusak ringan */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="lightDamageQuantity"
-                className="block text-xs font-medium text-foreground"
-              >
-                Rusak Ringan *
+            {/* Unit Rusak Ringan */}
+            <div className="space-y-1">
+              <label htmlFor="lightDamageQuantity" className="block text-[11px] font-medium text-foreground">
+                Rusak Ringan
               </label>
               <input
                 id="lightDamageQuantity"
@@ -304,22 +274,17 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
                     lightDamageQuantity: Math.max(0, Number(e.target.value)),
                   })
                 }
-                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+                className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
               />
               {fieldErrors.lightDamageQuantity && (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.lightDamageQuantity[0]}
-                </p>
+                <p className="text-[11px] text-destructive">{fieldErrors.lightDamageQuantity[0]}</p>
               )}
             </div>
 
-            {/* Unit rusak berat */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="heavyDamageQuantity"
-                className="block text-xs font-medium text-foreground"
-              >
-                Rusak Berat *
+            {/* Unit Rusak Berat */}
+            <div className="space-y-1">
+              <label htmlFor="heavyDamageQuantity" className="block text-[11px] font-medium text-foreground">
+                Rusak Berat
               </label>
               <input
                 id="heavyDamageQuantity"
@@ -334,20 +299,16 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
                     heavyDamageQuantity: Math.max(0, Number(e.target.value)),
                   })
                 }
-                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+                className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
               />
               {fieldErrors.heavyDamageQuantity && (
-                <p className="text-xs text-destructive">
-                  {fieldErrors.heavyDamageQuantity[0]}
-                </p>
+                <p className="text-[11px] text-destructive">{fieldErrors.heavyDamageQuantity[0]}</p>
               )}
             </div>
           </div>
-          {fieldErrors.totalQuantity && (
-            <p className="text-xs text-destructive">
-              {fieldErrors.totalQuantity[0]}
-            </p>
-          )}
+          <p className="text-[11px] text-muted-foreground">
+            * Unit kondisi Baik & Rusak Ringan otomatis masuk ke kuota siap pakai untuk dipinjam.
+          </p>
         </div>
 
         {/* Lokasi Gudang / Rak */}

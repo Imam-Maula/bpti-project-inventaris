@@ -4,72 +4,25 @@ import { revalidatePath } from "next/cache";
 import { Prisma, Condition, ItemStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/dal";
-import { getDominantCondition } from "@/lib/item-condition";
 import {
   createItemSchema,
   updateItemSchema,
   CreateItemInput,
   UpdateItemInput,
 } from "@/lib/validations/item";
-
-type ItemStockSummary = {
-  borrowedQuantity: number;
-  borrowedGoodQuantity: number;
-  borrowedLightDamageQuantity: number;
-  damagedQuantity: number;
-};
-
-async function getItemStockSummaries(
-  itemIds: string[]
-): Promise<Map<string, ItemStockSummary>> {
-  if (itemIds.length === 0) {
-    return new Map();
-  }
-
-  const [borrowedItems, items] = await Promise.all([
-    prisma.borrowRecord.groupBy({
-      by: ["itemId"],
-      where: {
-        itemId: { in: itemIds },
-        status: "DIPINJAM",
-      },
-      _sum: {
-        borrowQuantity: true,
-        borrowGoodQuantity: true,
-        borrowLightDamageQuantity: true,
-      },
-    }),
-    prisma.item.findMany({
-      where: { id: { in: itemIds } },
-      select: { id: true, heavyDamageQuantity: true },
-    }),
-  ]);
-
-  const summaries = new Map<string, ItemStockSummary>(
-    itemIds.map((itemId) => [
-      itemId,
-      {
-        borrowedQuantity: 0,
-        borrowedGoodQuantity: 0,
-        borrowedLightDamageQuantity: 0,
-        damagedQuantity: 0,
-      },
-    ])
-  );
-
-  for (const { itemId, _sum } of borrowedItems) {
-    const summary = summaries.get(itemId)!;
-    summary.borrowedQuantity = _sum.borrowQuantity ?? 0;
-    summary.borrowedGoodQuantity = _sum.borrowGoodQuantity ?? 0;
-    summary.borrowedLightDamageQuantity =
-      _sum.borrowLightDamageQuantity ?? 0;
-  }
-  for (const item of items) {
-    summaries.get(item.id)!.damagedQuantity = item.heavyDamageQuantity;
-  }
-
-  return summaries;
-}
+import {
+  getItemsService,
+  getItemByIdService,
+  createItemService,
+  updateItemAtomicService,
+  archiveItemService,
+  unarchiveItemService,
+  deleteItemService,
+  restoreQuarantinedItemService,
+  bulkArchiveItemsService,
+  bulkUnarchiveItemsService,
+} from "@/lib/services/item-service";
+import { recordAuditLogService } from "@/lib/services/audit-service";
 
 export interface ItemActionResult<T = unknown> {
   success: boolean;
@@ -79,7 +32,7 @@ export interface ItemActionResult<T = unknown> {
 }
 
 /**
- * Mengambil daftar seluruh barang master dengan filter opsional (pencarian, kategori, kondisi, status).
+ * Mengambil daftar seluruh barang master dengan filter opsional.
  */
 export async function getItemsAction(params?: {
   search?: string;
@@ -88,72 +41,7 @@ export async function getItemsAction(params?: {
   status?: ItemStatus | "ALL";
 }) {
   await requireAuth();
-
-  const where: Prisma.ItemWhereInput = {};
-
-  if (params?.status && params.status !== "ALL") {
-    where.status = params.status;
-  } else if (!params?.status) {
-    where.status = "AKTIF";
-  }
-
-  if (params?.search) {
-    where.OR = [
-      { code: { contains: params.search } },
-      { name: { contains: params.search } },
-      { location: { contains: params.search } },
-    ];
-  }
-
-  if (params?.category) {
-    where.category = params.category;
-  }
-
-  const items = await prisma.item.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-  });
-  const stockSummaries = await getItemStockSummaries(
-    items.map((item) => item.id)
-  );
-
-  const itemsWithStockSummary = items.map((item) => ({
-    ...item,
-    condition: getDominantCondition(
-      item.goodQuantity +
-        (stockSummaries.get(item.id)?.borrowedGoodQuantity ?? 0),
-      item.lightDamageQuantity +
-        (stockSummaries.get(item.id)?.borrowedLightDamageQuantity ?? 0),
-      item.heavyDamageQuantity
-    ),
-    borrowedQuantity: stockSummaries.get(item.id)?.borrowedQuantity ?? 0,
-    borrowedGoodQuantity:
-      stockSummaries.get(item.id)?.borrowedGoodQuantity ?? 0,
-    borrowedLightDamageQuantity:
-      stockSummaries.get(item.id)?.borrowedLightDamageQuantity ?? 0,
-    goodQuantity:
-      item.goodQuantity +
-      (stockSummaries.get(item.id)?.borrowedGoodQuantity ?? 0),
-    lightDamageQuantity:
-      item.lightDamageQuantity +
-      (stockSummaries.get(item.id)?.borrowedLightDamageQuantity ?? 0),
-    damagedQuantity: stockSummaries.get(item.id)?.damagedQuantity ?? 0,
-  }));
-
-  if (!params?.condition) {
-    return itemsWithStockSummary;
-  }
-
-  return itemsWithStockSummary.filter((item) => {
-    switch (params.condition) {
-      case Condition.BAIK:
-        return item.goodQuantity > 0;
-      case Condition.RUSAK_RINGAN:
-        return item.lightDamageQuantity > 0;
-      case Condition.RUSAK_BERAT:
-        return item.heavyDamageQuantity > 0;
-    }
-  });
+  return getItemsService(prisma, params);
 }
 
 /**
@@ -161,57 +49,16 @@ export async function getItemsAction(params?: {
  */
 export async function getItemByIdAction(id: string) {
   await requireAuth();
-
-  const [item, stockSummaries] = await Promise.all([
-    prisma.item.findUnique({
-      where: { id },
-      include: {
-        borrowRecords: {
-          where: { status: "DIPINJAM" },
-          take: 5,
-          orderBy: { borrowDate: "desc" },
-        },
-      },
-    }),
-    getItemStockSummaries([id]),
-  ]);
-
-  if (!item) {
-    return null;
-  }
-
-  return {
-    ...item,
-    condition: getDominantCondition(
-      item.goodQuantity +
-        (stockSummaries.get(id)?.borrowedGoodQuantity ?? 0),
-      item.lightDamageQuantity +
-        (stockSummaries.get(id)?.borrowedLightDamageQuantity ?? 0),
-      item.heavyDamageQuantity
-    ),
-    borrowedQuantity: stockSummaries.get(id)?.borrowedQuantity ?? 0,
-    borrowedGoodQuantity:
-      stockSummaries.get(id)?.borrowedGoodQuantity ?? 0,
-    borrowedLightDamageQuantity:
-      stockSummaries.get(id)?.borrowedLightDamageQuantity ?? 0,
-    goodQuantity:
-      item.goodQuantity +
-      (stockSummaries.get(id)?.borrowedGoodQuantity ?? 0),
-    lightDamageQuantity:
-      item.lightDamageQuantity +
-      (stockSummaries.get(id)?.borrowedLightDamageQuantity ?? 0),
-    damagedQuantity: stockSummaries.get(id)?.damagedQuantity ?? 0,
-  };
+  return getItemByIdService(prisma, id);
 }
 
 /**
  * Membuat master barang baru.
- * Jumlah total dan stok siap pinjam diturunkan dari jumlah tiap kondisi.
  */
 export async function createItemAction(
   data: CreateItemInput
 ): Promise<ItemActionResult> {
-  await requireAuth();
+  const session = await requireAuth();
 
   const validated = createItemSchema.safeParse(data);
   if (!validated.success) {
@@ -222,40 +69,20 @@ export async function createItemAction(
     };
   }
 
-  const {
-    code,
-    name,
-    category,
-    goodQuantity,
-    lightDamageQuantity,
-    heavyDamageQuantity,
-    location,
-  } = validated.data;
-  const totalQuantity =
-    goodQuantity + lightDamageQuantity + heavyDamageQuantity;
-  const condition = getDominantCondition(
-    goodQuantity,
-    lightDamageQuantity,
-    heavyDamageQuantity
-  );
-
   try {
-    const newItem = await prisma.item.create({
-      data: {
-        code,
-        name,
-        category,
-        totalQuantity,
-        availableQuantity: goodQuantity + lightDamageQuantity,
-        goodQuantity,
-        lightDamageQuantity,
-        heavyDamageQuantity,
-        location,
-        condition,
-      },
+    const newItem = await createItemService(prisma, validated.data);
+
+    await recordAuditLogService(prisma, {
+      action: "TAMBAH_BARANG",
+      entityType: "ITEM",
+      entityId: newItem.id,
+      adminId: session.userId,
+      details: `Menambahkan aset baru: "${newItem.name}" (${newItem.code}) sejumlah ${newItem.totalQuantity} unit di ${newItem.location}.`,
+      newValue: newItem,
     });
 
     revalidatePath("/barang");
+    revalidatePath("/aktivitas");
     revalidatePath("/");
 
     return {
@@ -264,13 +91,11 @@ export async function createItemAction(
       data: newItem,
     };
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2002") {
-        return {
-          success: false,
-          message: `Kode barang "${code}" sudah digunakan oleh barang lain.`,
-        };
-      }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return {
+        success: false,
+        message: `Kode barang "${validated.data.code}" sudah digunakan oleh barang lain.`,
+      };
     }
 
     console.error("Kesalahan saat menambahkan barang:", error);
@@ -282,13 +107,12 @@ export async function createItemAction(
 }
 
 /**
- * Memperbarui data master barang.
- * Memperbarui jumlah unit tiap kondisi, dengan jumlah unit yang sedang dipinjam tetap terlindungi.
+ * Memperbarui data master barang secara atomik.
  */
 export async function updateItemAction(
   data: UpdateItemInput
 ): Promise<ItemActionResult> {
-  await requireAuth();
+  const session = await requireAuth();
 
   const validated = updateItemSchema.safeParse(data);
   if (!validated.success) {
@@ -299,111 +123,96 @@ export async function updateItemAction(
     };
   }
 
-  const {
-    id,
-    code,
-    name,
-    category,
-    goodQuantity,
-    lightDamageQuantity,
-    heavyDamageQuantity,
-    location,
-  } = validated.data;
-  const totalQuantity =
-    goodQuantity + lightDamageQuantity + heavyDamageQuantity;
-  const condition = getDominantCondition(
-    goodQuantity,
-    lightDamageQuantity,
-    heavyDamageQuantity
-  );
-
   try {
-    const updated = await prisma.$transaction(async (tx) => {
-      const [existing, activeBorrowSummary] = await Promise.all([
-        tx.item.findUnique({ where: { id } }),
-        tx.borrowRecord.aggregate({
-          where: { itemId: id, status: "DIPINJAM" },
-          _sum: {
-            borrowQuantity: true,
-            borrowGoodQuantity: true,
-            borrowLightDamageQuantity: true,
-          },
-        }),
-      ]);
+    const existing = await getItemByIdService(prisma, validated.data.id);
+    const updated = await updateItemAtomicService(prisma, validated.data);
 
-      if (!existing) {
-        throw new Error("Barang tidak ditemukan.");
-      }
-
-      const borrowedQuantity =
-        activeBorrowSummary._sum.borrowQuantity ?? 0;
-      const borrowedGoodQuantity =
-        activeBorrowSummary._sum.borrowGoodQuantity ?? 0;
-      const borrowedLightDamageQuantity =
-        activeBorrowSummary._sum.borrowLightDamageQuantity ?? 0;
-
-      if (
-        goodQuantity < borrowedGoodQuantity ||
-        lightDamageQuantity < borrowedLightDamageQuantity ||
-        totalQuantity < borrowedQuantity
-      ) {
-        throw new Error(
-          `Jumlah kondisi tidak boleh lebih kecil dari unit yang sedang dipinjam (Baik: ${borrowedGoodQuantity}, Rusak ringan: ${borrowedLightDamageQuantity}, Total dipinjam: ${borrowedQuantity}).`
-        );
-      }
-
-      return tx.item.update({
-        where: { id },
-        data: {
-          code,
-          name,
-          category,
-          totalQuantity,
-          goodQuantity: goodQuantity - borrowedGoodQuantity,
-          lightDamageQuantity:
-            lightDamageQuantity - borrowedLightDamageQuantity,
-          heavyDamageQuantity,
-          availableQuantity: goodQuantity + lightDamageQuantity - borrowedQuantity,
-          location,
-          condition,
-        },
-      });
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    await recordAuditLogService(prisma, {
+      action: "UBAH_BARANG",
+      entityType: "ITEM",
+      entityId: updated.id,
+      adminId: session.userId,
+      details: `Memperbarui aset "${updated.name}" (${updated.code}): Total ${updated.totalQuantity} unit di lokasi ${updated.location}.`,
+      oldValue: existing,
+      newValue: updated,
+    });
 
     revalidatePath("/barang");
     revalidatePath("/sirkulasi");
+    revalidatePath("/aktivitas");
     revalidatePath("/");
 
     return {
       success: true,
-      message: `Data barang "${updated.name}" berhasil diperbarui. Total ${totalQuantity} unit: ${goodQuantity} baik, ${lightDamageQuantity} rusak ringan, dan ${heavyDamageQuantity} rusak berat.`,
+      message: `Data barang "${updated.name}" berhasil diperbarui.`,
       data: updated,
     };
   } catch (error) {
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
-      if (error.code === "P2002") {
-        return {
-          success: false,
-          message: `Kode barang "${code}" sudah digunakan oleh barang lain.`,
-        };
-      }
-    }
-
-    if (
-      error instanceof Error &&
-      (error.message === "Barang tidak ditemukan." ||
-        error.message.startsWith("Jumlah kondisi tidak boleh"))
-    ) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return {
         success: false,
-        message: error.message,
+        message: `Kode barang "${validated.data.code}" sudah digunakan oleh barang lain.`,
       };
     }
 
-    console.error("Kesalahan saat memperbarui barang:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Terjadi kesalahan server saat memperbarui data barang.";
+
     return {
       success: false,
-      message: "Terjadi kesalahan server saat memperbarui data barang.",
+      message,
+    };
+  }
+}
+
+/**
+ * Memulihkan unit yang berstatus karantina/perbaikan kembali ke stok siap pakai.
+ */
+export async function restoreQuarantinedItemAction(
+  id: string,
+  quantityToRestore: number
+): Promise<ItemActionResult> {
+  const session = await requireAuth();
+
+  try {
+    const updated = await restoreQuarantinedItemService(prisma, id, quantityToRestore);
+
+    await recordAuditLogService(prisma, {
+      action: "PULIHKAN_KARANTINA",
+      entityType: "ITEM",
+      entityId: updated.id,
+      adminId: session.userId,
+      details: `Memulihkan ${quantityToRestore} unit aset "${updated.name}" (${updated.code}) dari karantina ke stok siap pakai.`,
+      newValue: {
+        id: updated.id,
+        name: updated.name,
+        code: updated.code,
+        quantityRestored: quantityToRestore,
+        availableQuantity: updated.availableQuantity,
+        heavyDamageQuantity: updated.heavyDamageQuantity,
+      },
+    });
+
+    revalidatePath("/barang");
+    revalidatePath("/sirkulasi");
+    revalidatePath("/aktivitas");
+    revalidatePath("/");
+
+    return {
+      success: true,
+      message: `${quantityToRestore} unit barang "${updated.name}" berhasil dipulihkan dari karantina ke stok siap pakai.`,
+      data: updated,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Terjadi kesalahan saat memulihkan unit dari karantina.";
+    return {
+      success: false,
+      message,
     };
   }
 }
@@ -412,26 +221,27 @@ export async function updateItemAction(
  * Mengarsipkan master barang (Soft Delete).
  */
 export async function archiveItemAction(id: string): Promise<ItemActionResult> {
-  await requireAuth();
+  const session = await requireAuth();
 
   try {
-    const activeBorrows = await prisma.borrowRecord.count({
-      where: { itemId: id, status: "DIPINJAM" },
-    });
+    const archived = await archiveItemService(prisma, id);
 
-    if (activeBorrows > 0) {
-      return {
-        success: false,
-        message: "Barang tidak dapat diarsipkan karena masih ada unit yang aktif dipinjam.",
-      };
-    }
-
-    const archived = await prisma.item.update({
-      where: { id },
-      data: { status: "DIARSIPKAN" },
+    await recordAuditLogService(prisma, {
+      action: "ARSIPKAN_BARANG",
+      entityType: "ITEM",
+      entityId: archived.id,
+      adminId: session.userId,
+      details: `Mengarsipkan aset "${archived.name}" (${archived.code}) ke daftar arsip.`,
+      newValue: {
+        id: archived.id,
+        name: archived.name,
+        code: archived.code,
+        status: archived.status,
+      },
     });
 
     revalidatePath("/barang");
+    revalidatePath("/aktivitas");
     revalidatePath("/");
 
     return {
@@ -440,10 +250,13 @@ export async function archiveItemAction(id: string): Promise<ItemActionResult> {
       data: archived,
     };
   } catch (error) {
-    console.error("Kesalahan saat mengarsipkan barang:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Terjadi kesalahan server saat mengarsipkan barang.";
     return {
       success: false,
-      message: "Terjadi kesalahan server saat mengarsipkan barang.",
+      message,
     };
   }
 }
@@ -452,15 +265,27 @@ export async function archiveItemAction(id: string): Promise<ItemActionResult> {
  * Mengaktifkan kembali master barang yang diarsipkan ke katalog aktif.
  */
 export async function unarchiveItemAction(id: string): Promise<ItemActionResult> {
-  await requireAuth();
+  const session = await requireAuth();
 
   try {
-    const restored = await prisma.item.update({
-      where: { id },
-      data: { status: "AKTIF" },
+    const restored = await unarchiveItemService(prisma, id);
+
+    await recordAuditLogService(prisma, {
+      action: "AKTIFKAN_BARANG",
+      entityType: "ITEM",
+      entityId: restored.id,
+      adminId: session.userId,
+      details: `Mengaktifkan kembali aset "${restored.name}" (${restored.code}) ke katalog aktif.`,
+      newValue: {
+        id: restored.id,
+        name: restored.name,
+        code: restored.code,
+        status: restored.status,
+      },
     });
 
     revalidatePath("/barang");
+    revalidatePath("/aktivitas");
     revalidatePath("/");
 
     return {
@@ -479,65 +304,131 @@ export async function unarchiveItemAction(id: string): Promise<ItemActionResult>
 
 /**
  * Menghapus master barang.
- * Jika memiliki riwayat sirkulasi masa lalu (FK Restrict P2003), otomatis dialihkan ke status Diarsipkan (Soft Delete).
+ * Jika memiliki riwayat sirkulasi masa lalu (FK Restrict P2003), otomatis dialihkan ke status Diarsipkan.
  */
 export async function deleteItemAction(id: string): Promise<ItemActionResult> {
-  await requireAuth();
+  const session = await requireAuth();
 
   try {
-    const activeBorrows = await prisma.borrowRecord.count({
-      where: {
-        itemId: id,
-        status: "DIPINJAM",
-      },
+    const result = await deleteItemService(prisma, id);
+
+    await recordAuditLogService(prisma, {
+      action: result.isDeletedPermanent ? "HAPUS_PERMANEN" : "ARSIPKAN_OTOMATIS",
+      entityType: "ITEM",
+      entityId: result.item.id,
+      adminId: session.userId,
+      details: result.isDeletedPermanent
+        ? `Menghapus permanen aset "${result.item.name}" (${result.item.code}) beserta seluruh spesifikasinya.`
+        : `Aset "${result.item.name}" (${result.item.code}) dialihkan menjadi arsip karena memiliki riwayat sirkulasi masa lalu.`,
+      oldValue: result.item,
     });
 
-    if (activeBorrows > 0) {
-      return {
-        success: false,
-        message: "Barang tidak dapat dihapus karena masih ada unit yang aktif dipinjam.",
-      };
-    }
+    revalidatePath("/barang");
+    revalidatePath("/aktivitas");
+    revalidatePath("/");
 
-    try {
-      const deleted = await prisma.item.delete({
-        where: { id },
-      });
-
-      revalidatePath("/barang");
-      revalidatePath("/");
-
+    if (result.isDeletedPermanent) {
       return {
         success: true,
-        message: `Barang "${deleted.name}" (${deleted.code}) berhasil dihapus permanen.`,
+        message: `Barang "${result.item.name}" (${result.item.code}) berhasil dihapus permanen.`,
       };
-    } catch (dbError) {
-      if (
-        dbError instanceof Prisma.PrismaClientKnownRequestError &&
-        dbError.code === "P2003"
-      ) {
-        // Otomatis alihkan ke status DIARSIPKAN jika memiliki relasi masa lalu
-        const archived = await prisma.item.update({
-          where: { id },
-          data: { status: "DIARSIPKAN" },
-        });
-
-        revalidatePath("/barang");
-        revalidatePath("/");
-
-        return {
-          success: true,
-          message: `Barang "${archived.name}" (${archived.code}) memiliki riwayat transaksi sirkulasi masa lalu dan berhasil diarsipkan (soft delete).`,
-          data: archived,
-        };
-      }
-      throw dbError;
+    } else {
+      return {
+        success: true,
+        message: `Barang "${result.item.name}" (${result.item.code}) memiliki riwayat transaksi sirkulasi masa lalu dan berhasil diarsipkan (soft delete).`,
+        data: result.item,
+      };
     }
   } catch (error) {
-    console.error("Kesalahan saat memproses penghapusan barang:", error);
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Terjadi kesalahan server saat memproses penghapusan barang.";
     return {
       success: false,
-      message: "Terjadi kesalahan server saat memproses penghapusan barang.",
+      message,
     };
   }
 }
+
+/**
+ * Mengarsipkan banyak master barang sekaligus (Bulk Archive).
+ */
+export async function bulkArchiveItemsAction(
+  ids: string[]
+): Promise<ItemActionResult<{ count: number }>> {
+  const session = await requireAuth();
+
+  try {
+    const count = await bulkArchiveItemsService(prisma, ids);
+
+    await recordAuditLogService(prisma, {
+      action: "ARSIPKAN_MASSAL",
+      entityType: "ITEM",
+      entityId: "BULK_ACTION",
+      adminId: session.userId,
+      details: `Mengarsipkan ${count} barang secara massal.`,
+      newValue: { count, targetIds: ids },
+    });
+
+    revalidatePath("/barang");
+    revalidatePath("/aktivitas");
+    revalidatePath("/");
+
+    return {
+      success: true,
+      message: `${count} barang berhasil diarsipkan secara massal.`,
+      data: { count },
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Terjadi kesalahan server saat mengarsipkan barang massal.";
+    return {
+      success: false,
+      message,
+    };
+  }
+}
+
+/**
+ * Mengaktifkan kembali banyak master barang yang diarsipkan sekaligus (Bulk Unarchive).
+ */
+export async function bulkUnarchiveItemsAction(
+  ids: string[]
+): Promise<ItemActionResult<{ count: number }>> {
+  const session = await requireAuth();
+
+  try {
+    const count = await bulkUnarchiveItemsService(prisma, ids);
+
+    await recordAuditLogService(prisma, {
+      action: "AKTIFKAN_MASSAL",
+      entityType: "ITEM",
+      entityId: "BULK_ACTION",
+      adminId: session.userId,
+      details: `Mengaktifkan kembali ${count} barang secara massal ke katalog aktif.`,
+      newValue: { count, targetIds: ids },
+    });
+
+    revalidatePath("/barang");
+    revalidatePath("/aktivitas");
+    revalidatePath("/");
+
+    return {
+      success: true,
+      message: `${count} barang berhasil diaktifkan kembali ke katalog aktif.`,
+      data: { count },
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Terjadi kesalahan server saat mengaktifkan barang massal.";
+    return {
+      success: false,
+      message,
+    };
+  }
+}

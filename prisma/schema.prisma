@@ -32,6 +32,7 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   borrowRecords BorrowRecord[]
+  auditLogs     AuditLog[]
 
   @@map("users")
 }
@@ -54,29 +55,48 @@ model Item {
   updatedAt               DateTime       @updatedAt
   borrowRecords           BorrowRecord[]
 
+  @@index([status, category])
   @@map("items")
 }
 
 model BorrowRecord {
-  id                        String       @id @default(uuid())
-  borrowCode                String       @unique
-  itemId                    String
-  item                      Item         @relation(fields: [itemId], references: [id], onDelete: Restrict)
-  adminId                   String
-  admin                     User         @relation(fields: [adminId], references: [id], onDelete: Restrict)
-  borrowerName              String
-  borrowerContact           String
-  borrowQuantity            Int
-  borrowGoodQuantity        Int          @default(0)
-  borrowLightDamageQuantity Int          @default(0)
-  borrowDate                DateTime     @default(now())
-  dueDate                   DateTime
-  returnDate                DateTime?
-  status                    BorrowStatus @default(DIPINJAM)
-  returnCondition           Condition?
-  notes                     String?      @db.Text
-  createdAt                 DateTime     @default(now())
-  updatedAt                 DateTime     @updatedAt
+  id              String       @id @default(uuid())
+  borrowCode      String       @unique
+  itemId          String
+  item            Item         @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  adminId         String
+  admin           User         @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  borrowerName    String
+  borrowerContact String
+  borrowQuantity  Int
+  borrowDate      DateTime     @default(now())
+  dueDate         DateTime
+  returnDate      DateTime?
+  status          BorrowStatus @default(DIPINJAM)
+  returnCondition Condition?
+  notes           String?      @db.Text
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
+  @@index([status, dueDate])
+  @@index([createdAt])
   @@map("borrow_records")
 }
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String
+  entityType String
+  entityId   String
+  adminId    String
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  details    String   @db.Text
+  oldValue   String?  @db.Text
+  newValue   String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([adminId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

@@ -6,8 +6,8 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("[INFO] Memulai proses seeding basis data...");
 
-  // 1. Seed Akun Admin Pertama
-  const hashedPassword = await bcrypt.hash("admin123", 10);
+  // 1. Seed Akun Admin Pertama (12 Salt Rounds konsisten dengan lib/auth.ts)
+  const hashedPassword = await bcrypt.hash("admin123", 12);
   const admin = await prisma.user.upsert({
     where: { username: "admin" },
     update: {},
@@ -30,6 +30,7 @@ async function main() {
       goodQuantity: 5,
       lightDamageQuantity: 0,
       heavyDamageQuantity: 0,
+      resolvedDamagedQuantity: 0,
       location: "Ruang Server BPTI",
       condition: Condition.BAIK,
     },
@@ -42,6 +43,7 @@ async function main() {
       goodQuantity: 3,
       lightDamageQuantity: 0,
       heavyDamageQuantity: 0,
+      resolvedDamagedQuantity: 0,
       location: "Gudang BPTI Lt. 2",
       condition: Condition.BAIK,
     },
@@ -54,6 +56,7 @@ async function main() {
       goodQuantity: 10,
       lightDamageQuantity: 0,
       heavyDamageQuantity: 0,
+      resolvedDamagedQuantity: 0,
       location: "Lemari Aset 1",
       condition: Condition.BAIK,
     },
@@ -66,6 +69,7 @@ async function main() {
       goodQuantity: 4,
       lightDamageQuantity: 0,
       heavyDamageQuantity: 0,
+      resolvedDamagedQuantity: 0,
       location: "Meja Admin",
       condition: Condition.BAIK,
     },

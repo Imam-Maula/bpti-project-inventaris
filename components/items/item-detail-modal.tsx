@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { getItemByIdAction } from "@/actions/item-actions";
-import { Condition, ItemStatus } from "@prisma/client";
+import { Condition, ItemStatus, Item } from "@prisma/client";
 import {
   Package,
   X,
@@ -20,7 +20,7 @@ interface ItemDetailModalProps {
   itemId: string | null;
   open: boolean;
   onClose: () => void;
-  onEdit?: (item: ItemDetailData) => void;
+  onEdit?: (item: Item) => void;
 }
 
 function ItemDetailContent({
@@ -30,7 +30,7 @@ function ItemDetailContent({
 }: {
   itemId: string;
   onClose: () => void;
-  onEdit?: (item: ItemDetailData) => void;
+  onEdit?: (item: Item) => void;
 }) {
   const [item, setItem] = useState<ItemDetailData | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -124,8 +124,7 @@ function ItemDetailContent({
               <h3 className="text-base font-bold text-foreground">{item.name}</h3>
             </div>
 
-            {/* Grid Metrik Stok & Lokasi */}
-            {/* deslop-ignore-next-line 28 */}
+            {/* Grid Metrik Stok & Rincian Kondisi */}
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
               <div className="rounded-md border border-border bg-muted/30 p-2.5">
                 <span className="text-[11px] text-muted-foreground">Total Fisik</span>
@@ -142,32 +141,28 @@ function ItemDetailContent({
               <div className="rounded-md border border-border bg-muted/30 p-2.5">
                 <span className="text-[11px] text-muted-foreground">Baik</span>
                 <p className="mt-0.5 text-sm font-semibold text-foreground">
-                  {item.goodQuantity} <span className="text-xs font-normal">unit</span>
+                  {item.goodQuantity ?? item.totalQuantity} <span className="text-xs font-normal">unit</span>
                 </p>
               </div>
               <div className="rounded-md border border-border bg-muted/30 p-2.5">
                 <span className="text-[11px] text-muted-foreground">
-                  Rusak Ringan (dapat digunakan)
+                  Rusak Ringan (Bisa Pakai)
                 </span>
                 <p className="mt-0.5 text-sm font-semibold text-foreground">
-                  {item.lightDamageQuantity}{" "}
-                  <span className="text-xs font-normal">unit</span>
+                  {item.lightDamageQuantity ?? 0} <span className="text-xs font-normal">unit</span>
                 </p>
               </div>
               <div className="rounded-md border border-border bg-muted/30 p-2.5">
                 <span className="text-[11px] text-muted-foreground">Sedang Dipinjam</span>
                 <p className="mt-0.5 text-sm font-semibold text-primary">
-                  {item.borrowedQuantity}{" "}
+                  {Math.max(0, item.totalQuantity - item.availableQuantity - (item.heavyDamageQuantity ?? 0))}{" "}
                   <span className="text-xs font-normal">unit</span>
                 </p>
               </div>
               <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2.5">
-                <span className="text-[11px] text-muted-foreground">
-                  Rusak Berat
-                </span>
+                <span className="text-[11px] text-muted-foreground">Rusak Berat</span>
                 <p className="mt-0.5 text-sm font-semibold text-destructive">
-                  {item.damagedQuantity}{" "}
-                  <span className="text-xs font-normal">unit</span>
+                  {item.heavyDamageQuantity ?? 0} <span className="text-xs font-normal">unit</span>
                 </p>
               </div>
             </div>
@@ -184,22 +179,20 @@ function ItemDetailContent({
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  Kondisi Dominan:
+                  Kondisi Fisik:
                 </span>
                 <span
                   className={`rounded px-2 py-0.5 text-[11px] font-medium ${
                     item.condition === Condition.BAIK
                       ? "bg-primary/10 text-primary border border-primary/20"
-                      : item.condition === Condition.RUSAK_RINGAN
-                        ? "bg-muted text-foreground border border-border"
-                        : "bg-destructive/10 text-destructive border border-destructive/20"
+                      : "bg-destructive/10 text-destructive border border-destructive/20"
                   }`}
                 >
                   {item.condition === Condition.BAIK
                     ? "Baik"
                     : item.condition === Condition.RUSAK_RINGAN
                     ? "Rusak Ringan"
-                    : "Rusak Berat"}
+                    : "Rusak Berat (Karantina)"}
                 </span>
               </div>
             </div>
