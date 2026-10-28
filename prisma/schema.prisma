@@ -53,10 +53,23 @@ model Item {
   status                  ItemStatus     @default(AKTIF)
   createdAt               DateTime       @default(now())
   updatedAt               DateTime       @updatedAt
+  photoCaption            String?        @db.VarChar(500)
+  photoPath               String?        @db.VarChar(255)
   borrowRecords           BorrowRecord[]
+  image                   ItemImage?
 
   @@index([status, category])
   @@map("items")
+}
+
+model ItemImage {
+  itemId    String   @id
+  imageData Bytes    @db.LongBlob
+  mimeType  String   @db.VarChar(50)
+  updatedAt DateTime @updatedAt
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@map("item_images")
 }
 
 model BorrowRecord {
@@ -75,6 +88,8 @@ model BorrowRecord {
   status          BorrowStatus @default(DIPINJAM)
   returnCondition Condition?
   notes           String?      @db.Text
+  borrowGoodQuantity        Int          @default(0)
+  borrowLightDamageQuantity Int          @default(0)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 

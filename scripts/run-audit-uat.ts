@@ -153,6 +153,31 @@ async function runAuditUat() {
     throw new Error("Riwayat entitas spesifik barang tidak lengkap");
   }
 
+  console.log("\n[TEST 6] Verifikasi Persistensi Gambar Master Barang...");
+  const imageData = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jf5cAAAAASUVORK5CYII=",
+    "base64"
+  );
+  await prisma.itemImage.create({
+    data: {
+      itemId: updatedItem.id,
+      imageData,
+      mimeType: "image/png",
+    },
+  });
+  const storedImage = await prisma.itemImage.findUnique({
+    where: { itemId: updatedItem.id },
+  });
+  if (
+    !storedImage ||
+    storedImage.mimeType !== "image/png" ||
+    !Buffer.from(storedImage.imageData).equals(imageData)
+  ) {
+    throw new Error("Gambar barang tidak tersimpan dengan benar");
+  }
+  await prisma.itemImage.delete({ where: { itemId: updatedItem.id } });
+  console.log("[PASS] Gambar tersimpan dan dapat dibaca kembali dari database.");
+
   // Cleanup testing item
   await deleteItemService(prisma, updatedItem.id);
   console.log(`[CLEANUP] Item pengujian berhasil dihapus/diarsipkan.`);

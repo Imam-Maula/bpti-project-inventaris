@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Prisma, Condition, ItemStatus } from "@prisma/client";
+import { Prisma, Condition, ItemStatus, Item } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/dal";
 import {
@@ -57,7 +57,7 @@ export async function getItemByIdAction(id: string) {
  */
 export async function createItemAction(
   data: CreateItemInput
-): Promise<ItemActionResult> {
+): Promise<ItemActionResult<Item>> {
   const session = await requireAuth();
 
   const validated = createItemSchema.safeParse(data);
@@ -111,7 +111,7 @@ export async function createItemAction(
  */
 export async function updateItemAction(
   data: UpdateItemInput
-): Promise<ItemActionResult> {
+): Promise<ItemActionResult<Item>> {
   const session = await requireAuth();
 
   const validated = updateItemSchema.safeParse(data);
