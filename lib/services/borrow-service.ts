@@ -19,6 +19,7 @@ export async function getBorrowRecordsService(
   params?: {
     status?: BorrowStatus | "OVERDUE";
     search?: string;
+    userId?: string;
   }
 ) {
   const where: Prisma.BorrowRecordWhereInput = {};
@@ -42,6 +43,7 @@ export async function getBorrowRecordsService(
       { item: { code: { contains: params.search } } },
     ];
   }
+  if (params?.userId) where.userId = params.userId;
 
   return db.borrowRecord.findMany({
     where,
@@ -66,8 +68,73 @@ export async function getBorrowRecordsService(
           username: true,
         },
       },
+      user: {
+        select: { id: true, name: true, username: true, email: true },
+      },
     },
     orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function requestBorrowService(
+  db: PrismaClient,
+  userId: string,
+  data: import("@/lib/validations/borrow").RequestBorrowInput,
+  borrower: { name: string; email: string }
+) {
+  const { itemId, borrowQuantity, borrowDate, dueDate, notes } = data;
+
+  return db.$transaction(async (tx) => {
+    const lockedItems = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT id FROM items WHERE id = ${itemId} AND status = 'AKTIF' FOR UPDATE
+    `;
+    if (lockedItems.length === 0) {
+      throw new Error("Barang tidak ditemukan atau sedang tidak aktif.");
+    }
+
+    const item = await tx.item.findUnique({ where: { id: itemId } });
+    if (!item) throw new Error("Barang tidak ditemukan.");
+    const reservations = await tx.borrowRecord.aggregate({
+      where: { itemId, status: { in: ["PENDING", "APPROVED"] } },
+      _sum: { borrowQuantity: true },
+    });
+    const reservedQuantity = reservations._sum.borrowQuantity ?? 0;
+    const availableForRequests = item.availableQuantity - reservedQuantity;
+    if (borrowQuantity > availableForRequests) {
+      throw new Error(
+        `Stok yang dapat diajukan saat ini ${Math.max(availableForRequests, 0)} unit.`
+      );
+    }
+
+    let borrowCode = generateBorrowCode();
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const existing = await tx.borrowRecord.findUnique({ where: { borrowCode } });
+      if (!existing) break;
+      borrowCode = generateBorrowCode();
+      if (attempt === 4) throw new Error("Gagal membuat kode peminjaman unik.");
+    }
+
+    const adjustedBorrowDate = new Date(borrowDate);
+    adjustedBorrowDate.setHours(0, 0, 0, 0);
+    const adjustedDueDate = new Date(dueDate);
+    adjustedDueDate.setHours(23, 59, 59, 999);
+
+    return tx.borrowRecord.create({
+      data: {
+        borrowCode,
+        itemId,
+        userId,
+        adminId: null,
+        borrowerName: borrower.name,
+        borrowerContact: borrower.email,
+        borrowQuantity,
+        borrowDate: adjustedBorrowDate,
+        dueDate: adjustedDueDate,
+        notes: notes || null,
+        status: "PENDING",
+      },
+      include: { item: { select: { id: true, name: true, code: true } } },
+    });
   });
 }
 

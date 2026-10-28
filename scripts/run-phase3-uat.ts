@@ -8,6 +8,7 @@ import {
 } from "../lib/services/item-service";
 import {
   createBorrowTransactionService,
+  requestBorrowService,
   returnBorrowTransactionService,
   getBorrowRecordsService,
   getCirculationMetricsService,
@@ -223,6 +224,71 @@ async function main() {
       }
 
       return `Peminjaman 3 unit sukses (Kode: ${record.borrowCode}), stok siap pakai berkurang dari 10 menjadi 7 unit.`;
+    });
+
+    // -------------------------------------------------------------------------
+    // UAT-05A: Pengajuan User Mereservasi Stok Tanpa Mengurangi Stok Fisik
+    // -------------------------------------------------------------------------
+    await recordTest("UAT-05A", "Pengajuan User Menahan Stok Tanpa Mutasi Fisik", "UAT", async () => {
+      const request = await requestBorrowService(
+        prisma,
+        adminUser!.id,
+        {
+          itemId: testItemId,
+          borrowQuantity: 2,
+          borrowDate: new Date(),
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+        { name: "User Uji Pengajuan", email: "uat-user@example.com" }
+      );
+
+      try {
+        const afterRequest = await prisma.item.findUnique({
+          where: { id: testItemId },
+        });
+        if (request.status !== "PENDING" || request.adminId !== null) {
+          throw new Error("Pengajuan baru harus berstatus PENDING dan belum memiliki Admin.");
+        }
+        if (afterRequest?.availableQuantity !== 7) {
+          throw new Error("Stok fisik berubah sebelum barang diambil.");
+        }
+
+        let reservationLimitEnforced = false;
+        try {
+          await requestBorrowService(
+            prisma,
+            adminUser!.id,
+            {
+              itemId: testItemId,
+              borrowQuantity: 6,
+              borrowDate: new Date(),
+              dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            },
+            { name: "User Uji Kedua", email: "uat-user-2@example.com" }
+          );
+        } catch (error) {
+          reservationLimitEnforced =
+            error instanceof Error && error.message.includes("dapat diajukan");
+        }
+        if (!reservationLimitEnforced) {
+          throw new Error("Pengajuan kedua tidak memperhitungkan stok yang sudah direservasi.");
+        }
+
+        await prisma.borrowRecord.update({
+          where: { id: request.id },
+          data: { status: "APPROVED" },
+        });
+        const afterApproval = await prisma.item.findUnique({
+          where: { id: testItemId },
+        });
+        if (afterApproval?.availableQuantity !== 7) {
+          throw new Error("Stok fisik berubah pada saat Admin menyetujui pengajuan.");
+        }
+
+        return "Pengajuan PENDING/APPROVED menahan kuota permintaan tanpa mengurangi availableQuantity.";
+      } finally {
+        await prisma.borrowRecord.delete({ where: { id: request.id } });
+      }
     });
 
     // -------------------------------------------------------------------------

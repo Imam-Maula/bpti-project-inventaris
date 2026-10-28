@@ -1,14 +1,23 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { randomInt } from "node:crypto";
+import { Prisma, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   comparePassword,
   createSession,
   deleteSession,
   verifySession,
+  hashPassword,
 } from "@/lib/auth";
-import { loginSchema } from "@/lib/validations/auth";
+import {
+  loginSchema,
+  registerUserSchema,
+  verifyOtpSchema,
+  type RegisterUserInput,
+} from "@/lib/validations/auth";
+import { sendOtpEmail } from "@/lib/mail";
 import {
   checkLoginRateLimit,
   recordFailedLogin,
@@ -19,6 +28,7 @@ export interface AuthActionResult {
   success: boolean;
   message?: string;
   errors?: Record<string, string[]>;
+  email?: string;
 }
 
 /**
@@ -79,10 +89,17 @@ export async function loginAction(
       };
     }
 
+    if (user.role === Role.USER && !user.isVerified) {
+      return {
+        success: false,
+        message: "Akun belum diverifikasi. Silakan selesaikan verifikasi OTP dari email.",
+      };
+    }
+
     // Reset percobaan jika login berhasil
     resetLoginRateLimit(rateLimitKey);
 
-    await createSession(user.id, user.username, user.name);
+    await createSession(user.id, user.username, user.name, user.role, user.email);
   } catch (error) {
     console.error("Kesalahan server saat login:", error);
     return {
@@ -91,7 +108,177 @@ export async function loginAction(
     };
   }
 
-  redirect("/");
+  const session = await verifySession();
+  redirect(session?.role === Role.ADMIN ? "/" : "/barang");
+}
+
+export async function registerUser(
+  input: RegisterUserInput
+): Promise<AuthActionResult> {
+  const validated = registerUserSchema.safeParse(input);
+  if (!validated.success) {
+    return {
+      success: false,
+      message: "Data pendaftaran tidak valid.",
+      errors: validated.error.flatten().fieldErrors,
+    };
+  }
+
+  const { name, username, email, password } = validated.data;
+  const existing = await prisma.user.findFirst({
+    where: { OR: [{ username }, { email }] },
+    select: { id: true },
+  });
+  if (existing) {
+    return {
+      success: false,
+      message: "Username atau email sudah terdaftar.",
+    };
+  }
+
+  const code = randomInt(0, 1_000_000).toString().padStart(6, "0");
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+  let userId: string;
+
+  try {
+    const passwordHash = await hashPassword(password);
+    userId = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name,
+          username,
+          email,
+          password: passwordHash,
+          role: Role.USER,
+          isVerified: false,
+        },
+        select: { id: true },
+      });
+      await tx.otpVerification.create({
+        data: { email, code, expiresAt },
+      });
+      return user.id;
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return {
+        success: false,
+        message: "Username atau email sudah terdaftar.",
+      };
+    }
+    console.error("Kesalahan saat membuat pendaftaran user:", error);
+    return {
+      success: false,
+      message: "Terjadi kendala server saat memproses pendaftaran.",
+    };
+  }
+
+  try {
+    await sendOtpEmail(email, code);
+  } catch (error) {
+    console.error("Gagal mengirim email OTP:", error);
+    await prisma.$transaction([
+      prisma.otpVerification.deleteMany({ where: { email } }),
+      prisma.user.deleteMany({ where: { id: userId, isVerified: false } }),
+    ]);
+    return {
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Gagal mengirim OTP. Periksa konfigurasi email lalu coba lagi.",
+    };
+  }
+
+  return {
+    success: true,
+    email,
+    message: "Kode OTP telah dikirim ke email Anda dan berlaku selama 5 menit.",
+  };
+}
+
+export async function verifyOtp(emailInput: string, codeInput: string): Promise<AuthActionResult> {
+  const validated = verifyOtpSchema.safeParse({
+    email: emailInput,
+    code: codeInput,
+  });
+  if (!validated.success) {
+    return {
+      success: false,
+      message: validated.error.issues[0]?.message ?? "Kode OTP tidak valid.",
+    };
+  }
+
+  const { email, code } = validated.data;
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const otp = await tx.otpVerification.findUnique({ where: { email } });
+      if (!otp) {
+        return {
+          success: false,
+          message: "Kode OTP tidak ditemukan. Silakan ulangi pendaftaran.",
+        };
+      }
+
+      const now = new Date();
+      if (otp.expiresAt <= now) {
+        await tx.otpVerification.deleteMany({ where: { email } });
+        return {
+          success: false,
+          message: "Kode OTP telah kedaluwarsa. Silakan daftar kembali.",
+        };
+      }
+      if (otp.attempts >= 5) {
+        return {
+          success: false,
+          message: "Batas percobaan OTP tercapai. Silakan daftar kembali untuk kode baru.",
+        };
+      }
+      if (otp.code !== code) {
+        const attempt = await tx.otpVerification.updateMany({
+          where: { email, attempts: { lt: 5 }, expiresAt: { gt: now } },
+          data: { attempts: { increment: 1 } },
+        });
+        return {
+          success: false,
+          message:
+            attempt.count === 0
+              ? "Batas percobaan OTP tercapai. Silakan daftar kembali untuk kode baru."
+              : "Kode OTP tidak cocok.",
+        };
+      }
+
+      const consumed = await tx.otpVerification.deleteMany({
+        where: { email, code, attempts: { lt: 5 }, expiresAt: { gt: now } },
+      });
+      if (consumed.count !== 1) {
+        return {
+          success: false,
+          message: "Kode OTP sudah digunakan atau kedaluwarsa.",
+        };
+      }
+
+      const verified = await tx.user.updateMany({
+        where: { email, role: Role.USER },
+        data: { isVerified: true },
+      });
+      if (verified.count === 0) {
+        return { success: false, message: "Akun pendaftar tidak ditemukan." };
+      }
+
+      return {
+        success: true,
+        email,
+        message: "Email berhasil diverifikasi. Silakan masuk dengan akun Anda.",
+      };
+    });
+  } catch (error) {
+    console.error("Kesalahan saat memverifikasi OTP:", error);
+    return {
+      success: false,
+      message: "Terjadi kendala server saat memverifikasi OTP.",
+    };
+  }
 }
 
 /**

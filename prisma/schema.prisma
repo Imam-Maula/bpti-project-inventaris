@@ -14,9 +14,17 @@ enum Condition {
 }
 
 enum BorrowStatus {
+  PENDING
+  APPROVED
   DIPINJAM
   DIKEMBALIKAN
+  DITOLAK
   TERLAMBAT
+}
+
+enum Role {
+  ADMIN
+  USER
 }
 
 enum ItemStatus {
@@ -27,14 +35,29 @@ enum ItemStatus {
 model User {
   id            String         @id @default(uuid())
   username      String         @unique
+  email         String?        @unique @db.VarChar(254)
   password      String
   name          String
+  role          Role           @default(USER)
+  isVerified    Boolean        @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  borrowRecords BorrowRecord[]
+  borrowRecords BorrowRecord[] @relation("BorrowRecordAdmin")
+  borrowRequests BorrowRecord[] @relation("BorrowRecordUser")
   auditLogs     AuditLog[]
 
   @@map("users")
+}
+
+model OtpVerification {
+  id        String   @id @default(uuid())
+  email     String   @unique @db.VarChar(254)
+  code      String   @db.Char(6)
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("otp_verifications")
 }
 
 model Item {
@@ -77,15 +100,19 @@ model BorrowRecord {
   borrowCode      String       @unique
   itemId          String
   item            Item         @relation(fields: [itemId], references: [id], onDelete: Restrict)
-  adminId         String
-  admin           User         @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  adminId         String?
+  admin           User?        @relation("BorrowRecordAdmin", fields: [adminId], references: [id], onDelete: Restrict)
+  userId          String?
+  user            User?        @relation("BorrowRecordUser", fields: [userId], references: [id], onDelete: SetNull)
   borrowerName    String
   borrowerContact String
   borrowQuantity  Int
   borrowDate      DateTime     @default(now())
   dueDate         DateTime
   returnDate      DateTime?
-  status          BorrowStatus @default(DIPINJAM)
+  status          BorrowStatus @default(PENDING)
+  takenAt         DateTime?
+  rejectionReason String?      @db.Text
   returnCondition Condition?
   notes           String?      @db.Text
   borrowGoodQuantity        Int          @default(0)

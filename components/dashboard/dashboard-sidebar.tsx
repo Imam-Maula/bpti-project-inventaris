@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useTransition } from "react";
+import { Role } from "@prisma/client";
 import { logoutAction } from "@/actions/auth-actions";
 import {
   LayoutDashboard,
@@ -40,7 +41,13 @@ const navigationItems = [
   },
 ];
 
-export function DashboardSidebar() {
+export function DashboardSidebar({
+  role,
+  name,
+}: {
+  role: Role;
+  name: string;
+}) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -50,6 +57,14 @@ export function DashboardSidebar() {
       await logoutAction();
     });
   };
+
+  const navigation = role === Role.ADMIN
+    ? navigationItems
+    : navigationItems.filter((item) => item.href === "/barang").concat({
+        name: "Riwayat Peminjaman",
+        href: "/riwayat",
+        icon: History,
+      });
 
   const navContent = (
     <div className="flex h-full flex-col justify-between bg-sidebar text-sidebar-foreground">
@@ -84,7 +99,7 @@ export function DashboardSidebar() {
             Menu Utama
           </p>
           <nav className="space-y-1" aria-label="Sidebar Navigation">
-            {navigationItems.map((item) => {
+            {navigation.map((item) => {
               const isActive =
                 item.href === "/"
                   ? pathname === "/"
@@ -123,10 +138,10 @@ export function DashboardSidebar() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold text-sidebar-foreground">
-              Administrator BPTI
+              {name}
             </p>
             <p className="truncate text-[11px] text-muted-foreground">
-              Sesi Terverifikasi
+              {role === Role.ADMIN ? "Administrator" : "Akun User"}
             </p>
           </div>
         </div>

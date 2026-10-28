@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { Prisma, Condition, ItemStatus, Item } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/dal";
+import { requireAdmin, requireAuth } from "@/lib/dal";
 import {
   createItemSchema,
   updateItemSchema,
@@ -58,7 +58,7 @@ export async function getItemByIdAction(id: string) {
 export async function createItemAction(
   data: CreateItemInput
 ): Promise<ItemActionResult<Item>> {
-  const session = await requireAuth();
+  const session = await requireAdmin();
 
   const validated = createItemSchema.safeParse(data);
   if (!validated.success) {
@@ -112,7 +112,7 @@ export async function createItemAction(
 export async function updateItemAction(
   data: UpdateItemInput
 ): Promise<ItemActionResult<Item>> {
-  const session = await requireAuth();
+  const session = await requireAdmin();
 
   const validated = updateItemSchema.safeParse(data);
   if (!validated.success) {
@@ -174,7 +174,7 @@ export async function restoreQuarantinedItemAction(
   id: string,
   quantityToRestore: number
 ): Promise<ItemActionResult> {
-  const session = await requireAuth();
+  const session = await requireAdmin();
 
   try {
     const updated = await restoreQuarantinedItemService(prisma, id, quantityToRestore);
@@ -221,7 +221,7 @@ export async function restoreQuarantinedItemAction(
  * Mengarsipkan master barang (Soft Delete).
  */
 export async function archiveItemAction(id: string): Promise<ItemActionResult> {
-  const session = await requireAuth();
+  const session = await requireAdmin();
 
   try {
     const archived = await archiveItemService(prisma, id);
@@ -265,7 +265,7 @@ export async function archiveItemAction(id: string): Promise<ItemActionResult> {
  * Mengaktifkan kembali master barang yang diarsipkan ke katalog aktif.
  */
 export async function unarchiveItemAction(id: string): Promise<ItemActionResult> {
-  const session = await requireAuth();
+  const session = await requireAdmin();
 
   try {
     const restored = await unarchiveItemService(prisma, id);
@@ -307,7 +307,7 @@ export async function unarchiveItemAction(id: string): Promise<ItemActionResult>
  * Jika memiliki riwayat sirkulasi masa lalu (FK Restrict P2003), otomatis dialihkan ke status Diarsipkan.
  */
 export async function deleteItemAction(id: string): Promise<ItemActionResult> {
-  const session = await requireAuth();
+  const session = await requireAdmin();
 
   try {
     const result = await deleteItemService(prisma, id);
@@ -357,7 +357,7 @@ export async function deleteItemAction(id: string): Promise<ItemActionResult> {
 export async function bulkArchiveItemsAction(
   ids: string[]
 ): Promise<ItemActionResult<{ count: number }>> {
-  const session = await requireAuth();
+  const session = await requireAdmin();
 
   try {
     const count = await bulkArchiveItemsService(prisma, ids);
@@ -398,7 +398,7 @@ export async function bulkArchiveItemsAction(
 export async function bulkUnarchiveItemsAction(
   ids: string[]
 ): Promise<ItemActionResult<{ count: number }>> {
-  const session = await requireAuth();
+  const session = await requireAdmin();
 
   try {
     const count = await bulkUnarchiveItemsService(prisma, ids);

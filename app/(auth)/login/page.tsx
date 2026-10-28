@@ -3,8 +3,8 @@ import Image from "next/image";
 import { LoginForm } from "@/components/auth/login-form";
 
 export const metadata: Metadata = {
-  title: "Masuk Administrator — Sistem Inventaris BPTI",
-  description: "Portal masuk administrator Sistem Inventaris Badan Pengembangan Teknologi Informasi",
+  title: "Masuk — Sistem Inventaris BPTI",
+  description: "Portal masuk Sistem Inventaris Badan Pengembangan Teknologi Informasi",
 };
 
 export default function LoginPage() {

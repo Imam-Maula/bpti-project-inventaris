@@ -4,37 +4,47 @@ import { jwtVerify } from "jose";
 
 const SESSION_COOKIE_NAME = "bpti_session";
 
-async function isSessionValid(request: NextRequest): Promise<boolean> {
+async function getSessionRole(request: NextRequest): Promise<"ADMIN" | "USER" | null> {
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
-  if (!token) return false;
+  if (!token) return null;
 
   const secret = process.env.SESSION_SECRET;
-  if (!secret) return false;
+  if (!secret) return null;
 
   try {
     const secretKey = new TextEncoder().encode(secret);
-    await jwtVerify(token, secretKey, { algorithms: ["HS256"] });
-    return true;
+    const { payload } = await jwtVerify(token, secretKey, { algorithms: ["HS256"] });
+    return payload.role === "ADMIN" || payload.role === "USER" ? payload.role : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hasValidSession = await isSessionValid(request);
+  const role = await getSessionRole(request);
 
-  // Jika mengakses halaman login tetapi sudah login -> alihkan ke dashboard (/)
-  if (pathname === "/login") {
-    if (hasValidSession) {
-      return NextResponse.redirect(new URL("/", request.url));
+  if (pathname === "/login" || pathname === "/register") {
+    if (role) {
+      return NextResponse.redirect(
+        new URL(role === "ADMIN" ? "/" : "/barang", request.url)
+      );
     }
     return NextResponse.next();
   }
 
-  // Jika mengakses halaman dashboard/master/sirkulasi tetapi belum login -> alihkan ke /login
-  if (!hasValidSession) {
+  if (!role) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (role === "USER" && pathname === "/") {
+    return NextResponse.redirect(new URL("/barang", request.url));
+  }
+  if (
+    role === "USER" &&
+    (pathname === "/aktivitas" || pathname.startsWith("/sirkulasi"))
+  ) {
+    return NextResponse.redirect(new URL("/barang", request.url));
   }
 
   return NextResponse.next();
