@@ -113,8 +113,10 @@ interface BackupItem {
   quarantinedQuantity?: number;
   resolvedDamagedQuantity?: number;
   location: string;
+
   photoCaption?: string | null;
   photoPath?: string | null;
+
   condition: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT";
   status: "AKTIF" | "DIARSIPKAN";
   createdAt: string | Date;
@@ -156,6 +158,7 @@ interface BackupItem {
       itemId: string;
       imageData: string;
       mimeType: string;
+      order?: number;
       updatedAt: string | Date;
     }[]) {
       await tx.itemImage.create({
@@ -163,6 +166,7 @@ interface BackupItem {
           itemId: image.itemId,
           imageData: Buffer.from(image.imageData, "base64"),
           mimeType: image.mimeType,
+          order: image.order ?? 0,
           updatedAt: new Date(image.updatedAt),
         },
       });

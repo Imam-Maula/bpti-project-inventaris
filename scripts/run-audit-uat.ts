@@ -165,7 +165,7 @@ async function runAuditUat() {
       mimeType: "image/png",
     },
   });
-  const storedImage = await prisma.itemImage.findUnique({
+  const storedImage = await prisma.itemImage.findFirst({
     where: { itemId: updatedItem.id },
   });
   if (
@@ -175,7 +175,7 @@ async function runAuditUat() {
   ) {
     throw new Error("Gambar barang tidak tersimpan dengan benar");
   }
-  await prisma.itemImage.delete({ where: { itemId: updatedItem.id } });
+  await prisma.itemImage.deleteMany({ where: { itemId: updatedItem.id } });
   console.log("[PASS] Gambar tersimpan dan dapat dibaca kembali dari database.");
   // Cleanup testing item
   await deleteItemService(prisma, updatedItem.id);

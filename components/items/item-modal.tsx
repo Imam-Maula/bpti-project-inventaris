@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { Item } from "@prisma/client";
 import { createItemAction, updateItemAction } from "@/actions/item-actions";
@@ -26,25 +26,65 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<
+    { id: string; order: number; url: string }[]
+  >([]);
+  const [hasChangedImages, setHasChangedImages] = useState(false);
 
-  const uploadImage = async (itemId: string) => {
-    if (!imageFile) return;
+  useEffect(() => {
+    if (!initialData) return;
+    let isMounted = true;
+    fetch(`/api/items/${initialData.id}/image?info=true`)
+      .then((res) => (res.ok ? res.json() : { images: [] }))
+      .then((data: { images: { id: string; order: number; url: string }[] }) => {
+        if (isMounted && data.images) setExistingImages(data.images);
+      })
+      .catch(() => {
+        if (isMounted) setExistingImages([]);
+      });
 
-    const uploadData = new FormData();
-    uploadData.set("image", imageFile);
-    const response = await fetch(`/api/items/${itemId}/image`, {
-      method: "POST",
-      body: uploadData,
-    });
-    const result = response.headers
-      .get("content-type")
-      ?.includes("application/json")
-      ? ((await response.json()) as { message?: string })
-      : {};
+    return () => {
+      isMounted = false;
+    };
+  }, [initialData]);
 
-    if (!response.ok) {
-      throw new Error(result.message || "Gagal mengunggah gambar barang.");
+  const previewUrls = useMemo(() => {
+    return imageFiles.map((file) => URL.createObjectURL(file));
+  }, [imageFiles]);
+
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [previewUrls]);
+
+  const uploadImages = async (itemId: string) => {
+    if (!hasChangedImages && imageFiles.length === 0) return;
+
+    if (imageFiles.length === 0 && existingImages.length === 0 && hasChangedImages) {
+      await fetch(`/api/items/${itemId}/image`, { method: "DELETE" });
+      return;
+    }
+
+    if (imageFiles.length > 0) {
+      const uploadData = new FormData();
+      for (const file of imageFiles) {
+        uploadData.append("images", file);
+      }
+      const response = await fetch(`/api/items/${itemId}/image`, {
+        method: "POST",
+        body: uploadData,
+      });
+      const result = response.headers
+        .get("content-type")
+        ?.includes("application/json")
+        ? ((await response.json()) as { message?: string })
+        : {};
+
+      if (!response.ok) {
+        throw new Error(result.message || "Gagal mengunggah foto barang.");
+      }
     }
   };
 
@@ -95,15 +135,15 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
           if (res.errors) setFieldErrors(res.errors);
           toast.error("Gagal Memperbarui Aset", msg);
         } else {
-          if (imageFile) {
+          if (hasChangedImages || imageFiles.length > 0) {
             try {
-              await uploadImage(initialData.id);
+              await uploadImages(initialData.id);
             } catch (error) {
               const message =
                 error instanceof Error
                   ? error.message
-                  : "Gagal mengunggah gambar barang.";
-              toast.error("Data tersimpan, gambar gagal diunggah", message);
+                  : "Gagal mengunggah foto barang.";
+              toast.error("Data tersimpan, foto gagal diunggah", message);
               onSuccess();
               onClose();
               return;
@@ -111,7 +151,9 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
           }
           toast.success(
             "Data Barang Diperbarui",
-            imageFile ? "Data dan gambar barang berhasil diperbarui." : res.message
+            imageFiles.length > 0 || hasChangedImages
+              ? "Data dan foto barang berhasil diperbarui."
+              : res.message
           );
           onSuccess();
           onClose();
@@ -133,15 +175,15 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
           if (res.errors) setFieldErrors(res.errors);
           toast.error("Gagal Menyimpan Aset", msg);
         } else {
-          if (imageFile && res.data) {
+          if (imageFiles.length > 0 && res.data) {
             try {
-              await uploadImage(res.data.id);
+              await uploadImages(res.data.id);
             } catch (error) {
               const message =
                 error instanceof Error
                   ? error.message
-                  : "Gagal mengunggah gambar barang.";
-              toast.error("Barang tersimpan, gambar gagal diunggah", message);
+                  : "Gagal mengunggah foto barang.";
+              toast.error("Barang tersimpan, foto gagal diunggah", message);
               onSuccess();
               onClose();
               return;
@@ -149,7 +191,9 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
           }
           toast.success(
             "Aset Berhasil Didaftarkan",
-            imageFile ? "Barang dan gambarnya berhasil didaftarkan." : res.message
+            imageFiles.length > 0
+              ? `${imageFiles.length} foto barang berhasil dilampirkan.`
+              : res.message
           );
           onSuccess();
           onClose();
@@ -198,55 +242,143 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
         onSubmit={handleSubmit}
         className="mt-4 min-h-0 flex-1 space-y-3.5 overflow-y-auto overscroll-contain pr-2"
       >
-        <div className="space-y-2">
-          <label
-            htmlFor="itemImage"
-            className="block text-xs font-medium text-foreground"
-          >
-            Gambar Barang (JPG, PNG, atau WebP; maksimal 5 MB)
-          </label>
+        <div className="space-y-2 rounded-lg border border-border bg-muted/10 p-3">
+          <div className="flex items-center justify-between">
+            <label
+              htmlFor="itemImage"
+              className="block text-xs font-semibold text-foreground"
+            >
+              Foto Barang (Maksimal 3 Foto: JPG, PNG, atau WebP; maks. 5 MB/foto)
+            </label>
+            <span className="text-[11px] font-medium text-muted-foreground">
+              {imageFiles.length > 0
+                ? `${imageFiles.length} / 3 foto dipilih`
+                : existingImages.length > 0
+                ? `${existingImages.length} / 3 foto tersimpan`
+                : "0 / 3 foto"}
+            </span>
+          </div>
+
           <input
             id="itemImage"
             type="file"
+            multiple
             accept="image/jpeg,image/png,image/webp"
-            disabled={isPending}
+            disabled={isPending || imageFiles.length >= 3}
             onChange={(event) => {
-              const file = event.target.files?.[0] ?? null;
-              if (file && file.size > 5 * 1024 * 1024) {
-                setErrorMessage("Ukuran gambar maksimal 5 MB.");
-                event.target.value = "";
-                setImageFile(null);
-                return;
+              const selected = Array.from(event.target.files || []);
+              if (selected.length === 0) return;
+
+              for (const file of selected) {
+                if (file.size > 5 * 1024 * 1024) {
+                  setErrorMessage(`Ukuran berkas "${file.name}" melebihi batas maksimal 5 MB.`);
+                  event.target.value = "";
+                  return;
+                }
               }
+
+              const combined = [...imageFiles, ...selected].slice(0, 3);
+              if (imageFiles.length + selected.length > 3) {
+                toast.info(
+                  "Batas Foto",
+                  "Maksimal 3 foto per barang. Hanya 3 foto pertama yang akan disimpan."
+                );
+              }
+
               setErrorMessage(null);
-              setImageFile(file);
+              setImageFiles(combined);
+              setHasChangedImages(true);
+              event.target.value = "";
             }}
-            className="block w-full text-xs text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-foreground hover:file:bg-muted"
+            className="block w-full text-xs text-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-foreground hover:file:bg-muted disabled:opacity-50"
           />
-          {imageFile && (
-            <p className="text-[11px] text-muted-foreground">
-              File terpilih: {imageFile.name}
+
+          {/* Grid Preview Foto Baru yang Dipilih */}
+          {previewUrls.length > 0 ? (
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-medium text-muted-foreground">
+                Pratinjau foto yang akan diunggah:
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {previewUrls.map((url, idx) => (
+                  <div
+                    key={url}
+                    className="group relative h-28 overflow-hidden rounded-md border border-border bg-card shadow-xs"
+                  >
+                    <Image
+                      src={url}
+                      alt={`Pratinjau ${idx + 1}`}
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 opacity-80" />
+                    <span className="absolute top-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                      Foto {idx + 1} {idx === 0 && "(Utama)"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setImageFiles((prev) => prev.filter((_, i) => i !== idx));
+                        setHasChangedImages(true);
+                      }}
+                      className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-white shadow-xs transition hover:scale-110"
+                      title="Hapus foto ini"
+                      aria-label={`Hapus foto ${idx + 1}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                    <span className="absolute bottom-1 left-1 right-1 truncate text-[10px] text-white/90">
+                      {imageFiles[idx]?.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : isEdit && existingImages.length > 0 ? (
+            <div className="space-y-1.5">
+              <p className="text-[11px] font-medium text-muted-foreground">
+                Foto barang yang saat ini tersimpan:
+              </p>
+              <div className="grid grid-cols-3 gap-2">
+                {existingImages.map((img, idx) => (
+                  <div
+                    key={img.id || idx}
+                    className="group relative h-28 overflow-hidden rounded-md border border-border bg-card shadow-xs"
+                  >
+                    <Image
+                      src={img.url}
+                      alt={`Foto tersimpan ${idx + 1}`}
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 opacity-70" />
+                    <span className="absolute top-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                      Foto {idx + 1} {idx === 0 && "(Utama)"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExistingImages((prev) => prev.filter((_, i) => i !== idx));
+                        setHasChangedImages(true);
+                      }}
+                      className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-white shadow-xs transition hover:scale-110"
+                      title="Hapus foto ini"
+                      aria-label={`Hapus foto ${idx + 1}`}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1">
+              <ImagePlus className="h-3.5 w-3.5" />
+              Pilih hingga 3 file gambar untuk melampirkan foto aset fisik.
             </p>
           )}
-          {isEdit && initialData ? (
-            <div className="relative h-40 w-full overflow-hidden rounded-md border border-border bg-muted/30">
-              <Image
-                src={`/api/items/${initialData.id}/image`}
-                alt={`Gambar ${initialData.name}`}
-                fill
-                unoptimized
-                onError={(event) => {
-                  event.currentTarget.style.display = "none";
-                }}
-                className="object-contain"
-              />
-            </div>
-          ) : !imageFile ? (
-            <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <ImagePlus className="h-3.5 w-3.5" />
-              Pilih gambar untuk melampirkannya pada data barang.
-            </p>
-          ) : null}
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
