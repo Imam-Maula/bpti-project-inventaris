@@ -59,12 +59,7 @@ export async function getItemByIdAction(id: string) {
 export async function createItemAction(
   data: CreateItemInput
 ): Promise<ItemActionResult<Item>> {
-<<<<<<< HEAD
-
-  const session = await requireAuth();
-=======
   const session = await requireAdmin();
->>>>>>> origin/main
 
   const validated = createItemSchema.safeParse(data);
   if (!validated.success) {
@@ -118,12 +113,7 @@ export async function createItemAction(
 export async function updateItemAction(
   data: UpdateItemInput
 ): Promise<ItemActionResult<Item>> {
-<<<<<<< HEAD
-
-  const session = await requireAuth();
-=======
   const session = await requireAdmin();
->>>>>>> origin/main
 
   const validated = updateItemSchema.safeParse(data);
   if (!validated.success) {
