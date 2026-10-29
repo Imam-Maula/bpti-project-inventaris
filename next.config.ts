@@ -1,10 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@prisma/client"],
-  experimental: {
-    cpus: 1,
-  },
+  serverExternalPackages: ["@prisma/client", "bcryptjs"],
   async headers() {
     return [
       {
