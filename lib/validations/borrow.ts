@@ -1,6 +1,23 @@
 import { z } from "zod";
 import { Condition } from "@prisma/client";
 
+export const borrowerPhoneSchema = z
+  .string()
+  .min(8, "Nomor telepon/WhatsApp peminjam minimal 8 karakter")
+  .max(20, "Nomor telepon/WhatsApp peminjam maksimal 20 karakter")
+  .regex(
+    /^[\d\s+\-()]+$/,
+    "Format nomor telepon hanya boleh memuat angka, spasi, dan tanda (+ - ())"
+  )
+  .trim();
+
+export const borrowerEmailSchema = z
+  .string()
+  .email("Format alamat email peminjam tidak valid")
+  .max(100, "Alamat email peminjam maksimal 100 karakter")
+  .trim()
+  .toLowerCase();
+
 export const createBorrowSchema = z.object({
   itemId: z.string().uuid("Aset inventaris yang dipilih tidak valid"),
   borrowerName: z
@@ -8,15 +25,9 @@ export const createBorrowSchema = z.object({
     .min(2, "Nama staf peminjam minimal 2 karakter")
     .max(100, "Nama staf peminjam maksimal 100 karakter")
     .trim(),
-  borrowerContact: z
-    .string()
-    .min(8, "Nomor kontak peminjam minimal 8 karakter")
-    .max(30, "Nomor kontak peminjam maksimal 30 karakter")
-    .regex(
-      /^[\d\s+\-()]+$/,
-      "Format kontak hanya boleh memuat angka, spasi, dan tanda (+ - ())"
-    )
-    .trim(),
+  borrowerPhone: borrowerPhoneSchema,
+  borrowerEmail: borrowerEmailSchema,
+  borrowerContact: z.string().optional(),
   borrowQuantity: z.coerce
     .number()
     .int("Jumlah unit pinjam harus berupa bilangan bulat")
@@ -55,6 +66,8 @@ export const requestBorrowSchema = z
       .min(1, "Jumlah unit pinjam minimal 1 unit"),
     borrowDate: z.coerce.date({ message: "Tanggal pinjam tidak valid" }),
     dueDate: z.coerce.date({ message: "Tanggal kembali tidak valid" }),
+    borrowerPhone: borrowerPhoneSchema,
+    borrowerEmail: borrowerEmailSchema.optional(),
     notes: z.string().max(500, "Catatan keperluan maksimal 500 karakter").optional(),
   })
   .refine((data) => data.dueDate >= data.borrowDate, {

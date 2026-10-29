@@ -109,7 +109,9 @@ model BorrowRecord {
   userId          String?
   user            User?        @relation("BorrowRecordUser", fields: [userId], references: [id], onDelete: SetNull)
   borrowerName    String
-  borrowerContact String
+  borrowerPhone   String       @default("")
+  borrowerEmail   String       @default("")
+  borrowerContact String       @default("")
   borrowQuantity  Int
   borrowDate      DateTime     @default(now())
   dueDate         DateTime

@@ -23,6 +23,8 @@ import {
   AlertTriangle,
   Download,
   FileText,
+  Phone,
+  Mail,
 } from "lucide-react";
 
 interface BorrowRecordWithItem {
@@ -31,6 +33,8 @@ interface BorrowRecordWithItem {
   itemId: string;
   adminId: string | null;
   borrowerName: string;
+  borrowerPhone: string;
+  borrowerEmail: string;
   borrowerContact: string;
   borrowQuantity: number;
   borrowDate: Date;
@@ -93,6 +97,8 @@ export function BorrowListClient({
         rec.borrowCode.toLowerCase().includes(search.toLowerCase()) ||
         rec.borrowerName.toLowerCase().includes(search.toLowerCase()) ||
         rec.borrowerContact.toLowerCase().includes(search.toLowerCase()) ||
+        (rec.borrowerPhone && rec.borrowerPhone.toLowerCase().includes(search.toLowerCase())) ||
+        (rec.borrowerEmail && rec.borrowerEmail.toLowerCase().includes(search.toLowerCase())) ||
         rec.item.name.toLowerCase().includes(search.toLowerCase()) ||
         rec.item.code.toLowerCase().includes(search.toLowerCase());
 
@@ -178,6 +184,8 @@ export function BorrowListClient({
       id: record.id,
       borrowCode: record.borrowCode,
       borrowerName: record.borrowerName,
+      borrowerPhone: record.borrowerPhone,
+      borrowerEmail: record.borrowerEmail,
       borrowerContact: record.borrowerContact,
       borrowQuantity: record.borrowQuantity,
       borrowDate: new Date(record.borrowDate),
@@ -198,6 +206,8 @@ export function BorrowListClient({
       id: record.id,
       borrowCode: record.borrowCode,
       borrowerName: record.borrowerName,
+      borrowerPhone: record.borrowerPhone,
+      borrowerEmail: record.borrowerEmail,
       borrowerContact: record.borrowerContact,
       borrowQuantity: record.borrowQuantity,
       borrowDate: record.borrowDate,
@@ -227,6 +237,8 @@ export function BorrowListClient({
     const headers = [
       "Kode Transaksi",
       "Nama Peminjam",
+      "No. Telepon Peminjam",
+      "Email Peminjam",
       "Kontak Peminjam",
       "Kode Barang",
       "Nama Barang",
@@ -241,6 +253,8 @@ export function BorrowListClient({
     const rows = recordsToExport.map((rec) => [
       `"${rec.borrowCode.replace(/"/g, '""')}"`,
       `"${rec.borrowerName.replace(/"/g, '""')}"`,
+      `"${(rec.borrowerPhone || "").replace(/"/g, '""')}"`,
+      `"${(rec.borrowerEmail || "").replace(/"/g, '""')}"`,
       `"${rec.borrowerContact.replace(/"/g, '""')}"`,
       `"${rec.item.code.replace(/"/g, '""')}"`,
       `"${rec.item.name.replace(/"/g, '""')}"`,
@@ -522,10 +536,24 @@ export function BorrowListClient({
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="text-foreground">{rec.borrowerName}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {rec.borrowerContact}
-                        </div>
+                        <div className="font-medium text-foreground">{rec.borrowerName}</div>
+                        {rec.borrowerPhone && (
+                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Phone className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            <span>{rec.borrowerPhone}</span>
+                          </div>
+                        )}
+                        {rec.borrowerEmail && (
+                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Mail className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            <span className="truncate max-w-[200px]" title={rec.borrowerEmail}>{rec.borrowerEmail}</span>
+                          </div>
+                        )}
+                        {!rec.borrowerPhone && !rec.borrowerEmail && rec.borrowerContact && (
+                          <div className="text-xs text-muted-foreground">
+                            {rec.borrowerContact}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className="tabular-nums text-xs font-semibold text-foreground">

@@ -38,6 +38,8 @@ export async function getBorrowRecordsService(
     where.OR = [
       { borrowCode: { contains: params.search } },
       { borrowerName: { contains: params.search } },
+      { borrowerPhone: { contains: params.search } },
+      { borrowerEmail: { contains: params.search } },
       { borrowerContact: { contains: params.search } },
       { item: { name: { contains: params.search } } },
       { item: { code: { contains: params.search } } },
@@ -82,7 +84,7 @@ export async function requestBorrowService(
   data: import("@/lib/validations/borrow").RequestBorrowInput,
   borrower: { name: string; email: string }
 ) {
-  const { itemId, borrowQuantity, borrowDate, dueDate, notes } = data;
+  const { itemId, borrowQuantity, borrowDate, dueDate, notes, borrowerPhone, borrowerEmail } = data;
 
   return db.$transaction(async (tx) => {
     const lockedItems = await tx.$queryRaw<Array<{ id: string }>>`
@@ -126,7 +128,11 @@ export async function requestBorrowService(
         userId,
         adminId: null,
         borrowerName: borrower.name,
-        borrowerContact: borrower.email,
+        borrowerPhone: borrowerPhone || "",
+        borrowerEmail: borrowerEmail || borrower.email || "",
+        borrowerContact: borrowerPhone && (borrowerEmail || borrower.email)
+          ? `${borrowerPhone} | ${borrowerEmail || borrower.email}`
+          : borrowerPhone || borrowerEmail || borrower.email || "",
         borrowQuantity,
         borrowDate: adjustedBorrowDate,
         dueDate: adjustedDueDate,
@@ -215,7 +221,7 @@ export async function createBorrowTransactionService(
   adminId: string,
   data: CreateBorrowInput
 ) {
-  const { itemId, borrowerName, borrowerContact, borrowQuantity, dueDate, notes } = data;
+  const { itemId, borrowerName, borrowerPhone, borrowerEmail, borrowerContact, borrowQuantity, dueDate, notes } = data;
 
   return db.$transaction(async (tx) => {
     // 1. CAS decrement bersyarat: WHERE availableQuantity >= borrowQuantity AND status = 'AKTIF'
@@ -258,13 +264,21 @@ export async function createBorrowTransactionService(
     const adjustedDueDate = new Date(dueDate);
     adjustedDueDate.setHours(23, 59, 59, 999);
 
+    const effectivePhone = borrowerPhone || borrowerContact || "";
+    const effectiveEmail = borrowerEmail || "";
+    const contactCombined = effectivePhone && effectiveEmail
+      ? `${effectivePhone} | ${effectiveEmail}`
+      : effectivePhone || effectiveEmail;
+
     const record = await tx.borrowRecord.create({
       data: {
         borrowCode,
         itemId,
         adminId,
         borrowerName,
-        borrowerContact,
+        borrowerPhone: effectivePhone,
+        borrowerEmail: effectiveEmail,
+        borrowerContact: contactCombined,
         borrowQuantity,
         dueDate: adjustedDueDate,
         notes: notes || null,

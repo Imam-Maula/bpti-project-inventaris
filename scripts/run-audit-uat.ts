@@ -106,7 +106,9 @@ async function runAuditUat() {
   const borrowRecord = await createBorrowTransactionService(prisma, admin.id, {
     itemId: updatedItem.id,
     borrowerName: "Mahasiswa Penguji Audit",
-    borrowerContact: "081299998888",
+    borrowerPhone: "081299998888",
+    borrowerEmail: "audit.tester@uhamka.ac.id",
+    borrowerContact: "081299998888 | audit.tester@uhamka.ac.id",
     borrowQuantity: 2,
     dueDate: new Date(Date.now() + 86400000 * 3),
     notes: "Pengujian audit log sirkulasi",

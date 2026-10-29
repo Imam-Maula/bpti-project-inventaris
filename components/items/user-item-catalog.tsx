@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { Item } from "@prisma/client";
 import { requestBorrow } from "@/actions/borrow-actions";
 import { useToast } from "@/components/ui/toast";
-import { Package, X } from "lucide-react";
+import { Package, X, Phone } from "lucide-react";
 
 export function UserItemCatalog({ items }: { items: Item[] }) {
   const { toast } = useToast();
@@ -12,6 +12,7 @@ export function UserItemCatalog({ items }: { items: Item[] }) {
   const [quantity, setQuantity] = useState(1);
   const [borrowDate, setBorrowDate] = useState(getLocalDate());
   const [dueDate, setDueDate] = useState(getDefaultDueDate());
+  const [borrowerPhone, setBorrowerPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -34,6 +35,7 @@ export function UserItemCatalog({ items }: { items: Item[] }) {
         borrowQuantity: quantity,
         borrowDate: new Date(`${borrowDate}T00:00:00.000Z`),
         dueDate: new Date(`${dueDate}T00:00:00.000Z`),
+        borrowerPhone,
         notes,
       });
       if (!result.success) {
@@ -188,6 +190,22 @@ export function UserItemCatalog({ items }: { items: Item[] }) {
                 />
               </label>
             </div>
+
+            <label className="block space-y-1.5 text-sm">
+              <span className="font-medium flex items-center gap-1.5">
+                <Phone className="h-4 w-4 text-primary" />
+                Nomor Telepon / WhatsApp Aktif
+              </span>
+              <input
+                type="tel"
+                required
+                placeholder="Contoh: 081234567890"
+                value={borrowerPhone}
+                onChange={(event) => setBorrowerPhone(event.target.value)}
+                disabled={isPending}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+              />
+            </label>
 
             <label className="block space-y-1.5 text-sm">
               <span className="font-medium">Catatan keperluan</span>
