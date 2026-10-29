@@ -55,6 +55,6 @@ export const config = {
     /*
      * Match semua rute kecuali file aset statis dan metadata browser:
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot|map)$).*)",
   ],
 };
