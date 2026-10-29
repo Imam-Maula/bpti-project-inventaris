@@ -8,7 +8,7 @@ import {
   verifyOtp,
   type AuthActionResult,
 } from "@/actions/auth-actions";
-import { AlertCircle, Loader2, Mail, UserPlus } from "lucide-react";
+import { AlertCircle, Loader2, Mail, Phone, UserPlus } from "lucide-react";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -28,6 +28,7 @@ export function RegisterForm() {
         name: String(formData.get("name") ?? ""),
         username: String(formData.get("username") ?? ""),
         email: String(formData.get("email") ?? ""),
+        phone: String(formData.get("phone") ?? ""),
         password: String(formData.get("password") ?? ""),
       });
       setMessage(result);
@@ -76,32 +77,94 @@ export function RegisterForm() {
             <label htmlFor="name" className="block text-sm font-medium text-foreground">
               Nama Lengkap
             </label>
-            <input id="name" name="name" required maxLength={100} autoComplete="name" disabled={isPending}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50" />
+            <input
+              id="name"
+              name="name"
+              required
+              maxLength={100}
+              autoComplete="name"
+              disabled={isPending}
+              placeholder="Contoh: Budi Santoso"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+            />
           </div>
+
           <div className="space-y-1.5">
             <label htmlFor="username" className="block text-sm font-medium text-foreground">
               Username
             </label>
-            <input id="username" name="username" required minLength={3} maxLength={50} autoComplete="username" disabled={isPending}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50" />
+            <input
+              id="username"
+              name="username"
+              required
+              minLength={3}
+              maxLength={50}
+              autoComplete="username"
+              disabled={isPending}
+              placeholder="Contoh: budi.santoso"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+            />
           </div>
+
           <div className="space-y-1.5">
             <label htmlFor="email" className="block text-sm font-medium text-foreground">
-              Email
+              Alamat Email
             </label>
-            <input id="email" name="email" type="email" required maxLength={254} autoComplete="email" disabled={isPending}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50" />
+            <input
+              id="email"
+              name="email"
+              type="email"
+              required
+              maxLength={254}
+              autoComplete="email"
+              disabled={isPending}
+              placeholder="nama@uhamka.ac.id"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+            />
           </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="phone" className="block text-sm font-medium text-foreground flex items-center gap-1.5">
+              <Phone className="h-4 w-4 text-primary" />
+              Nomor Telepon / WhatsApp
+            </label>
+            <input
+              id="phone"
+              name="phone"
+              type="tel"
+              required
+              minLength={8}
+              maxLength={20}
+              placeholder="Contoh: 081234567890"
+              autoComplete="tel"
+              disabled={isPending}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+            />
+          </div>
+
           <div className="space-y-1.5">
             <label htmlFor="password" className="block text-sm font-medium text-foreground">
               Kata Sandi
             </label>
-            <input id="password" name="password" type="password" required minLength={8} maxLength={100} autoComplete="new-password" disabled={isPending}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50" />
+            <input
+              id="password"
+              name="password"
+              type="password"
+              required
+              minLength={8}
+              maxLength={100}
+              autoComplete="new-password"
+              disabled={isPending}
+              placeholder="Minimal 8 karakter"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+            />
           </div>
-          <button type="submit" disabled={isPending}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+
+          <button
+            type="submit"
+            disabled={isPending}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
             {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
             Daftar dan Kirim OTP
           </button>
@@ -115,19 +178,39 @@ export function RegisterForm() {
             <p className="text-xs text-muted-foreground">
               Masukkan kode 6 digit yang dikirim ke {email}. Kode berlaku 5 menit.
             </p>
-            <input id="otp" name="otp" type="text" inputMode="numeric" autoComplete="one-time-code"
-              pattern="[0-9]{6}" maxLength={6} required value={code}
+            <input
+              id="otp"
+              name="otp"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              required
+              value={code}
               onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
               disabled={isPending}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-center font-mono text-lg tracking-[0.5em] text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50" />
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-center font-mono text-lg tracking-[0.5em] text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+            />
           </div>
-          <button type="submit" disabled={isPending || code.length !== 6}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+          <button
+            type="submit"
+            disabled={isPending || code.length !== 6}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             Verifikasi Email
           </button>
-          <button type="button" disabled={isPending} onClick={() => { setOtpSent(false); setCode(""); setMessage(null); }}
-            className="w-full text-xs text-muted-foreground hover:text-foreground disabled:opacity-50">
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => {
+              setOtpSent(false);
+              setCode("");
+              setMessage(null);
+            }}
+            className="w-full text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+          >
             Kembali ke formulir pendaftaran
           </button>
         </form>

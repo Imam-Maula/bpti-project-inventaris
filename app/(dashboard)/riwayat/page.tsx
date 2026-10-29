@@ -55,7 +55,7 @@ export default async function RiwayatPage() {
                 <StatusBadge status={record.status} />
               </div>
 
-              <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+              <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-4">
                 <div>
                   <dt className="text-xs text-muted-foreground">Jumlah</dt>
                   <dd className="mt-1 text-foreground">

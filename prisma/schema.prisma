@@ -36,6 +36,7 @@ model User {
   id            String         @id @default(uuid())
   username      String         @unique
   email         String?        @unique @db.VarChar(254)
+  phone         String?        @db.VarChar(30)
   password      String
   name          String
   role          Role           @default(USER)
@@ -59,6 +60,18 @@ model OtpVerification {
 
   @@map("otp_verifications")
 }
+
+model PasswordResetOtp {
+  id        String   @id @default(uuid())
+  email     String   @unique @db.VarChar(254)
+  code      String   @db.Char(6)
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("password_reset_otps")
+}
+
 
 model Item {
   id                      String         @id @default(uuid())

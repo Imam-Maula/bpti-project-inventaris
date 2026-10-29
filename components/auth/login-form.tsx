@@ -60,12 +60,20 @@ export function LoginForm() {
 
       {/* Input Password */}
       <div className="space-y-1.5">
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-foreground"
-        >
-          Kata Sandi
-        </label>
+        <div className="flex items-center justify-between">
+          <label
+            htmlFor="password"
+            className="block text-sm font-medium text-foreground"
+          >
+            Kata Sandi
+          </label>
+          <Link
+            href="/forgot-password"
+            className="text-xs font-medium text-primary hover:underline"
+          >
+            Lupa kata sandi?
+          </Link>
+        </div>
         <div className="relative">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
             <Lock className="h-4 w-4" />

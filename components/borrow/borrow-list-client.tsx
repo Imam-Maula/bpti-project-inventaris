@@ -459,7 +459,10 @@ export function BorrowListClient({
                   Barang Inventaris
                 </th>
                 <th scope="col" className="px-4 py-3">
-                  Peminjam & Kontak
+                  Peminjam & No. Telepon
+                </th>
+                <th scope="col" className="px-4 py-3">
+                  Email Peminjam
                 </th>
                 <th scope="col" className="px-4 py-3 text-center">
                   Jumlah
@@ -479,7 +482,7 @@ export function BorrowListClient({
               {filteredRecords.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-4 py-8 text-center text-muted-foreground"
                   >
                     <ArrowLeftRight className="mx-auto mb-2 h-8 w-8 text-muted-foreground/60" />
@@ -537,22 +540,29 @@ export function BorrowListClient({
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-foreground">{rec.borrowerName}</div>
-                        {rec.borrowerPhone && (
+                        {rec.borrowerPhone ? (
                           <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                             <Phone className="h-3 w-3 shrink-0 text-muted-foreground" />
                             <span>{rec.borrowerPhone}</span>
                           </div>
-                        )}
-                        {rec.borrowerEmail && (
-                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                            <Mail className="h-3 w-3 shrink-0 text-muted-foreground" />
-                            <span className="truncate max-w-[200px]" title={rec.borrowerEmail}>{rec.borrowerEmail}</span>
-                          </div>
-                        )}
-                        {!rec.borrowerPhone && !rec.borrowerEmail && rec.borrowerContact && (
+                        ) : rec.borrowerContact ? (
                           <div className="text-xs text-muted-foreground">
                             {rec.borrowerContact}
                           </div>
+                        ) : (
+                          <div className="text-xs text-muted-foreground">-</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {rec.borrowerEmail ? (
+                          <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                            <span className="truncate max-w-[190px]" title={rec.borrowerEmail}>
+                              {rec.borrowerEmail}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">
