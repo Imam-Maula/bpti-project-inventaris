@@ -1,0 +1,144 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Condition {
+  BAIK
+  RUSAK_RINGAN
+  RUSAK_BERAT
+}
+
+enum BorrowStatus {
+  PENDING
+  APPROVED
+  DIPINJAM
+  DIKEMBALIKAN
+  DITOLAK
+  TERLAMBAT
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum ItemStatus {
+  AKTIF
+  DIARSIPKAN
+}
+
+model User {
+  id            String         @id @default(uuid())
+  username      String         @unique
+  email         String?        @unique @db.VarChar(254)
+  password      String
+  name          String
+  role          Role           @default(USER)
+  isVerified    Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  borrowRecords BorrowRecord[] @relation("BorrowRecordAdmin")
+  borrowRequests BorrowRecord[] @relation("BorrowRecordUser")
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+model OtpVerification {
+  id        String   @id @default(uuid())
+  email     String   @unique @db.VarChar(254)
+  code      String   @db.Char(6)
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("otp_verifications")
+}
+
+model Item {
+  id                      String         @id @default(uuid())
+  code                    String         @unique
+  name                    String
+  category                String
+  totalQuantity           Int            @default(0)
+  availableQuantity       Int            @default(0)
+  goodQuantity            Int            @default(0)
+  lightDamageQuantity     Int            @default(0)
+  heavyDamageQuantity     Int            @default(0)
+  resolvedDamagedQuantity Int            @default(0)
+  location                String
+  condition               Condition      @default(BAIK)
+  status                  ItemStatus     @default(AKTIF)
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  photoCaption            String?        @db.VarChar(500)
+  photoPath               String?        @db.VarChar(255)
+  borrowRecords           BorrowRecord[]
+  image                   ItemImage?
+
+  @@index([status, category])
+  @@map("items")
+}
+
+model ItemImage {
+  itemId    String   @id
+  imageData Bytes    @db.LongBlob
+  mimeType  String   @db.VarChar(50)
+  updatedAt DateTime @updatedAt
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@map("item_images")
+}
+
+model BorrowRecord {
+  id              String       @id @default(uuid())
+  borrowCode      String       @unique
+  itemId          String
+  item            Item         @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  adminId         String?
+  admin           User?        @relation("BorrowRecordAdmin", fields: [adminId], references: [id], onDelete: Restrict)
+  userId          String?
+  user            User?        @relation("BorrowRecordUser", fields: [userId], references: [id], onDelete: SetNull)
+  borrowerName    String
+  borrowerContact String
+  borrowQuantity  Int
+  borrowDate      DateTime     @default(now())
+  dueDate         DateTime
+  returnDate      DateTime?
+  status          BorrowStatus @default(PENDING)
+  takenAt         DateTime?
+  rejectionReason String?      @db.Text
+  returnCondition Condition?
+  notes           String?      @db.Text
+  borrowGoodQuantity        Int          @default(0)
+  borrowLightDamageQuantity Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([status, dueDate])
+  @@index([createdAt])
+  @@map("borrow_records")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String
+  entityType String
+  entityId   String
+  adminId    String
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Restrict)
+  details    String   @db.Text
+  oldValue   String?  @db.Text
+  newValue   String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([adminId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

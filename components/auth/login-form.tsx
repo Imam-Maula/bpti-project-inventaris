@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Link from "next/link";
 import { loginAction, type AuthActionResult } from "@/actions/auth-actions";
 import { User, Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 
@@ -111,6 +112,12 @@ export function LoginForm() {
           "Masuk"
         )}
       </button>
+      <p className="text-center text-xs text-muted-foreground">
+        Belum punya akun?{" "}
+        <Link href="/register" className="font-medium text-primary hover:underline">
+          Daftar sebagai User
+        </Link>
+      </p>
     </form>
   );
 }

@@ -1,19 +1,23 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { BorrowStatus } from "@prisma/client";
+import { BorrowStatus, Role } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/dal";
+import { requireAdmin, requireRole } from "@/lib/dal";
 import {
   createBorrowSchema,
+  requestBorrowSchema,
+  rejectBorrowSchema,
   returnBorrowSchema,
   CreateBorrowInput,
+  RequestBorrowInput,
   ReturnBorrowInput,
 } from "@/lib/validations/borrow";
 import {
   getBorrowRecordsService,
   getCirculationMetricsService,
   createBorrowTransactionService,
+  requestBorrowService,
   returnBorrowTransactionService,
 } from "@/lib/services/borrow-service";
 import { recordAuditLogService } from "@/lib/services/audit-service";
@@ -33,8 +37,13 @@ export async function getBorrowRecordsAction(params?: {
   status?: BorrowStatus | "OVERDUE";
   search?: string;
 }) {
-  await requireAuth();
+  await requireAdmin();
   return getBorrowRecordsService(prisma, params);
+}
+
+export async function getUserBorrowRecordsAction() {
+  const session = await requireRole(Role.USER);
+  return getBorrowRecordsService(prisma, { userId: session.userId });
 }
 
 /**
@@ -45,7 +54,7 @@ export async function getCirculationMetricsAction(params?: {
   startDate?: Date;
   endDate?: Date;
 }) {
-  await requireAuth();
+  await requireAdmin();
   return getCirculationMetricsService(prisma, params);
 }
 
@@ -56,7 +65,7 @@ export async function getCirculationMetricsAction(params?: {
 export async function createBorrowAction(
   data: CreateBorrowInput
 ): Promise<BorrowActionResult> {
-  const session = await requireAuth();
+  const session = await requireAdmin();
 
   const validated = createBorrowSchema.safeParse(data);
   if (!validated.success) {
@@ -121,10 +130,10 @@ export async function createBorrowAction(
  * Memproses pengembalian barang secara atomik.
  * Mencegah double return dan memulihkan stok atau mencatat ke karantina jika rusak berat.
  */
-export async function returnBorrowAction(
+export async function returnItem(
   data: ReturnBorrowInput
 ): Promise<BorrowActionResult> {
-  const session = await requireAuth();
+  const session = await requireAdmin();
 
   const validated = returnBorrowSchema.safeParse(data);
   if (!validated.success) {
@@ -156,10 +165,7 @@ export async function returnBorrowAction(
       },
     });
 
-    revalidatePath("/sirkulasi");
-    revalidatePath("/barang");
-    revalidatePath("/aktivitas");
-    revalidatePath("/");
+    revalidateBorrowPages();
 
     const quarantineNote = result.isDamagedHeavy
       ? ` ${result.record.borrowQuantity} unit teridentifikasi RUSAK BERAT dan otomatis dicatat ke kuota karantina/perbaikan aset BPTI.`
@@ -181,4 +187,207 @@ export async function returnBorrowAction(
       message: errorMessage,
     };
   }
+}
+
+export async function returnBorrowAction(
+  data: ReturnBorrowInput
+): Promise<BorrowActionResult> {
+  return returnItem(data);
+}
+
+export async function requestBorrow(
+  input: RequestBorrowInput
+): Promise<BorrowActionResult> {
+  const session = await requireRole(Role.USER);
+  const validated = requestBorrowSchema.safeParse(input);
+  if (!validated.success) {
+    return {
+      success: false,
+      message: "Data pengajuan peminjaman tidak valid.",
+      errors: validated.error.flatten().fieldErrors,
+    };
+  }
+  if (!session.email) {
+    return {
+      success: false,
+      message: "Akun belum memiliki email terverifikasi untuk kontak peminjaman.",
+    };
+  }
+
+  try {
+    const record = await requestBorrowService(
+      prisma,
+      session.userId,
+      validated.data,
+      { name: session.name, email: session.email }
+    );
+    revalidateBorrowPages();
+    return {
+      success: true,
+      message: `Pengajuan berhasil dikirim dengan kode ${record.borrowCode}. Stok baru berkurang saat barang diambil.`,
+      data: record,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Gagal mengirim pengajuan peminjaman.",
+    };
+  }
+}
+
+export async function approveBorrow(id: string): Promise<BorrowActionResult> {
+  const session = await requireAdmin();
+  try {
+    const record = await prisma.$transaction(async (tx) => {
+      const current = await tx.borrowRecord.findUnique({
+        where: { id },
+        include: { item: { select: { name: true, code: true } } },
+      });
+      if (!current || current.status !== BorrowStatus.PENDING) {
+        throw new Error("Pengajuan tidak ditemukan atau sudah diproses.");
+      }
+      const changed = await tx.borrowRecord.updateMany({
+        where: { id, status: BorrowStatus.PENDING },
+        data: {
+          status: BorrowStatus.APPROVED,
+          adminId: session.userId,
+          rejectionReason: null,
+        },
+      });
+      if (changed.count !== 1) throw new Error("Pengajuan sudah diproses.");
+      return current;
+    });
+    await recordAuditLogService(prisma, {
+      action: "SETUJUI_PEMINJAMAN",
+      entityType: "BORROW_RECORD",
+      entityId: id,
+      adminId: session.userId,
+      details: `Menyetujui pengajuan ${record.borrowCode} untuk barang "${record.item.name}".`,
+      newValue: { status: BorrowStatus.APPROVED },
+    });
+    revalidateBorrowPages();
+    return { success: true, message: "Pengajuan peminjaman disetujui." };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Gagal menyetujui pengajuan.",
+    };
+  }
+}
+
+export async function rejectBorrow(
+  id: string,
+  rejectionReason: string
+): Promise<BorrowActionResult> {
+  const session = await requireAdmin();
+  const validatedReason = rejectBorrowSchema.safeParse({ rejectionReason });
+  if (!validatedReason.success) {
+    return {
+      success: false,
+      message: validatedReason.error.flatten().fieldErrors.rejectionReason?.[0] ??
+        "Alasan penolakan tidak valid.",
+    };
+  }
+
+  try {
+    const record = await prisma.$transaction(async (tx) => {
+      const current = await tx.borrowRecord.findUnique({
+        where: { id },
+        include: { item: { select: { name: true } } },
+      });
+      if (!current || current.status !== BorrowStatus.PENDING) {
+        throw new Error("Pengajuan tidak ditemukan atau sudah diproses.");
+      }
+      const changed = await tx.borrowRecord.updateMany({
+        where: { id, status: BorrowStatus.PENDING },
+        data: {
+          status: BorrowStatus.DITOLAK,
+          rejectionReason: validatedReason.data.rejectionReason,
+          adminId: session.userId,
+        },
+      });
+      if (changed.count !== 1) throw new Error("Pengajuan sudah diproses.");
+      return current;
+    });
+    await recordAuditLogService(prisma, {
+      action: "TOLAK_PEMINJAMAN",
+      entityType: "BORROW_RECORD",
+      entityId: id,
+      adminId: session.userId,
+      details: `Menolak pengajuan ${record.borrowCode} untuk "${record.item.name}". Alasan: ${validatedReason.data.rejectionReason}`,
+      newValue: {
+        status: BorrowStatus.DITOLAK,
+        rejectionReason: validatedReason.data.rejectionReason,
+      },
+    });
+    revalidateBorrowPages();
+    return { success: true, message: "Pengajuan peminjaman ditolak." };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Gagal menolak pengajuan.",
+    };
+  }
+}
+
+export async function confirmItemTaken(id: string): Promise<BorrowActionResult> {
+  const session = await requireAdmin();
+  try {
+    const record = await prisma.$transaction(async (tx) => {
+      const current = await tx.borrowRecord.findUnique({
+        where: { id },
+        include: { item: { select: { id: true, name: true, code: true } } },
+      });
+      if (!current || current.status !== BorrowStatus.APPROVED) {
+        throw new Error("Pengajuan tidak ditemukan atau belum disetujui.");
+      }
+
+      const stock = await tx.item.updateMany({
+        where: {
+          id: current.itemId,
+          status: "AKTIF",
+          availableQuantity: { gte: current.borrowQuantity },
+        },
+        data: { availableQuantity: { decrement: current.borrowQuantity } },
+      });
+      if (stock.count !== 1) {
+        throw new Error("Stok tersedia tidak cukup untuk menyerahkan barang.");
+      }
+
+      const changed = await tx.borrowRecord.updateMany({
+        where: { id, status: BorrowStatus.APPROVED },
+        data: {
+          status: BorrowStatus.DIPINJAM,
+          takenAt: new Date(),
+          adminId: session.userId,
+        },
+      });
+      if (changed.count !== 1) throw new Error("Status pengajuan sudah berubah.");
+      return current;
+    });
+
+    await recordAuditLogService(prisma, {
+      action: "BARANG_DIAMBIL",
+      entityType: "BORROW_RECORD",
+      entityId: id,
+      adminId: session.userId,
+      details: `${record.borrowQuantity} unit "${record.item.name}" (${record.item.code}) diserahkan kepada ${record.borrowerName}.`,
+      newValue: { status: BorrowStatus.DIPINJAM, takenAt: new Date() },
+    });
+    revalidateBorrowPages();
+    return { success: true, message: "Pengambilan barang dikonfirmasi dan stok diperbarui." };
+  } catch (error) {
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Gagal mengonfirmasi pengambilan barang.",
+    };
+  }
+}
+
+function revalidateBorrowPages() {
+  revalidatePath("/sirkulasi");
+  revalidatePath("/riwayat");
+  revalidatePath("/barang");
+  revalidatePath("/aktivitas");
+  revalidatePath("/");
 }

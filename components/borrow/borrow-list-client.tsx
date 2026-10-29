@@ -1,8 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Item, BorrowStatus } from "@prisma/client";
+import {
+  approveBorrow,
+  confirmItemTaken,
+  rejectBorrow,
+} from "@/actions/borrow-actions";
+import { useToast } from "@/components/ui/toast";
 import { BorrowModal } from "./borrow-modal";
 import { ReturnDialog, BorrowRecordDetail } from "./return-dialog";
 import { BeritaAcaraDialog, BeritaAcaraData } from "./berita-acara-dialog";
@@ -23,13 +29,15 @@ interface BorrowRecordWithItem {
   id: string;
   borrowCode: string;
   itemId: string;
-  adminId: string;
+  adminId: string | null;
   borrowerName: string;
   borrowerContact: string;
   borrowQuantity: number;
   borrowDate: Date;
   dueDate: Date;
   returnDate: Date | null;
+  takenAt: Date | null;
+  rejectionReason: string | null;
   status: BorrowStatus;
   notes: string | null;
   item: {
@@ -44,7 +52,7 @@ interface BorrowRecordWithItem {
     id: string;
     name: string;
     username: string;
-  };
+  } | null;
 }
 
 interface BorrowListClientProps {
@@ -57,6 +65,12 @@ export function BorrowListClient({
   availableItems,
 }: BorrowListClientProps) {
   const router = useRouter();
+  const { toast } = useToast();
+  const [isActionPending, startActionTransition] = useTransition();
+  const [rejectingRecord, setRejectingRecord] =
+    useState<BorrowRecordWithItem | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [actionError, setActionError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
 
@@ -198,8 +212,8 @@ export function BorrowListClient({
         location: record.item.location,
       },
       admin: {
-        name: record.admin.name,
-        username: record.admin.username,
+        name: record.admin?.name ?? "Menunggu Admin",
+        username: record.admin?.username ?? "-",
       },
     });
     setBeritaAcaraOpen(true);
@@ -269,6 +283,48 @@ export function BorrowListClient({
     router.refresh();
   };
 
+  const handleApprove = (recordId: string) => {
+    startActionTransition(async () => {
+      const result = await approveBorrow(recordId);
+      if (!result.success) {
+        toast.error("Gagal menyetujui pengajuan", result.message);
+        return;
+      }
+      toast.success("Pengajuan disetujui", result.message);
+      handleSuccessAction();
+    });
+  };
+
+  const handleConfirmTaken = (recordId: string) => {
+    startActionTransition(async () => {
+      const result = await confirmItemTaken(recordId);
+      if (!result.success) {
+        toast.error("Gagal mengonfirmasi pengambilan", result.message);
+        return;
+      }
+      toast.success("Pengambilan dicatat", result.message);
+      handleSuccessAction();
+    });
+  };
+
+  const handleReject = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!rejectingRecord) return;
+    setActionError(null);
+    startActionTransition(async () => {
+      const result = await rejectBorrow(rejectingRecord.id, rejectionReason);
+      if (!result.success) {
+        setActionError(result.message ?? "Gagal menolak pengajuan.");
+        toast.error("Gagal menolak pengajuan", result.message);
+        return;
+      }
+      toast.success("Pengajuan ditolak", result.message);
+      setRejectingRecord(null);
+      setRejectionReason("");
+      handleSuccessAction();
+    });
+  };
+
   return (
     <div className="space-y-4">
       {/* Bar Kontrol & Filter */}
@@ -289,8 +345,11 @@ export function BorrowListClient({
             aria-label="Filter Status Peminjaman"
           >
             <option value="ALL">Semua Status</option>
+            <option value="PENDING">Menunggu Persetujuan</option>
+            <option value="APPROVED">Disetujui — Menunggu Diambil</option>
             <option value="DIPINJAM">Sedang Dipinjam (Aktif)</option>
             <option value="DIKEMBALIKAN">Selesai Dikembalikan</option>
+            <option value="DITOLAK">Ditolak</option>
             <option value="OVERDUE">Terlambat Pengembalian</option>
           </select>
         </div>
@@ -521,9 +580,57 @@ export function BorrowListClient({
                             Dikembalikan
                           </span>
                         )}
+                        {rec.status === "PENDING" && (
+                          <span className="inline-flex items-center gap-1 rounded border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                            Menunggu Persetujuan
+                          </span>
+                        )}
+                        {rec.status === "APPROVED" && (
+                          <span className="inline-flex items-center gap-1 rounded border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:text-blue-400">
+                            Disetujui — Menunggu Diambil
+                          </span>
+                        )}
+                        {rec.status === "DITOLAK" && (
+                          <span className="inline-flex items-center gap-1 rounded border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">
+                            Ditolak
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {rec.status === "PENDING" && (
+                            <>
+                              <button
+                                type="button"
+                                disabled={isActionPending}
+                                onClick={() => handleApprove(rec.id)}
+                                className="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                              >
+                                ACC / Setujui
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isActionPending}
+                                onClick={() => {
+                                  setRejectingRecord(rec);
+                                  setActionError(null);
+                                }}
+                                className="rounded-md border border-destructive/30 px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                              >
+                                Tolak
+                              </button>
+                            </>
+                          )}
+                          {rec.status === "APPROVED" && (
+                            <button
+                              type="button"
+                              disabled={isActionPending}
+                              onClick={() => handleConfirmTaken(rec.id)}
+                              className="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                            >
+                              Barang Sudah Diambil
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => handleOpenBeritaAcara(rec)}
@@ -590,6 +697,71 @@ export function BorrowListClient({
         data={selectedBeritaAcara}
         onClose={() => setBeritaAcaraOpen(false)}
       />
+
+      {rejectingRecord && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="reject-borrow-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        >
+          <button
+            type="button"
+            className="fixed inset-0 cursor-default bg-black/60"
+            aria-label="Tutup dialog penolakan"
+            onClick={() => !isActionPending && setRejectingRecord(null)}
+          />
+          <form
+            onSubmit={handleReject}
+            className="relative z-10 w-full max-w-md space-y-4 rounded-lg border border-border bg-card p-5 text-card-foreground shadow-xl"
+          >
+            <div>
+              <h2 id="reject-borrow-title" className="font-semibold">
+                Tolak Pengajuan Peminjaman
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {rejectingRecord.borrowerName} · {rejectingRecord.item.name}
+              </p>
+            </div>
+            <label htmlFor="rejectionReason" className="block space-y-1.5">
+              <span className="text-sm font-medium">Alasan penolakan</span>
+              <textarea
+                id="rejectionReason"
+                required
+                minLength={3}
+                maxLength={500}
+                rows={4}
+                value={rejectionReason}
+                onChange={(event) => setRejectionReason(event.target.value)}
+                disabled={isActionPending}
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+              />
+            </label>
+            {actionError && (
+              <p role="alert" className="text-xs text-destructive">
+                {actionError}
+              </p>
+            )}
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={isActionPending}
+                onClick={() => setRejectingRecord(null)}
+                className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                disabled={isActionPending}
+                className="rounded-md bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground disabled:opacity-50"
+              >
+                {isActionPending ? "Memproses..." : "Tolak Pengajuan"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

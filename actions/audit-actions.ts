@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireAuth } from "@/lib/dal";
+import { requireAdmin } from "@/lib/dal";
 import {
   getAuditLogsService,
   getAuditLogsByEntityService,
@@ -17,7 +17,7 @@ export async function getAuditLogsAction(params?: {
   action?: string;
   limit?: number;
 }): Promise<AuditLogWithAdmin[]> {
-  await requireAuth();
+  await requireAdmin();
   return getAuditLogsService(prisma, params);
 }
 
@@ -27,6 +27,6 @@ export async function getAuditLogsAction(params?: {
 export async function getItemAuditLogsAction(
   itemId: string
 ): Promise<AuditLogWithAdmin[]> {
-  await requireAuth();
+  await requireAdmin();
   return getAuditLogsByEntityService(prisma, "ITEM", itemId);
 }

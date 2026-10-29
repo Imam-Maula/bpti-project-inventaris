@@ -2,11 +2,14 @@ import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { env } from "@/lib/env";
+import type { Role } from "@prisma/client";
 
 export interface SessionPayload {
   userId: string;
   username: string;
   name: string;
+  role: Role;
+  email?: string | null;
   expiresAt: Date;
 }
 
@@ -30,15 +33,29 @@ export async function decrypt(token?: string): Promise<SessionPayload | null> {
     const { payload } = await jwtVerify(token, secretKey, {
       algorithms: ["HS256"],
     });
+    if (
+      typeof payload.userId !== "string" ||
+      typeof payload.username !== "string" ||
+      typeof payload.name !== "string" ||
+      (payload.role !== "ADMIN" && payload.role !== "USER")
+    ) {
+      return null;
+    }
     return payload as unknown as SessionPayload;
   } catch {
     return null;
   }
 }
 
-export async function createSession(userId: string, username: string, name: string): Promise<void> {
+export async function createSession(
+  userId: string,
+  username: string,
+  name: string,
+  role: Role,
+  email?: string | null
+): Promise<void> {
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const token = await encrypt({ userId, username, name, expiresAt });
+  const token = await encrypt({ userId, username, name, role, email, expiresAt });
   const cookieStore = await cookies();
 
   cookieStore.set(SESSION_COOKIE_NAME, token, {

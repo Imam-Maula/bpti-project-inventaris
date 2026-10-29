@@ -3,6 +3,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { verifySession, SessionPayload } from "@/lib/session";
+import { Role } from "@prisma/client";
 
 /**
  * Memastikan sesi pengguna valid untuk operasi Server Actions / Server Components.
@@ -13,7 +14,27 @@ export async function requireAuth(): Promise<SessionPayload> {
   if (!session) {
     redirect("/login");
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { id: true, username: true, name: true, email: true, role: true, isVerified: true },
+  });
+  if (!user || (user.role === Role.USER && !user.isVerified)) {
+    redirect("/login");
+  }
+  return { ...session, ...user };
+}
+
+export async function requireRole(role: Role): Promise<SessionPayload> {
+  const session = await requireAuth();
+  if (session.role !== role) {
+    redirect(session.role === Role.ADMIN ? "/" : "/barang");
+  }
   return session;
+}
+
+export async function requireAdmin(): Promise<SessionPayload> {
+  return requireRole(Role.ADMIN);
 }
 
 /**
@@ -31,6 +52,8 @@ export const getCurrentUser = cache(async () => {
         id: true,
         username: true,
         name: true,
+        email: true,
+        role: true,
         createdAt: true,
       },
     });

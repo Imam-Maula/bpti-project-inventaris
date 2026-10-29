@@ -45,3 +45,29 @@ export const returnBorrowSchema = z.object({
 
 export type CreateBorrowInput = z.infer<typeof createBorrowSchema>;
 export type ReturnBorrowInput = z.infer<typeof returnBorrowSchema>;
+
+export const requestBorrowSchema = z
+  .object({
+    itemId: z.string().uuid("Aset inventaris yang dipilih tidak valid"),
+    borrowQuantity: z.coerce
+      .number()
+      .int("Jumlah unit pinjam harus berupa bilangan bulat")
+      .min(1, "Jumlah unit pinjam minimal 1 unit"),
+    borrowDate: z.coerce.date({ message: "Tanggal pinjam tidak valid" }),
+    dueDate: z.coerce.date({ message: "Tanggal kembali tidak valid" }),
+    notes: z.string().max(500, "Catatan keperluan maksimal 500 karakter").optional(),
+  })
+  .refine((data) => data.dueDate >= data.borrowDate, {
+    path: ["dueDate"],
+    message: "Tanggal kembali harus sama atau setelah tanggal pinjam",
+  });
+
+export const rejectBorrowSchema = z.object({
+  rejectionReason: z
+    .string()
+    .min(3, "Alasan penolakan minimal 3 karakter")
+    .max(500, "Alasan penolakan maksimal 500 karakter")
+    .trim(),
+});
+
+export type RequestBorrowInput = z.infer<typeof requestBorrowSchema>;

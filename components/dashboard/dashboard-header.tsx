@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./theme-toggle";
+import { Role } from "@prisma/client";
 
 const pageTitles: Record<string, { title: string; description: string }> = {
   "/": {
@@ -12,13 +13,17 @@ const pageTitles: Record<string, { title: string; description: string }> = {
     title: "Master Barang",
     description: "Data aset, kategori, kondisi fisik, dan ketersediaan unit",
   },
+  "/riwayat": {
+    title: "Riwayat Peminjaman",
+    description: "Status pengajuan dan riwayat peminjaman Anda",
+  },
   "/sirkulasi": {
     title: "Sirkulasi Peminjaman",
     description: "Pencatatan peminjaman dan pengembalian aset",
   },
 };
 
-export function DashboardHeader() {
+export function DashboardHeader({ role, name }: { role: Role; name: string }) {
   const pathname = usePathname();
   const current = pageTitles[pathname] || {
     title: "Administrasi",
@@ -42,7 +47,9 @@ export function DashboardHeader() {
 
         {/* Info Sesi Administrator */}
         <div className="flex items-center gap-2 border-l border-border pl-3 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">Admin</span>
+          <span className="font-medium text-foreground">
+            {name} · {role === Role.ADMIN ? "Admin" : "User"}
+          </span>
         </div>
       </div>
     </header>

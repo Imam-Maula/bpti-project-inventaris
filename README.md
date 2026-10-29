@@ -8,7 +8,7 @@
 
 Sistem Pengelolaan Barang Inventaris BPTI UHAMKA adalah platform web administratif tingkat kampus yang dirancang khusus untuk mencatat ribuan unit aset logistik, mengelola mutasi sirkulasi peminjaman staf, memantau batas waktu pengembalian (*due date*), serta menjaga integritas stok fisik secara *real-time* dan akuntabel.
 
-Sistem dioperasikan pada lingkungan jaringan lokal (*On-Premise Intranet*) dengan model akses administrator tunggal (*Single-Role Authentication*) untuk menjamin keamanan kendali aset kantor.
+Sistem dioperasikan pada lingkungan jaringan lokal (*On-Premise Intranet*) dengan kontrol akses berbasis peran (RBAC): Admin mengelola master barang dan sirkulasi, sedangkan User terverifikasi melihat katalog, mengajukan peminjaman, dan memantau riwayatnya.
 
 ---
 
@@ -98,8 +98,12 @@ Pastikan berkas `.env` berada di direktori root dengan konfigurasi berikut:
 ```env
 DATABASE_URL="mysql://root:@localhost:3306/db_inventaris_bpti"
 SESSION_SECRET="bpti-inventory-secure-session-secret-key-2026-min-32-chars"
+GMAIL_USER="akun-gmail-pengirim@gmail.com"
+GMAIL_APP_PASSWORD="password-aplikasi-gmail"
 NODE_ENV="development"
 ```
+
+`GMAIL_USER` dan `GMAIL_APP_PASSWORD` diperlukan untuk mengirim OTP saat User mendaftar. Gunakan Gmail App Password dan simpan hanya di `.env` lokal/server; jangan masukkan kredensial ke Git.
 
 ### Langkah 4: Sinkronisasi Skema Basis Data
 Terapkan skema tabel relasional ke basis data MySQL:
@@ -129,22 +133,36 @@ Gunakan akun berikut untuk masuk ke sistem:
 - **Password:** `admin123`
 - **Masa Berlaku Sesi:** 7 hari kalender (JWT HS256 HttpOnly Cookie).
 
+Pendaftaran melalui `/register` selalu membuat akun ber-role `USER`. User harus memverifikasi email OTP sebelum dapat masuk. `pnpm db:seed` memastikan akun `admin` ber-role Admin dan juga memasukkan barang contoh.
+
 ---
 
 ## 7. Kamus Basis Data Relasional (ERD & Tabel)
 
 ```mermaid
 erDiagram
-    users ||--o{ borrow_records : "mencatat sirkulasi"
+    users ||--o{ borrow_records : "Admin pemroses"
+    users o|--o{ borrow_records : "User pengaju"
     items ||--o{ borrow_records : "dipinjamkan pada"
 
     users {
         string id PK "UUID"
         string username UK "Identitas Login"
+        string email UK "Email terverifikasi"
         string password "Bcrypt Hash 12 Rounds"
-        string name "Nama Lengkap Staf Admin"
+        string name "Nama Lengkap"
+        enum role "ADMIN | USER"
+        boolean isVerified "Verifikasi email"
         datetime createdAt
         datetime updatedAt
+    }
+
+    otp_verifications {
+        string id PK "UUID"
+        string email UK "Email pendaftar"
+        string code "OTP enam digit"
+        datetime expiresAt
+        datetime createdAt
     }
 
     items {
@@ -166,14 +184,17 @@ erDiagram
         string id PK "UUID"
         string borrowCode UK "Kode Transaksi (PJM-YYYYMMDD-XXXX)"
         string itemId FK "Referensi Item"
-        string adminId FK "Referensi User Admin"
+        string adminId FK "Admin pemroses (nullable)"
+        string userId FK "User pengaju (nullable untuk data lama)"
         string borrowerName "Nama Staf Peminjam"
         string borrowerContact "Nomor WhatsApp/HP Peminjam"
         int borrowQuantity "Jumlah Unit Dipinjam"
         datetime borrowDate "Tanggal Mulai Pinjam"
         datetime dueDate "Tenggat Waktu Pengembalian"
         datetime returnDate "Waktu Realisasi Pengembalian"
-        enum status "DIPINJAM | DIKEMBALIKAN | TERLAMBAT"
+        datetime takenAt "Waktu barang diambil"
+        string rejectionReason "Alasan penolakan"
+        enum status "PENDING | APPROVED | DIPINJAM | DIKEMBALIKAN | DITOLAK | TERLAMBAT"
         enum returnCondition "Kondisi Fisik Pasca Pinjam"
         string notes "Catatan Keperluan / Fisik"
         datetime createdAt
@@ -200,11 +221,11 @@ Setelah memperbarui skema pada instalasi yang sudah ada, jalankan `pnpm db:push`
 
 
 ### SOP-02: Transaksi Sirkulasi Peminjaman Aset (FR-TRX-01)
-1. Buka menu **Sirkulasi Peminjaman** (`/sirkulasi`).
-2. Klik tombol **Catat Peminjaman**.
-3. Pilih barang yang diinginkan dari menu dropdown (tersedia informasi kuota unit siap pakai).
-4. Masukkan Nama Staf Peminjam, Nomor Kontak WhatsApp/HP, Jumlah Unit, Tenggat Waktu Pengembalian, dan Catatan Keperluan.
-5. Klik **Konfirmasi Peminjaman**. Sistem secara atomik mengurangi kuota `availableQuantity` dan menerbitkan kode transaksi `PJM-YYYYMMDD-XXXX`.
+1. User memilih barang di katalog, lalu mengisi jumlah, tanggal pinjam/kembali, dan catatan keperluan.
+2. Sistem membuat pengajuan berstatus `PENDING` dan mereservasi kuota permintaan tanpa mengurangi stok fisik.
+3. Admin membuka **Sirkulasi Peminjaman** (`/sirkulasi`) untuk memilih **ACC / Setujui** atau **Tolak** dengan alasan.
+4. Setelah barang secara fisik diambil di kantor, Admin memilih **Barang Sudah Diambil**; pada tahap ini stok `availableQuantity` berkurang.
+5. Peminjaman yang dicatat langsung oleh Admin tetap mengurangi stok secara atomik dan menerbitkan kode transaksi `PJM-YYYYMMDD-XXXX`.
 
 ### SOP-03: Pengembalian Aset & Inspeksi Kondisi Fisik (FR-TRX-02)
 1. Buka menu **Sirkulasi Peminjaman** (`/sirkulasi`).
@@ -220,7 +241,13 @@ Setelah memperbarui skema pada instalasi yang sudah ada, jalankan `pnpm db:push`
 
 ### SOP-05: Pencarian & Penyaringan Multi-Kriteria (FR-ITEM-02 & FR-TRX-03)
 - Pada menu Master Barang: Gunakan kotak pencarian instan (*live search*) untuk memfilter data berdasarkan kode, nama, atau lokasi tanpa perlu memuat ulang peramban. Filter kategori dan filter kondisi fisik dapat dikombinasikan secara bebas.
-- Pada menu Sirkulasi: Filter transaksi berdasarkan status (*Semua Status*, *Sedang Dipinjam*, *Selesai Dikembalikan*, atau *Terlambat Pengembalian*).
+- Pada menu Sirkulasi: Filter transaksi berdasarkan status, termasuk menunggu persetujuan, disetujui, ditolak, sedang dipinjam, dikembalikan, dan terlambat.
+
+### SOP-06: Pendaftaran User & Pengajuan Peminjaman
+1. User mendaftar di `/register` menggunakan nama, username, email, dan kata sandi.
+2. Masukkan kode OTP enam digit yang dikirim ke email. Kode berlaku selama lima menit.
+3. Setelah masuk, buka **Master Barang** untuk melihat jumlah stok tersedia dan ajukan peminjaman barang.
+4. Pantau status melalui **Riwayat Peminjaman**. Pengajuan yang disetujui dapat diambil di kantor BPTI; jika ditolak, alasan Admin tersedia pada detail pengajuan.
 
 ---
 
@@ -262,7 +289,7 @@ Repositori ini dilengkapi dengan perintah skrip terstandardisasi pada `package.j
 5. **Keterbatasan Sistem Saat Ini (*Known Limitations*):**
    - **Model Inventaris:** Berbasis kuantitas unit agregat per item (`totalQuantity`, `availableQuantity`), belum pelacakan per serial number individual fisik (RFID/Barcode).
    - **Manajemen Sesi:** Daftar token sesi yang dicabut (*revocation list*) saat ini tersimpan di memori proses lokal (*In-Memory Set*), sehingga restart server akan mereset cache token yang dicabut.
-   - **Tingkat Akses Pengguna:** Menggunakan model administrator tunggal (*Single-Role Authentication*), belum mengimplementasikan hierarki multi-role (RBAC) bertingkat.
+   - **Pengiriman OTP:** Pendaftaran User memerlukan konfigurasi Gmail App Password pada environment server. Pengiriman email nyata perlu diuji menggunakan akun SMTP yang telah dikonfigurasi.
 
 ---
 

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { verifySession } from "@/lib/session";
 import { recordAuditLogService } from "@/lib/services/audit-service";
+import { requireAdmin } from "@/lib/dal";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,10 +66,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
 }
 
 export async function POST(request: Request, { params }: RouteContext) {
-  const session = await verifySession();
-  if (!session) {
-    return Response.json({ message: "Sesi tidak valid." }, { status: 401 });
-  }
+  const session = await requireAdmin();
 
   const contentLength = Number(request.headers.get("content-length") ?? 0);
   if (contentLength > MAX_IMAGE_SIZE + 64 * 1024) {
