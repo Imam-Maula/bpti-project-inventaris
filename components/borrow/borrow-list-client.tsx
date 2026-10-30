@@ -340,9 +340,9 @@ export function BorrowListClient({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Bar Kontrol & Filter */}
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex h-full flex-1 flex-col min-h-0 overflow-hidden space-y-4">
+      {/* Bar Kontrol & Filter (Statis & Tetap Diam) */}
+      <div className="shrink-0 flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
           <LiveSearch
             value={search}
@@ -391,9 +391,9 @@ export function BorrowListClient({
         </div>
       </div>
 
-      {/* Bilah Aksi Massal (Bulk Action Bar) */}
+      {/* Bilah Aksi Massal (Bulk Action Bar) - Statis */}
       {selectedIds.size > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3.5 shadow-xs transition-all">
+        <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3.5 shadow-xs transition-all">
           <div className="flex flex-wrap items-center gap-2.5">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
               {selectedIds.size}
@@ -434,11 +434,11 @@ export function BorrowListClient({
         </div>
       )}
 
-      {/* Tabel Sirkulasi Peminjaman */}
-      <div className="overflow-hidden rounded-md border border-border bg-card shadow-xs">
-        <div className="overflow-x-auto">
+      {/* Tabel Sirkulasi Peminjaman - Area Scroll Mandiri */}
+      <div className="flex flex-1 flex-col min-h-0 overflow-hidden rounded-md border border-border bg-card shadow-xs">
+        <div className="flex-1 overflow-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-muted/40 text-xs font-medium text-muted-foreground">
+            <thead className="sticky top-0 z-10 border-b border-border bg-muted/95 backdrop-blur-xs text-xs font-medium text-muted-foreground shadow-2xs">
               <tr>
                 <th scope="col" className="w-10 px-3 py-3 text-center">
                   <input
@@ -702,15 +702,17 @@ export function BorrowListClient({
           </table>
         </div>
 
-        {/* Kontrol Paginasi Sirkulasi */}
-        <Pagination
-          currentPage={safeCurrentPage}
-          totalPages={totalPages}
-          totalItems={filteredRecords.length}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={setPageSize}
-        />
+        {/* Kontrol Paginasi Sirkulasi - Tetap Terlihat di Bawah Tabel */}
+        <div className="shrink-0 border-t border-border bg-card">
+          <Pagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            totalItems={filteredRecords.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
       </div>
 
       {/* Modal Catat Peminjaman */}

@@ -49,7 +49,7 @@ export function UserItemCatalog({ items }: { items: Item[] }) {
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="flex-1 min-h-0 overflow-y-auto pr-2 pb-2 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => {
           const canBorrow =
             item.status === "AKTIF" && item.availableQuantity > 0;

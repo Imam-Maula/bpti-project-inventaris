@@ -189,9 +189,9 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Kartu Ringkasan Metrik Audit */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <div className="flex h-full flex-1 flex-col min-h-0 overflow-hidden space-y-4">
+      {/* Kartu Ringkasan Metrik Audit (Statis & Tetap Diam) */}
+      <div className="shrink-0 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
           <div className="flex items-center gap-2 text-muted-foreground text-xs">
             <History className="h-4 w-4 text-primary" />
@@ -245,8 +245,8 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
         </div>
       </div>
 
-      {/* Toolbar Filter & Aksi */}
-      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-xs md:flex-row md:items-center md:justify-between">
+      {/* Toolbar Filter & Aksi (Statis & Tetap Diam) */}
+      <div className="shrink-0 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-xs md:flex-row md:items-center md:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
           {/* Pencarian */}
           <div className="relative flex-1">
@@ -331,12 +331,12 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
         </div>
       </div>
 
-      {/* Tabel Log Aktivitas */}
-      <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* Tabel Log Aktivitas - Area Scroll Mandiri */}
+      <div className="flex flex-1 flex-col min-h-0 overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+        <div className="flex-1 overflow-auto">
           <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-border bg-muted/40 font-semibold text-muted-foreground">
+            <thead className="sticky top-0 z-10 border-b border-border bg-muted/95 backdrop-blur-xs text-xs font-semibold text-muted-foreground shadow-2xs">
+              <tr>
                 <th className="py-3 px-4 whitespace-nowrap">Waktu & Tanggal</th>
                 <th className="py-3 px-4 whitespace-nowrap">Admin Pelaksana</th>
                 <th className="py-3 px-4 whitespace-nowrap">Jenis Tindakan</th>
@@ -468,9 +468,9 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
           </table>
         </div>
 
-        {/* Footer Pagination */}
+        {/* Footer Pagination - Tetap Terlihat di Bawah Tabel */}
         {totalItems > 0 && (
-          <div className="border-t border-border px-4 py-3 bg-muted/10">
+          <div className="shrink-0 border-t border-border px-4 py-3 bg-card">
             <Pagination
               currentPage={safeCurrentPage}
               totalPages={totalPages}

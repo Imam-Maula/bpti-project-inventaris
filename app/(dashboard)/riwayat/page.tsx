@@ -25,7 +25,7 @@ export default async function RiwayatPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
+      <div className="shrink-0 space-y-1">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Riwayat Peminjaman
         </h1>
@@ -39,7 +39,7 @@ export default async function RiwayatPage() {
           Anda belum memiliki pengajuan peminjaman.
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-2 pb-2">
           {records.map((record) => (
             <article
               key={record.id}

@@ -38,9 +38,9 @@ export default async function DashboardPage() {
     .slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      {/* Header Halaman & Aksi Cepat */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex h-full flex-1 flex-col min-h-0 overflow-hidden space-y-5">
+      {/* Header Halaman & Aksi Cepat (Statis & Tetap Diam) */}
+      <div className="shrink-0 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Ringkasan Dasbor
@@ -94,8 +94,8 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Grid 5 Kartu Metrik Statistik Utama Sesuai Invarian Stok BPTI */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {/* Grid 5 Kartu Metrik Statistik Utama Sesuai Invarian Stok BPTI (Statis & Tetap Diam) */}
+      <div className="shrink-0 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {/* Metrik 1: Total Jenis Aset */}
         <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
           <div className="flex items-center justify-between">
@@ -201,9 +201,9 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* Grid Dua Kolom: Sirkulasi Terkini & Aset Kritis */}
+      {/* Grid Dua Kolom: Sirkulasi Terkini & Aset Kritis - Area Scroll Mandiri */}
       {/* deslop-ignore-next-line 28 */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="flex-1 min-h-0 overflow-y-auto pr-1 grid grid-cols-1 gap-6 lg:grid-cols-3 pb-2">
         {/* Kolom Kiri (2/3): Aktivitas Sirkulasi Terkini */}
         <div className="space-y-3 lg:col-span-2">
           <div className="flex items-center justify-between">

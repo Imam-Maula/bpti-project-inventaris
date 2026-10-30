@@ -11,8 +11,9 @@ export default async function AktivitasPage() {
   const logs = await getAuditLogsAction({ limit: 1000 });
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
+    <div className="flex h-full flex-1 flex-col min-h-0 overflow-hidden">
+      {/* Header Halaman (Judul & Deskripsi) - Tetap Statis & Diam */}
+      <div className="shrink-0 space-y-1 pb-4">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Log Aktivitas & Audit Trail
         </h1>
