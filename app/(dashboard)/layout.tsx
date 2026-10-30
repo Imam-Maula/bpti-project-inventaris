@@ -10,17 +10,17 @@ export default async function DashboardLayout({
   const user = await requireAuth();
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       {/* Sidebar Navigasi Kiri */}
       <DashboardSidebar role={user.role} name={user.name} />
 
       {/* Area Konten Utama Kanan */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex min-w-0 flex-1 flex-col h-screen overflow-hidden">
         {/* Header Atas */}
         <DashboardHeader role={user.role} name={user.name} />
 
         {/* Konten Halaman */}
-        <main className="flex-1 bg-muted/20 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto bg-muted/20 p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
