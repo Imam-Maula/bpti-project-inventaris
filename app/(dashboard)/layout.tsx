@@ -20,7 +20,7 @@ export default async function DashboardLayout({
         <DashboardHeader role={user.role} name={user.name} />
 
         {/* Konten Halaman - Memenuhi sisa tinggi layar tanpa scrollbar pada level halaman */}
-        <main className="flex flex-1 flex-col min-h-0 overflow-hidden bg-muted/20 p-4 sm:p-6 lg:p-8">
+        <main className="flex flex-1 flex-col min-h-0 overflow-hidden bg-muted/20 p-3 sm:p-4 lg:p-5">
           <div className="mx-auto flex h-full w-full max-w-7xl flex-1 flex-col min-h-0 overflow-hidden">
             {children}
           </div>

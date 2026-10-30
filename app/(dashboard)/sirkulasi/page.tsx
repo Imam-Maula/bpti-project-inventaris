@@ -17,11 +17,11 @@ export default async function SirkulasiPage() {
   return (
     <div className="flex h-full flex-1 flex-col min-h-0 overflow-hidden">
       {/* Header Halaman (Judul & Deskripsi) - Tetap Statis & Diam */}
-      <div className="shrink-0 space-y-1 pb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+      <div className="shrink-0 space-y-0.5 pb-2.5">
+        <h1 className="text-xl font-bold tracking-tight text-foreground">
           Sirkulasi Peminjaman
         </h1>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs text-muted-foreground">
           Pantau transaksi peminjaman aktif, batas waktu pengembalian, dan riwayat sirkulasi unit fisik.
         </p>
       </div>
