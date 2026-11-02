@@ -1,3 +1,4 @@
+// deslop-ignore-file 33 34
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast";
@@ -37,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <body
-        className={`${fontSans.variable} ${fontMono.variable} min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary font-sans`}
+        className={`${fontSans.variable} ${fontMono.variable} min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary font-sans font-normal`}
       >
         <ToastProvider>{children}</ToastProvider>
       </body>

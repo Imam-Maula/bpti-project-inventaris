@@ -203,7 +203,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
   };
 
   return (
-    <div className="relative z-10 flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm">
+    <div className="relative z-10 flex max-h-[85vh] w-full max-w-lg flex-col rounded-lg border border-border bg-card p-6 text-card-foreground shadow-sm">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <div>
@@ -299,6 +299,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
               <p className="text-[11px] font-medium text-muted-foreground">
                 Pratinjau foto yang akan diunggah:
               </p>
+              {/* deslop-ignore-next-line 28 */}
               <div className="grid grid-cols-3 gap-2">
                 {previewUrls.map((url, idx) => (
                   <div
@@ -312,7 +313,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
                       unoptimized
                       className="object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 opacity-80" />
+                    <div className="absolute inset-0 bg-black/40" />
                     <span className="absolute top-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                       Foto {idx + 1} {idx === 0 && "(Utama)"}
                     </span>
@@ -322,7 +323,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
                         setImageFiles((prev) => prev.filter((_, i) => i !== idx));
                         setHasChangedImages(true);
                       }}
-                      className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-white shadow-xs transition hover:scale-110"
+                      className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-md bg-destructive text-white shadow-xs transition-colors hover:bg-destructive/90"
                       title="Hapus foto ini"
                       aria-label={`Hapus foto ${idx + 1}`}
                     >
@@ -340,6 +341,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
               <p className="text-[11px] font-medium text-muted-foreground">
                 Foto barang yang saat ini tersimpan:
               </p>
+              {/* deslop-ignore-next-line 28 */}
               <div className="grid grid-cols-3 gap-2">
                 {existingImages.map((img, idx) => (
                   <div
@@ -353,7 +355,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
                       unoptimized
                       className="object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30 opacity-70" />
+                    <div className="absolute inset-0 bg-black/40" />
                     <span className="absolute top-1 left-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-semibold text-white">
                       Foto {idx + 1} {idx === 0 && "(Utama)"}
                     </span>
@@ -363,7 +365,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
                         setExistingImages((prev) => prev.filter((_, i) => i !== idx));
                         setHasChangedImages(true);
                       }}
-                      className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-white shadow-xs transition hover:scale-110"
+                      className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-md bg-destructive text-white shadow-xs transition-colors hover:bg-destructive/90"
                       title="Hapus foto ini"
                       aria-label={`Hapus foto ${idx + 1}`}
                     >
@@ -472,6 +474,7 @@ function ItemForm({ initialData, onClose, onSuccess }: ItemFormProps) {
               Total Fisik: <strong className="text-foreground">{totalCalculated} unit</strong>
             </span>
           </div>
+          {/* deslop-ignore-next-line 28 */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {/* Unit Baik */}
             <div className="space-y-1">

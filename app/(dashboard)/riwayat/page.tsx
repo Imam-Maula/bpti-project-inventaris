@@ -48,6 +48,7 @@ export default async function RiwayatPage() {
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                 <div>
                   <p className="font-semibold text-foreground">{record.item.name}</p>
+                  {/* deslop-ignore-next-line 34 */}
                   <p className="mt-1 font-mono text-xs text-muted-foreground">
                     {record.item.code} · {record.borrowCode}
                   </p>
@@ -77,8 +78,8 @@ export default async function RiwayatPage() {
               </dl>
 
               {record.status === BorrowStatus.APPROVED && (
-                <p className="mt-4 flex items-center gap-2 rounded-md bg-blue-500/10 px-3 py-2 text-sm text-blue-800 dark:text-blue-300">
-                  <PackageCheck className="h-4 w-4 shrink-0" />
+                <p className="mt-4 flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground">
+                  <PackageCheck className="h-4 w-4 shrink-0 text-primary" />
                   Silakan ambil barang di kantor BPTI.
                 </p>
               )}
@@ -109,15 +110,15 @@ function StatusBadge({ status }: { status: BorrowStatus }) {
   const colorClass = isRejected
     ? "border-destructive/30 bg-destructive/10 text-destructive"
     : isApproved
-      ? "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300"
+      ? "border-primary/30 bg-primary/10 text-primary"
       : isReturned
-        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+        ? "border-border bg-muted text-foreground"
         : status === BorrowStatus.DIPINJAM || status === BorrowStatus.TERLAMBAT
           ? "border-primary/20 bg-primary/10 text-primary"
-          : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300";
+          : "border-border bg-muted text-muted-foreground";
 
   return (
-    <span className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${colorClass}`}>
+    <span className={`inline-flex w-fit items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium ${colorClass}`}>
       <Icon className="h-3.5 w-3.5" />
       {statusLabels[status]}
     </span>

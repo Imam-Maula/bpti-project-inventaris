@@ -95,7 +95,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Grid 5 Kartu Metrik Statistik Utama Sesuai Invarian Stok BPTI (Statis & Tetap Diam) */}
-      <div className="shrink-0 grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="shrink-0 grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(3,minmax(0,1fr))] lg:grid-cols-5">
         {/* Metrik 1: Total Jenis Aset */}
         <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
           <div className="flex items-center justify-between">

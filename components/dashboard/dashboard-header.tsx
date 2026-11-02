@@ -7,7 +7,7 @@ import { Role } from "@prisma/client";
 const pageTitles: Record<string, { title: string; description: string }> = {
   "/": {
     title: "Ringkasan Dasbor",
-    description: "Statistik aset inventaris dan aktivitas sirkulasi",
+    description: "Statistik aset inventaris dan aktivitas sirkulasi BPTI",
   },
   "/barang": {
     title: "Master Barang",
@@ -15,7 +15,7 @@ const pageTitles: Record<string, { title: string; description: string }> = {
   },
   "/riwayat": {
     title: "Riwayat Peminjaman",
-    description: "Status pengajuan dan riwayat peminjaman Anda",
+    description: "Status pengajuan dan riwayat peminjaman aset",
   },
   "/sirkulasi": {
     title: "Sirkulasi Peminjaman",
@@ -35,11 +35,11 @@ export function DashboardHeader({ role, name }: { role: Role; name: string }) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-background px-6">
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-background px-4 sm:px-6">
       <div className="pl-10 lg:pl-0">
-        <span className="block text-sm font-semibold text-foreground sm:text-base">
+        <h1 className="text-xl font-semibold text-foreground leading-tight">
           {current.title}
-        </span>
+        </h1>
         <p className="hidden text-xs text-muted-foreground sm:block">
           {current.description}
         </p>
@@ -50,9 +50,12 @@ export function DashboardHeader({ role, name }: { role: Role; name: string }) {
         <ThemeToggle />
 
         {/* Info Sesi Administrator */}
-        <div className="flex items-center gap-2 border-l border-border pl-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 border-l border-border pl-3 text-xs">
           <span className="font-medium text-foreground">
-            {name} · {role === Role.ADMIN ? "Admin" : "User"}
+            {name}
+          </span>
+          <span className="rounded-md border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
+            {role === Role.ADMIN ? "Admin" : "User"}
           </span>
         </div>
       </div>

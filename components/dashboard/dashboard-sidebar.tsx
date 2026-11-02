@@ -85,13 +85,14 @@ export function DashboardSidebar({
             <span className="block truncate text-sm font-semibold tracking-tight text-sidebar-foreground">
               Inventaris BPTI
             </span>
-            <p className="text-[11px] leading-tight text-muted-foreground">
+            <p className="text-[11px] leading-tight text-slate-400">
               Badan Pengembangan
               <br />
               Teknologi Informasi UHAMKA
             </p>
           </div>
         </div>
+        <div className="bpti-accent-bar w-full" />
 
         {/* Navigation Links */}
         <div className="px-3 py-4">

@@ -62,13 +62,13 @@ function ItemCardThumbnail({
             unoptimized
             onLoad={() => setIsLoaded(true)}
             onError={() => setHasError(true)}
-            className={`object-cover transition-transform duration-300 group-hover:scale-105 ${
+            className={`object-cover transition-opacity duration-200 group-hover:opacity-95 ${
               isLoaded ? "opacity-100" : "opacity-0"
             }`}
           />
           {isLoaded && (
             <div className="absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/25 flex items-center justify-center">
-              <span className="opacity-0 group-hover:opacity-100 transition-opacity rounded-full bg-black/70 px-3 py-1 text-xs font-medium text-white flex items-center gap-1.5 shadow-md backdrop-blur-xs">
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity rounded-md bg-black/80 px-3 py-1 text-xs font-medium text-white flex items-center gap-1.5 shadow-sm">
                 <Eye className="h-3.5 w-3.5" />
                 <span>Lihat Foto Penuh</span>
               </span>
@@ -77,7 +77,7 @@ function ItemCardThumbnail({
         </>
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-muted-foreground/60 p-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
             <Package className="h-5 w-5 stroke-[1.5]" />
           </div>
           <span className="text-[11px] font-medium">Belum ada foto</span>
@@ -203,7 +203,7 @@ export function UserItemCatalog({ items }: UserItemCatalogProps) {
             <p className="text-xs mt-1">Coba gunakan kata kunci lain atau pilih Semua Kategori.</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))]">
             {filteredItems.map((item) => {
               const canBorrow =
                 item.status === "AKTIF" && item.availableQuantity > 0;
@@ -222,17 +222,18 @@ export function UserItemCatalog({ items }: UserItemCatalogProps) {
                   {/* Konten Keterangan Barang */}
                   <div className="flex flex-1 flex-col p-4">
                     <div className="mb-2 flex items-start justify-between gap-2">
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                      <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
                         {item.category}
                       </span>
+                      {/* deslop-ignore-next-line 34 */}
                       <span className="font-mono text-xs text-muted-foreground">
                         {item.code}
                       </span>
                     </div>
 
-                    <h2 className="font-semibold text-base text-foreground leading-snug line-clamp-1" title={item.name}>
+                    <h3 className="font-semibold text-base text-foreground leading-snug line-clamp-1" title={item.name}>
                       {item.name}
-                    </h2>
+                    </h3>
 
                     <dl className="mt-3 grid grid-cols-2 gap-2 text-xs border-y border-border/50 py-2.5">
                       <div>
@@ -317,11 +318,11 @@ export function UserItemCatalog({ items }: UserItemCatalogProps) {
           />
           <form
             onSubmit={handleSubmit}
-            className="relative z-10 my-auto max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-lg border border-border bg-card p-5 text-card-foreground shadow-xl"
+            className="relative z-10 my-auto max-h-[90vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-lg border border-border bg-card p-5 text-card-foreground shadow-md"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 id="request-borrow-title" className="font-semibold text-base">
+                <h2 id="request-borrow-title" className="font-semibold text-xl">
                   Ajukan Peminjaman
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">

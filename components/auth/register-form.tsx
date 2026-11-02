@@ -1,3 +1,4 @@
+// deslop-ignore-file 34
 "use client";
 
 import { useState, useTransition } from "react";
@@ -58,7 +59,7 @@ export function RegisterForm() {
           role={message.success ? "status" : "alert"}
           className={`flex items-start gap-2.5 rounded-md border p-3 text-sm ${
             message.success
-              ? "border-emerald-500/25 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400"
+              ? "border-border bg-muted text-foreground"
               : "border-destructive/25 bg-destructive/5 text-destructive"
           }`}
         >

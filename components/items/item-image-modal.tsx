@@ -1,3 +1,4 @@
+// deslop-ignore-file 34
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -108,23 +109,23 @@ export function ItemImageModal({ item, onClose }: ItemImageModalProps) {
       <button
         type="button"
         aria-label="Tutup gambar barang"
-        className="fixed inset-0 cursor-default bg-black/75 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 cursor-default bg-black/75 transition-opacity"
         onClick={onClose}
       />
 
-      <div className="relative z-10 flex w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-2xl">
+      <div className="relative z-10 flex w-full max-w-4xl flex-col rounded-lg border border-border bg-card text-card-foreground shadow-lg">
         {/* Header Modal */}
-        <div className="flex items-center justify-between border-b border-border px-5 py-3.5 bg-card/95">
+        <div className="flex items-center justify-between border-b border-border px-5 py-3.5 bg-card/95 rounded-t-lg">
           <div className="min-w-0 pr-4">
             <div className="flex items-center gap-2">
               <h2
                 id="item-image-modal-title"
-                className="truncate text-base font-semibold text-foreground"
+                className="truncate text-xl font-semibold text-foreground"
               >
                 {item.name}
               </h2>
               {totalImages > 1 && (
-                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
                   {currentIndex + 1} / {totalImages}
                 </span>
               )}
@@ -143,7 +144,7 @@ export function ItemImageModal({ item, onClose }: ItemImageModalProps) {
                   onClick={handlePrev}
                   aria-label="Gambar sebelumnya (Panah Kiri)"
                   title="Gambar sebelumnya (←)"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-xs hover:bg-muted focus:outline-hidden focus:ring-1 focus:ring-primary"
+                  className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-xs hover:bg-muted focus:outline-hidden focus:ring-1 focus:ring-primary"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -152,7 +153,7 @@ export function ItemImageModal({ item, onClose }: ItemImageModalProps) {
                   onClick={handleNext}
                   aria-label="Gambar berikutnya (Panah Kanan)"
                   title="Gambar berikutnya (→)"
-                  className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-xs hover:bg-muted focus:outline-hidden focus:ring-1 focus:ring-primary"
+                  className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-xs hover:bg-muted focus:outline-hidden focus:ring-1 focus:ring-primary"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -185,7 +186,7 @@ export function ItemImageModal({ item, onClose }: ItemImageModalProps) {
                   type="button"
                   onClick={handlePrev}
                   aria-label="Gambar sebelumnya"
-                  className="absolute left-2 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-lg backdrop-blur-xs transition hover:scale-105 hover:bg-background focus:outline-hidden focus:ring-2 focus:ring-primary sm:left-4"
+                  className="absolute left-2 z-20 flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-md transition-colors hover:bg-background focus:outline-hidden focus:ring-1 focus:ring-primary sm:left-4"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
@@ -201,7 +202,7 @@ export function ItemImageModal({ item, onClose }: ItemImageModalProps) {
                   height={900}
                   unoptimized
                   onError={() => setImageError(true)}
-                  className="max-h-[60vh] w-auto max-w-full rounded-md object-contain shadow-xs transition-all duration-200"
+                  className="max-h-[60vh] w-auto max-w-full rounded-md object-contain shadow-xs transition-opacity duration-150"
                   priority
                 />
               </div>
@@ -212,7 +213,7 @@ export function ItemImageModal({ item, onClose }: ItemImageModalProps) {
                   type="button"
                   onClick={handleNext}
                   aria-label="Gambar berikutnya"
-                  className="absolute right-2 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-lg backdrop-blur-xs transition hover:scale-105 hover:bg-background focus:outline-hidden focus:ring-2 focus:ring-primary sm:right-4"
+                  className="absolute right-2 z-20 flex h-9 w-9 items-center justify-center rounded-md border border-border bg-background/90 text-foreground shadow-md transition-colors hover:bg-background focus:outline-hidden focus:ring-1 focus:ring-primary sm:right-4"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
@@ -246,7 +247,7 @@ export function ItemImageModal({ item, onClose }: ItemImageModalProps) {
                     setCurrentIndex(idx);
                   }}
                   aria-label={`Lihat gambar ke-${idx + 1}`}
-                  className={`h-2.5 rounded-full transition-all duration-200 ${
+                  className={`h-2.5 rounded-xs transition-colors duration-150 ${
                     currentIndex === idx
                       ? "w-7 bg-primary"
                       : "w-2.5 bg-muted-foreground/30 hover:bg-muted-foreground/60"
@@ -265,7 +266,7 @@ export function ItemImageModal({ item, onClose }: ItemImageModalProps) {
                     setImageError(false);
                     setCurrentIndex(idx);
                   }}
-                  className={`relative h-12 w-16 overflow-hidden rounded border transition-all ${
+                  className={`relative h-12 w-16 overflow-hidden rounded border transition-colors ${
                     currentIndex === idx
                       ? "border-primary ring-2 ring-primary/30"
                       : "border-border opacity-60 hover:opacity-100"

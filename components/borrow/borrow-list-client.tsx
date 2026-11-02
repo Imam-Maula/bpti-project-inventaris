@@ -393,9 +393,9 @@ export function BorrowListClient({
 
       {/* Bilah Aksi Massal (Bulk Action Bar) - Statis */}
       {selectedIds.size > 0 && (
-        <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3.5 shadow-xs transition-all">
+        <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3.5 shadow-xs transition-colors duration-150">
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
               {selectedIds.size}
             </span>
             <span className="text-xs font-medium text-foreground">
@@ -438,7 +438,7 @@ export function BorrowListClient({
       <div className="flex flex-1 flex-col min-h-0 overflow-hidden rounded-md border border-border bg-card shadow-xs">
         <div className="flex-1 overflow-auto">
           <table className="w-full text-left text-sm">
-            <thead className="sticky top-0 z-10 border-b border-border bg-muted/95 backdrop-blur-xs text-xs font-medium text-muted-foreground shadow-2xs whitespace-nowrap">
+            <thead className="sticky top-0 z-10 border-b border-border bg-muted text-xs font-medium text-muted-foreground shadow-2xs whitespace-nowrap">
               <tr>
                 <th scope="col" className="w-10 px-2.5 py-2 text-center">
                   <input
@@ -619,12 +619,14 @@ export function BorrowListClient({
                           </span>
                         )}
                         {rec.status === "PENDING" && (
-                          <span className="inline-flex items-center gap-1 rounded border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                          <span className="inline-flex items-center gap-1 rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
+                            <Clock className="h-3 w-3 text-muted-foreground" />
                             Menunggu Persetujuan
                           </span>
                         )}
                         {rec.status === "APPROVED" && (
-                          <span className="inline-flex items-center gap-1 rounded border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:text-blue-400">
+                          <span className="inline-flex items-center gap-1 rounded border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                            <CheckCircle2 className="h-3 w-3 text-primary" />
                             Disetujui — Menunggu Diambil
                           </span>
                         )}
@@ -753,7 +755,7 @@ export function BorrowListClient({
           />
           <form
             onSubmit={handleReject}
-            className="relative z-10 w-full max-w-md space-y-4 rounded-lg border border-border bg-card p-5 text-card-foreground shadow-xl"
+            className="relative z-10 w-full max-w-md space-y-4 rounded-lg border border-border bg-card p-5 text-card-foreground shadow-md"
           >
             <div>
               <h2 id="reject-borrow-title" className="font-semibold">

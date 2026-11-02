@@ -542,9 +542,9 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
 
       {/* Bilah Aksi Massal (Bulk Action Bar) - Statis */}
       {selectedIds.size > 0 && (
-        <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3.5 shadow-xs transition-all">
+        <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3.5 shadow-xs transition-colors duration-150">
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
               {selectedIds.size}
             </span>
             <span className="text-xs font-medium text-foreground">
@@ -605,7 +605,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
       <div className="flex flex-1 flex-col min-h-0 overflow-hidden rounded-md border border-border bg-card shadow-xs">
         <div className="flex-1 overflow-auto">
           <table className="w-full text-left text-sm">
-            <thead className="sticky top-0 z-10 border-b border-border bg-muted/95 backdrop-blur-xs text-xs font-medium text-muted-foreground shadow-2xs">
+            <thead className="sticky top-0 z-10 border-b border-border bg-muted text-xs font-medium text-muted-foreground shadow-2xs">
               <tr>
                 <th scope="col" className="w-10 px-2.5 py-2 text-center">
                   <input
