@@ -10,6 +10,8 @@ export interface BorrowRecordDetail {
   id: string;
   borrowCode: string;
   borrowerName: string;
+  borrowerPhone?: string;
+  borrowerEmail?: string;
   borrowerContact: string;
   borrowQuantity: number;
   borrowDate: Date;
@@ -154,6 +156,20 @@ export function ReturnDialog({
             <span className="text-muted-foreground">Nama Peminjam:</span>
             <span className="text-foreground">{record.borrowerName}</span>
           </div>
+          {(record.borrowerPhone || record.borrowerEmail) ? (
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Kontak Peminjam:</span>
+              <span className="text-foreground text-right">
+                {record.borrowerPhone && <div>{record.borrowerPhone}</div>}
+                {record.borrowerEmail && <div className="text-muted-foreground">{record.borrowerEmail}</div>}
+              </span>
+            </div>
+          ) : record.borrowerContact ? (
+            <div className="flex justify-between text-xs">
+              <span className="text-muted-foreground">Kontak Peminjam:</span>
+              <span className="text-foreground">{record.borrowerContact}</span>
+            </div>
+          ) : null}
           <div className="flex justify-between">
             <span className="text-muted-foreground">Tenggat Kembali:</span>
             <span

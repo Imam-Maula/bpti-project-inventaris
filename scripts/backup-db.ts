@@ -47,7 +47,7 @@ async function runBackup() {
       orderBy: { createdAt: "asc" },
     }),
     prisma.itemImage.findMany({
-      orderBy: { itemId: "asc" },
+      orderBy: [{ itemId: "asc" }, { order: "asc" }],
     }),
   ]);
 

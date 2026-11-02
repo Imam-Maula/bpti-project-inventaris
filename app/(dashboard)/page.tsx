@@ -38,14 +38,14 @@ export default async function DashboardPage() {
     .slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      {/* Header Halaman & Aksi Cepat */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+    <div className="flex h-full flex-1 flex-col min-h-0 overflow-hidden space-y-3">
+      {/* Header Halaman & Aksi Cepat (Statis & Tetap Diam) */}
+      <div className="shrink-0 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-0.5">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">
             Ringkasan Dasbor
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Ikhtisar statistik aset, sirkulasi peminjaman aktif, dan aktivitas terkini BPTI.
           </p>
         </div>
@@ -94,116 +94,116 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Grid 5 Kartu Metrik Statistik Utama Sesuai Invarian Stok BPTI */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {/* Grid 5 Kartu Metrik Statistik Utama Sesuai Invarian Stok BPTI (Statis & Tetap Diam) */}
+      <div className="shrink-0 grid grid-cols-2 gap-2.5 sm:grid-cols-[repeat(3,minmax(0,1fr))] lg:grid-cols-5">
         {/* Metrik 1: Total Jenis Aset */}
-        <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
+        <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-[11px] font-medium text-muted-foreground">
               Total Jenis Aset
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground">
-              <Boxes className="h-4 w-4" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground">
+              <Boxes className="h-3.5 w-3.5" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold text-foreground">
+          <div className="mt-1.5">
+            <div className="text-lg font-bold text-foreground">
               {metrics.totalJenisAset}
             </div>
-            <p className="text-[11px] text-muted-foreground">
-              Kategori master barang terdaftar
+            <p className="text-[10px] text-muted-foreground truncate">
+              Kategori master terdaftar
             </p>
           </div>
         </div>
 
         {/* Metrik 2: Total Unit Fisik */}
-        <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
+        <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-[11px] font-medium text-muted-foreground">
               Total Unit Fisik
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground">
-              <Package className="h-4 w-4" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground">
+              <Package className="h-3.5 w-3.5" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold text-foreground">
+          <div className="mt-1.5">
+            <div className="text-lg font-bold text-foreground">
               {metrics.totalUnitFisik}
-              <span className="ml-1 text-xs font-normal text-muted-foreground">unit</span>
+              <span className="ml-1 text-[11px] font-normal text-muted-foreground">unit</span>
             </div>
-            <p className="text-[11px] text-muted-foreground">
-              Akumulasi seluruh kuota aset kantor
+            <p className="text-[10px] text-muted-foreground truncate">
+              Akumulasi kuota aset kantor
             </p>
           </div>
         </div>
 
         {/* Metrik 3: Unit Siap Pakai */}
-        <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
+        <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-[11px] font-medium text-muted-foreground">
               Unit Siap Pakai
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground">
-              <CheckCircle2 className="h-4 w-4" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground">
+              <CheckCircle2 className="h-3.5 w-3.5" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold text-foreground">
+          <div className="mt-1.5">
+            <div className="text-lg font-bold text-foreground">
               {metrics.totalUnitSiapPakai}
-              <span className="ml-1 text-xs font-normal text-muted-foreground">unit</span>
+              <span className="ml-1 text-[11px] font-normal text-muted-foreground">unit</span>
             </div>
-            <p className="text-[11px] text-muted-foreground">
-              Tersedia di ruang / lemari inventaris
+            <p className="text-[10px] text-muted-foreground truncate">
+              Tersedia di ruang/lemari
             </p>
           </div>
         </div>
 
         {/* Metrik 4: Unit Sedang Dipinjam */}
-        <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
+        <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              Unit Sedang Dipinjam
+            <span className="text-[11px] font-medium text-muted-foreground">
+              Unit Dipinjam
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground">
-              <Clock className="h-4 w-4" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground">
+              <Clock className="h-3.5 w-3.5" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold text-foreground">
+          <div className="mt-1.5">
+            <div className="text-lg font-bold text-foreground">
               {metrics.totalUnitDipinjam}
-              <span className="ml-1 text-xs font-normal text-muted-foreground">unit</span>
+              <span className="ml-1 text-[11px] font-normal text-muted-foreground">unit</span>
             </div>
-            <p className="text-[11px] text-muted-foreground">
-              {metrics.totalTransaksiDipinjam} transaksi peminjaman aktif
+            <p className="text-[10px] text-muted-foreground truncate">
+              {metrics.totalTransaksiDipinjam} transaksi aktif
             </p>
           </div>
         </div>
 
         {/* Metrik 5: Unit Karantina / Rusak */}
-        <div className="rounded-lg border border-border bg-card p-5 shadow-xs">
+        <div className="rounded-lg border border-border bg-card p-3 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
+            <span className="text-[11px] font-medium text-muted-foreground">
               Karantina / Rusak
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-muted text-foreground">
-              <Wrench className="h-4 w-4" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-foreground">
+              <Wrench className="h-3.5 w-3.5" />
             </div>
           </div>
-          <div className="mt-3">
-            <div className="text-2xl font-bold text-foreground">
+          <div className="mt-1.5">
+            <div className="text-lg font-bold text-foreground">
               {metrics.totalUnitKarantina}
-              <span className="ml-1 text-xs font-normal text-muted-foreground">unit</span>
+              <span className="ml-1 text-[11px] font-normal text-muted-foreground">unit</span>
             </div>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[10px] text-muted-foreground truncate">
               Aset rusak dalam perbaikan
             </p>
           </div>
         </div>
       </div>
 
-      {/* Grid Dua Kolom: Sirkulasi Terkini & Aset Kritis */}
+      {/* Grid Dua Kolom: Sirkulasi Terkini & Aset Kritis - Area Scroll Mandiri */}
       {/* deslop-ignore-next-line 28 */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="flex-1 min-h-0 overflow-y-auto pr-1 grid grid-cols-1 gap-6 lg:grid-cols-3 pb-2">
         {/* Kolom Kiri (2/3): Aktivitas Sirkulasi Terkini */}
         <div className="space-y-3 lg:col-span-2">
           <div className="flex items-center justify-between">

@@ -28,6 +28,7 @@ import {
   RotateCcw,
   Download,
   Image as ImageIcon,
+
 } from "lucide-react";
 import { ItemImageModal } from "./item-image-modal";
 
@@ -436,7 +437,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="flex h-full flex-1 flex-col min-h-0 overflow-hidden space-y-4">
       {/* Toast Notification Banner */}
       {notice && (
         <div
@@ -465,8 +466,8 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
         </div>
       )}
 
-      {/* Bar Kontrol & Filter */}
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* Bar Kontrol & Filter (Statis & Tetap Diam) */}
+      <div className="shrink-0 flex flex-col gap-2.5 rounded-lg border border-border bg-card p-2.5 sm:flex-row sm:items-center sm:justify-between shadow-2xs">
         <div className="flex flex-1 flex-wrap items-center gap-2">
           <LiveSearch
             value={search}
@@ -539,11 +540,11 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
         </div>
       </div>
 
-      {/* Bilah Aksi Massal (Bulk Action Bar) */}
+      {/* Bilah Aksi Massal (Bulk Action Bar) - Statis */}
       {selectedIds.size > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3.5 shadow-xs transition-all">
+        <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3.5 shadow-xs transition-colors duration-150">
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
               {selectedIds.size}
             </span>
             <span className="text-xs font-medium text-foreground">
@@ -600,13 +601,13 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
         </div>
       )}
 
-      {/* Tabel Master Barang */}
-      <div className="overflow-hidden rounded-md border border-border bg-card shadow-xs">
-        <div className="overflow-x-auto">
+      {/* Tabel Master Barang - Area Scroll Mandiri */}
+      <div className="flex flex-1 flex-col min-h-0 overflow-hidden rounded-md border border-border bg-card shadow-xs">
+        <div className="flex-1 overflow-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-muted/40 text-xs font-medium text-muted-foreground">
+            <thead className="sticky top-0 z-10 border-b border-border bg-muted text-xs font-medium text-muted-foreground shadow-2xs">
               <tr>
-                <th scope="col" className="w-10 px-3 py-3 text-center">
+                <th scope="col" className="w-10 px-2.5 py-2 text-center">
                   <input
                     type="checkbox"
                     checked={isAllPageSelected}
@@ -618,22 +619,22 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
                     aria-label="Pilih semua barang di halaman ini"
                   />
                 </th>
-                <th scope="col" className="px-4 py-3">
+                <th scope="col" className="px-3 py-2">
                   Kode & Nama Barang
                 </th>
-                <th scope="col" className="px-4 py-3">
+                <th scope="col" className="px-3 py-2">
                   Kategori
                 </th>
-                <th scope="col" className="px-4 py-3">
+                <th scope="col" className="px-3 py-2">
                   Lokasi Simpan
                 </th>
-                <th scope="col" className="px-4 py-3 text-center">
+                <th scope="col" className="px-3 py-2 text-center">
                   Stok Siap / Total
                 </th>
-                <th scope="col" className="px-4 py-3">
+                <th scope="col" className="px-3 py-2">
                   Kondisi & Status
                 </th>
-                <th scope="col" className="px-4 py-3 text-right">
+                <th scope="col" className="px-3 py-2 text-right">
                   Aksi
                 </th>
               </tr>
@@ -670,7 +671,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
                         isSelected ? "bg-primary/5" : isArchived ? "opacity-75 bg-muted/10" : ""
                       }`}
                     >
-                      <td className="w-10 px-3 py-3 text-center">
+                      <td className="w-10 px-2.5 py-1.5 text-center">
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -679,24 +680,24 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
                           aria-label={`Pilih ${item.name}`}
                         />
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-foreground">
+                      <td className="px-3 py-1.5">
+                        <div className="font-medium text-foreground leading-tight">
                           {item.name}
                         </div>
                         {/* deslop-ignore-next-line 34 */}
-                        <div className="text-xs font-mono text-muted-foreground">
+                        <div className="text-[11px] font-mono text-muted-foreground">
                           {item.code}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-block rounded-md border border-border bg-muted/60 px-2 py-0.5 text-xs text-foreground">
+                      <td className="px-3 py-1.5">
+                        <span className="inline-block rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-[11px] text-foreground">
                           {item.category}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                      <td className="px-3 py-1.5 text-xs text-muted-foreground">
                         {item.location}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-3 py-1.5 text-center">
                         <span
                           className={`inline-block tabular-nums text-xs font-semibold ${
                             isAvailable
@@ -707,7 +708,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
                           {item.availableQuantity} / {item.totalQuantity} unit
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-1.5">
                         <div className="flex flex-wrap items-center gap-1.5">
                           {item.condition === Condition.BAIK && (
                             <span className="inline-block rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
@@ -737,7 +738,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-1.5 text-right">
                         <div className="inline-flex items-center gap-1">
                           <button
                             type="button"
@@ -815,15 +816,17 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
           </table>
         </div>
 
-        {/* Kontrol Paginasi Tabel */}
-        <Pagination
-          currentPage={safeCurrentPage}
-          totalPages={totalPages}
-          totalItems={filteredItems.length}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={setPageSize}
-        />
+        {/* Kontrol Paginasi Tabel - Tetap Terlihat di Bawah Tabel */}
+        <div className="shrink-0 border-t border-border bg-card">
+          <Pagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            totalItems={filteredItems.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
       </div>
 
       {/* Modal Edit / Tambah */}
