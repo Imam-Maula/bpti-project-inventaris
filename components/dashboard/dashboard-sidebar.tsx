@@ -122,7 +122,7 @@ export function DashboardSidebar({
                       isActive ? "text-primary-foreground" : "text-muted-foreground"
                     }`}
                   />
-                  <span>{item.name}</span>
+                  <span className="whitespace-nowrap">{item.name}</span>
                 </Link>
               );
             })}
