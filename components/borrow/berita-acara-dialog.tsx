@@ -7,8 +7,6 @@ export interface BeritaAcaraData {
   id: string;
   borrowCode: string;
   borrowerName: string;
-  borrowerPhone?: string;
-  borrowerEmail?: string;
   borrowerContact: string;
   borrowQuantity: number;
   borrowDate: Date | string;
@@ -159,15 +157,7 @@ export function BeritaAcaraDialog({
             <div className="space-y-1">
               <span className="font-semibold block text-primary print:text-black">Pihak Kedua (Peminjam):</span>
               <p><span className="text-muted-foreground print:text-gray-600">Nama Lengkap:</span> <strong>{data.borrowerName}</strong></p>
-              {data.borrowerPhone ? (
-                <p><span className="text-muted-foreground print:text-gray-600">No. Telepon / WA:</span> {data.borrowerPhone}</p>
-              ) : null}
-              {data.borrowerEmail ? (
-                <p><span className="text-muted-foreground print:text-gray-600">Email:</span> {data.borrowerEmail}</p>
-              ) : null}
-              {!data.borrowerPhone && !data.borrowerEmail && (
-                <p><span className="text-muted-foreground print:text-gray-600">No. Kontak / WA:</span> {data.borrowerContact}</p>
-              )}
+              <p><span className="text-muted-foreground print:text-gray-600">No. Kontak / WA:</span> {data.borrowerContact}</p>
             </div>
           </div>
 

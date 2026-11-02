@@ -25,7 +25,7 @@ export default async function RiwayatPage() {
 
   return (
     <div className="space-y-6">
-      <div className="shrink-0 space-y-1">
+      <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Riwayat Peminjaman
         </h1>
@@ -39,7 +39,7 @@ export default async function RiwayatPage() {
           Anda belum memiliki pengajuan peminjaman.
         </div>
       ) : (
-        <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-2 pb-2">
+        <div className="space-y-3">
           {records.map((record) => (
             <article
               key={record.id}
@@ -48,7 +48,6 @@ export default async function RiwayatPage() {
               <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                 <div>
                   <p className="font-semibold text-foreground">{record.item.name}</p>
-                  {/* deslop-ignore-next-line 34 */}
                   <p className="mt-1 font-mono text-xs text-muted-foreground">
                     {record.item.code} · {record.borrowCode}
                   </p>
@@ -56,7 +55,7 @@ export default async function RiwayatPage() {
                 <StatusBadge status={record.status} />
               </div>
 
-              <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-4">
+              <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
                 <div>
                   <dt className="text-xs text-muted-foreground">Jumlah</dt>
                   <dd className="mt-1 text-foreground">
@@ -78,8 +77,8 @@ export default async function RiwayatPage() {
               </dl>
 
               {record.status === BorrowStatus.APPROVED && (
-                <p className="mt-4 flex items-center gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-foreground">
-                  <PackageCheck className="h-4 w-4 shrink-0 text-primary" />
+                <p className="mt-4 flex items-center gap-2 rounded-md bg-blue-500/10 px-3 py-2 text-sm text-blue-800 dark:text-blue-300">
+                  <PackageCheck className="h-4 w-4 shrink-0" />
                   Silakan ambil barang di kantor BPTI.
                 </p>
               )}
@@ -110,15 +109,15 @@ function StatusBadge({ status }: { status: BorrowStatus }) {
   const colorClass = isRejected
     ? "border-destructive/30 bg-destructive/10 text-destructive"
     : isApproved
-      ? "border-primary/30 bg-primary/10 text-primary"
+      ? "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300"
       : isReturned
-        ? "border-border bg-muted text-foreground"
+        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
         : status === BorrowStatus.DIPINJAM || status === BorrowStatus.TERLAMBAT
           ? "border-primary/20 bg-primary/10 text-primary"
-          : "border-border bg-muted text-muted-foreground";
+          : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300";
 
   return (
-    <span className={`inline-flex w-fit items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium ${colorClass}`}>
+    <span className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${colorClass}`}>
       <Icon className="h-3.5 w-3.5" />
       {statusLabels[status]}
     </span>

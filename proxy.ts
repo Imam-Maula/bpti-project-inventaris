@@ -24,11 +24,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const role = await getSessionRole(request);
 
-  if (
-    pathname === "/login" ||
-    pathname === "/register" ||
-    pathname === "/forgot-password"
-  ) {
+  if (pathname === "/login" || pathname === "/register") {
     if (role) {
       return NextResponse.redirect(
         new URL(role === "ADMIN" ? "/" : "/barang", request.url)
@@ -59,6 +55,6 @@ export const config = {
     /*
      * Match semua rute kecuali file aset statis dan metadata browser:
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|eot|map)$).*)",
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

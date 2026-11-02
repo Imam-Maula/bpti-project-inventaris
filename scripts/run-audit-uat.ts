@@ -106,9 +106,7 @@ async function runAuditUat() {
   const borrowRecord = await createBorrowTransactionService(prisma, admin.id, {
     itemId: updatedItem.id,
     borrowerName: "Mahasiswa Penguji Audit",
-    borrowerPhone: "081299998888",
-    borrowerEmail: "audit.tester@uhamka.ac.id",
-    borrowerContact: "081299998888 | audit.tester@uhamka.ac.id",
+    borrowerContact: "081299998888",
     borrowQuantity: 2,
     dueDate: new Date(Date.now() + 86400000 * 3),
     notes: "Pengujian audit log sirkulasi",
@@ -167,7 +165,7 @@ async function runAuditUat() {
       mimeType: "image/png",
     },
   });
-  const storedImage = await prisma.itemImage.findFirst({
+  const storedImage = await prisma.itemImage.findUnique({
     where: { itemId: updatedItem.id },
   });
   if (
@@ -177,8 +175,9 @@ async function runAuditUat() {
   ) {
     throw new Error("Gambar barang tidak tersimpan dengan benar");
   }
-  await prisma.itemImage.deleteMany({ where: { itemId: updatedItem.id } });
+  await prisma.itemImage.delete({ where: { itemId: updatedItem.id } });
   console.log("[PASS] Gambar tersimpan dan dapat dibaca kembali dari database.");
+
   // Cleanup testing item
   await deleteItemService(prisma, updatedItem.id);
   console.log(`[CLEANUP] Item pengujian berhasil dihapus/diarsipkan.`);

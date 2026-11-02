@@ -32,8 +32,6 @@ async function main() {
     select: {
       borrowCode: true,
       borrowerName: true,
-      borrowerPhone: true,
-      borrowerEmail: true,
       borrowerContact: true,
       borrowQuantity: true,
       status: true,
@@ -50,8 +48,6 @@ async function main() {
     records.map((r) => ({
       code: r.borrowCode,
       peminjam: r.borrowerName,
-      telepon: r.borrowerPhone,
-      email: r.borrowerEmail,
       kontak: r.borrowerContact,
       barang: `${r.item.code} - ${r.item.name}`,
       qty: r.borrowQuantity,

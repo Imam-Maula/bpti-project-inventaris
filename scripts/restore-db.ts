@@ -82,7 +82,6 @@ async function runRestore() {
     // Bersihkan tabel anak terlebih dahulu untuk menjaga integritas relasional FK
     await tx.auditLog.deleteMany();
     await tx.borrowRecord.deleteMany();
-    await tx.itemImage.deleteMany();
     await tx.item.deleteMany();
     await tx.user.deleteMany();
 
@@ -113,10 +112,8 @@ interface BackupItem {
   quarantinedQuantity?: number;
   resolvedDamagedQuantity?: number;
   location: string;
-
   photoCaption?: string | null;
   photoPath?: string | null;
-
   condition: "BAIK" | "RUSAK_RINGAN" | "RUSAK_BERAT";
   status: "AKTIF" | "DIARSIPKAN";
   createdAt: string | Date;
@@ -158,7 +155,6 @@ interface BackupItem {
       itemId: string;
       imageData: string;
       mimeType: string;
-      order?: number;
       updatedAt: string | Date;
     }[]) {
       await tx.itemImage.create({
@@ -166,7 +162,6 @@ interface BackupItem {
           itemId: image.itemId,
           imageData: Buffer.from(image.imageData, "base64"),
           mimeType: image.mimeType,
-          order: image.order ?? 0,
           updatedAt: new Date(image.updatedAt),
         },
       });
@@ -181,9 +176,7 @@ interface BackupItem {
           itemId: br.itemId,
           adminId: br.adminId,
           borrowerName: br.borrowerName,
-          borrowerPhone: br.borrowerPhone || "",
-          borrowerEmail: br.borrowerEmail || "",
-          borrowerContact: br.borrowerContact || "",
+          borrowerContact: br.borrowerContact,
           borrowQuantity: br.borrowQuantity,
           borrowDate: new Date(br.borrowDate),
           dueDate: new Date(br.dueDate),
@@ -194,7 +187,6 @@ interface BackupItem {
           updatedAt: new Date(br.updatedAt),
         },
       });
-
       if (
         br.borrowGoodQuantity !== undefined ||
         br.borrowLightDamageQuantity !== undefined

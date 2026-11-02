@@ -1,4 +1,3 @@
-// deslop-ignore-file 34
 "use client";
 
 import { useEffect, useState } from "react";
@@ -119,16 +118,16 @@ export function AuditLogDetailModal({
   // Helper badge warna aksi
   const getActionBadgeColor = (action: string) => {
     if (action.includes("TAMBAH") || action.includes("PULIHKAN")) {
-      return "border-border bg-primary/10 text-primary";
+      return "border-emerald-500/20 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400";
     }
     if (action.includes("UBAH") || action.includes("PENGEMBALIAN")) {
-      return "border-border bg-card text-foreground";
+      return "border-blue-500/20 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400";
     }
     if (action.includes("ARSIP")) {
-      return "border-border bg-muted text-muted-foreground";
+      return "border-amber-500/20 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400";
     }
     if (action.includes("HAPUS")) {
-      return "border-destructive/30 bg-destructive/10 text-destructive";
+      return "border-rose-500/20 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400";
     }
     return "border-border bg-muted text-foreground";
   };
@@ -142,12 +141,12 @@ export function AuditLogDetailModal({
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 transition-opacity"
+        className="fixed inset-0 bg-black/60 transition-opacity backdrop-blur-xs"
         onClick={onClose}
       />
 
       {/* Modal Container */}
-      <div className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg border border-border bg-card text-card-foreground shadow-lg">
+      <div className="relative z-10 flex max-h-[90vh] w-full max-w-2xl flex-col rounded-xl border border-border bg-card text-card-foreground shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div className="flex items-center gap-3">
@@ -158,7 +157,7 @@ export function AuditLogDetailModal({
               <div className="flex items-center gap-2">
                 <h2
                   id="audit-detail-title"
-                  className="text-xl font-bold tracking-tight text-foreground"
+                  className="text-lg font-bold tracking-tight text-foreground"
                 >
                   Detail Histori Audit Trail
                 </h2>
@@ -188,7 +187,6 @@ export function AuditLogDetailModal({
         {/* Content Body */}
         <div className="overflow-y-auto p-6 space-y-5 text-xs">
           {/* Metadata Grid */}
-          {/* deslop-ignore-next-line 28 */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-lg border border-border bg-muted/30 p-3">
               <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
@@ -291,7 +289,7 @@ export function AuditLogDetailModal({
                             key={entry.key}
                             className={
                               entry.isChanged
-                                ? "bg-muted/40 hover:bg-muted/60 transition-colors"
+                                ? "bg-amber-500/5 hover:bg-amber-500/10 transition-colors"
                                 : "hover:bg-muted/20"
                             }
                           >
@@ -300,8 +298,7 @@ export function AuditLogDetailModal({
                             </td>
                             <td className="py-2 px-3">
                               {entry.oldVal !== "—" && entry.isChanged ? (
-                                /* deslop-ignore-next-line 09 */
-                                <span className="inline-block rounded border border-border bg-muted px-1.5 py-0.5 text-muted-foreground line-through">
+                                <span className="inline-block rounded bg-rose-500/10 px-1.5 py-0.5 text-rose-700 dark:text-rose-400 line-through">
                                   {entry.oldVal}
                                 </span>
                               ) : (
@@ -312,7 +309,7 @@ export function AuditLogDetailModal({
                             </td>
                             <td className="py-2 px-3">
                               {entry.newVal !== "—" && entry.isChanged ? (
-                                <span className="inline-block rounded border border-border bg-card px-1.5 py-0.5 font-semibold text-foreground">
+                                <span className="inline-block rounded bg-emerald-500/10 px-1.5 py-0.5 font-semibold text-emerald-700 dark:text-emerald-400">
                                   {entry.newVal}
                                 </span>
                               ) : (

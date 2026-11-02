@@ -34,13 +34,12 @@ export function RejectionReasonDialog({
             onClick={() => setIsOpen(false)}
             className="fixed inset-0 cursor-default bg-black/60"
           />
-          <section className="relative z-10 w-full max-w-md rounded-lg border border-border bg-card p-5 text-card-foreground shadow-md">
+          <section className="relative z-10 w-full max-w-md rounded-lg border border-border bg-card p-5 text-card-foreground shadow-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 id="rejection-reason-title" className="font-semibold">
                   Alasan Pengajuan Ditolak
                 </h2>
-                {/* deslop-ignore-next-line 34 */}
                 <p className="mt-1 font-mono text-xs text-muted-foreground">
                   {borrowCode}
                 </p>
