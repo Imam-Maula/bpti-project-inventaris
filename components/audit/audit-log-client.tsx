@@ -1,4 +1,3 @@
-// deslop-ignore-file 34
 "use client";
 
 import { useState, useTransition, useMemo } from "react";
@@ -167,13 +166,17 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
   const getActionBadge = (action: string) => {
     let classes = "border-border bg-muted text-foreground";
     if (action.includes("TAMBAH") || action.includes("PULIHKAN")) {
-      classes = "border-border bg-primary/10 text-primary";
+      classes =
+        "border-emerald-500/20 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400";
     } else if (action.includes("UBAH") || action.includes("PENGEMBALIAN")) {
-      classes = "border-border bg-card text-foreground";
+      classes =
+        "border-blue-500/20 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400";
     } else if (action.includes("ARSIP")) {
-      classes = "border-border bg-muted text-muted-foreground";
+      classes =
+        "border-amber-500/20 bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400";
     } else if (action.includes("HAPUS")) {
-      classes = "border-destructive/30 bg-destructive/10 text-destructive";
+      classes =
+        "border-rose-500/20 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400";
     }
 
     return (
@@ -186,64 +189,64 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
   };
 
   return (
-    <div className="flex h-full flex-1 flex-col min-h-0 overflow-hidden space-y-4">
-      {/* Kartu Ringkasan Metrik Audit (Statis & Tetap Diam) */}
-      <div className="shrink-0 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-        <div className="rounded-lg border border-border bg-card p-2.5 shadow-xs">
-          <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-            <History className="h-3.5 w-3.5 text-primary" />
-            <span className="text-[11px]">Total Log Tercatat</span>
+    <div className="space-y-6">
+      {/* Kartu Ringkasan Metrik Audit */}
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
+          <div className="flex items-center gap-2 text-muted-foreground text-xs">
+            <History className="h-4 w-4 text-primary" />
+            <span>Total Log Tercatat</span>
           </div>
-          <p className="mt-1 text-lg font-bold tracking-tight text-foreground">
+          <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">
             {stats.total}{" "}
-            <span className="text-[11px] font-normal text-muted-foreground">
+            <span className="text-xs font-normal text-muted-foreground">
               entri
             </span>
           </p>
         </div>
 
-        <div className="rounded-lg border border-border bg-card p-2.5 shadow-xs">
-          <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-            <Package className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
-            <span className="text-[11px]">Mutasi Barang</span>
+        <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
+          <div className="flex items-center gap-2 text-muted-foreground text-xs">
+            <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <span>Mutasi Master Barang</span>
           </div>
-          <p className="mt-1 text-lg font-bold tracking-tight text-foreground">
+          <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">
             {stats.itemLogs}{" "}
-            <span className="text-[11px] font-normal text-muted-foreground">
+            <span className="text-xs font-normal text-muted-foreground">
               aktivitas
             </span>
           </p>
         </div>
 
-        <div className="rounded-lg border border-border bg-card p-2.5 shadow-xs">
-          <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-            <ArrowLeftRight className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-[11px]">Sirkulasi</span>
+        <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
+          <div className="flex items-center gap-2 text-muted-foreground text-xs">
+            <ArrowLeftRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <span>Sirkulasi Peminjaman</span>
           </div>
-          <p className="mt-1 text-lg font-bold tracking-tight text-foreground">
+          <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">
             {stats.borrowLogs}{" "}
-            <span className="text-[11px] font-normal text-muted-foreground">
+            <span className="text-xs font-normal text-muted-foreground">
               transaksi
             </span>
           </p>
         </div>
 
-        <div className="rounded-lg border border-border bg-card p-2.5 shadow-xs">
-          <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-            <User className="h-3.5 w-3.5 text-foreground" />
-            <span className="text-[11px]">Admin Terlibat</span>
+        <div className="rounded-xl border border-border bg-card p-4 shadow-xs">
+          <div className="flex items-center gap-2 text-muted-foreground text-xs">
+            <User className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+            <span>Admin Terlibat</span>
           </div>
-          <p className="mt-1 text-lg font-bold tracking-tight text-foreground">
+          <p className="mt-2 text-2xl font-bold tracking-tight text-foreground">
             {stats.uniqueAdmins}{" "}
-            <span className="text-[11px] font-normal text-muted-foreground">
+            <span className="text-xs font-normal text-muted-foreground">
               petugas
             </span>
           </p>
         </div>
       </div>
 
-      {/* Toolbar Filter & Aksi (Statis & Tetap Diam) */}
-      <div className="shrink-0 flex flex-col gap-2.5 rounded-lg border border-border bg-card p-2.5 shadow-xs md:flex-row md:items-center md:justify-between">
+      {/* Toolbar Filter & Aksi */}
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-xs md:flex-row md:items-center md:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center">
           {/* Pencarian */}
           <div className="relative flex-1">
@@ -286,7 +289,6 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
               <option value="TAMBAH_BARANG">TAMBAH_BARANG</option>
               <option value="UBAH_BARANG">UBAH_BARANG</option>
               <option value="UBAH_GAMBAR_BARANG">UBAH_GAMBAR_BARANG</option>
-
               <option value="PULIHKAN_KARANTINA">PULIHKAN_KARANTINA</option>
               <option value="ARSIPKAN_BARANG">ARSIPKAN_BARANG</option>
               <option value="AKTIFKAN_BARANG">AKTIFKAN_BARANG</option>
@@ -328,18 +330,18 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
         </div>
       </div>
 
-      {/* Tabel Log Aktivitas - Area Scroll Mandiri */}
-      <div className="flex flex-1 flex-col min-h-0 rounded-lg border border-border bg-card shadow-xs">
-        <div className="flex-1 overflow-auto rounded-md">
+      {/* Tabel Log Aktivitas */}
+      <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden">
+        <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="sticky top-0 z-10 border-b border-border bg-muted text-xs font-semibold text-muted-foreground shadow-2xs">
-              <tr>
-                <th className="py-2 px-3 whitespace-nowrap">Waktu & Tanggal</th>
-                <th className="py-2 px-3 whitespace-nowrap">Admin Pelaksana</th>
-                <th className="py-2 px-3 whitespace-nowrap">Jenis Tindakan</th>
-                <th className="py-2 px-3 whitespace-nowrap">Target Entitas</th>
-                <th className="py-2 px-3">Rincian Narasi</th>
-                <th className="py-2 px-3 text-right whitespace-nowrap">Aksi</th>
+            <thead>
+              <tr className="border-b border-border bg-muted/40 font-semibold text-muted-foreground">
+                <th className="py-3 px-4 whitespace-nowrap">Waktu & Tanggal</th>
+                <th className="py-3 px-4 whitespace-nowrap">Admin Pelaksana</th>
+                <th className="py-3 px-4 whitespace-nowrap">Jenis Tindakan</th>
+                <th className="py-3 px-4 whitespace-nowrap">Target Entitas</th>
+                <th className="py-3 px-4">Rincian Narasi</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -363,33 +365,33 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
                       className="hover:bg-muted/30 transition-colors"
                     >
                       {/* Waktu */}
-                      <td className="py-1.5 px-3 whitespace-nowrap">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         <div className="font-semibold text-foreground">
                           {timeStr} WIB
                         </div>
-                        <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                        <div className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
                           <Calendar className="h-3 w-3" />
                           {dateStr}
                         </div>
                       </td>
 
                       {/* Admin */}
-                      <td className="py-1.5 px-3 whitespace-nowrap">
-                        <div className="font-medium text-foreground leading-tight">
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <div className="font-medium text-foreground">
                           {log.admin.name}
                         </div>
-                        <div className="text-[10px] text-muted-foreground font-mono">
+                        <div className="text-[11px] text-muted-foreground font-mono">
                           @{log.admin.username}
                         </div>
                       </td>
 
                       {/* Jenis Tindakan */}
-                      <td className="py-1.5 px-3 whitespace-nowrap">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         {getActionBadge(log.action)}
                       </td>
 
                       {/* Entitas */}
-                      <td className="py-1.5 px-3 whitespace-nowrap">
+                      <td className="py-3 px-4 whitespace-nowrap">
                         <span className="font-medium text-foreground">
                           {log.entityType}
                         </span>
@@ -402,9 +404,9 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
                       </td>
 
                       {/* Rincian Naratif */}
-                      <td className="py-1.5 px-3">
+                      <td className="py-3 px-4">
                         <p
-                          className="text-foreground/90 line-clamp-2 leading-snug"
+                          className="text-foreground/90 line-clamp-2 leading-relaxed"
                           title={log.details}
                         >
                           {log.details}
@@ -412,7 +414,7 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
                       </td>
 
                       {/* Aksi */}
-                      <td className="py-1.5 px-3 text-right whitespace-nowrap">
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => {
@@ -465,9 +467,9 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
           </table>
         </div>
 
-        {/* Footer Pagination - Tetap Terlihat di Bawah Tabel */}
+        {/* Footer Pagination */}
         {totalItems > 0 && (
-          <div className="shrink-0 border-t border-border px-4 py-3 bg-card">
+          <div className="border-t border-border px-4 py-3 bg-muted/10">
             <Pagination
               currentPage={safeCurrentPage}
               totalPages={totalPages}

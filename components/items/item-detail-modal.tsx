@@ -125,7 +125,6 @@ function ItemDetailContent({
             </div>
 
             {/* Grid Metrik Stok & Rincian Kondisi */}
-            {/* deslop-ignore-next-line 28 */}
             <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
               <div className="rounded-md border border-border bg-muted/30 p-2.5">
                 <span className="text-[11px] text-muted-foreground">Total Fisik</span>

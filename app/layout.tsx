@@ -1,20 +1,8 @@
-// deslop-ignore-file 33 34
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { GeistSans } from "geist/font/sans";
+import { GeistMono } from "geist/font/mono";
 import { ToastProvider } from "@/components/ui/toast";
 import "./globals.css";
-
-const fontSans = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-});
-
-const fontMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: {
@@ -22,7 +10,7 @@ export const metadata: Metadata = {
     template: "%s | BPTI Inventaris",
   },
   description:
-    "Sistem Manajemen Inventaris & Sirkulasi Aset Badan Pengembangan Teknologi Informasi (BPTI) UHAMKA",
+    "Sistem Manajemen Inventaris & Sirkulasi Aset Badan Pengembangan Teknologi Informasi (BPTI)",
   icons: {
     icon: "/logo-bpti.png",
     shortcut: "/logo-bpti.png",
@@ -38,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <body
-        className={`${fontSans.variable} ${fontMono.variable} min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary font-sans font-normal`}
+        className={`${GeistSans.variable} ${GeistMono.variable} min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary`}
       >
         <ToastProvider>{children}</ToastProvider>
       </body>

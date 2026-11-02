@@ -36,7 +36,6 @@ model User {
   id            String         @id @default(uuid())
   username      String         @unique
   email         String?        @unique @db.VarChar(254)
-  phone         String?        @db.VarChar(30)
   password      String
   name          String
   role          Role           @default(USER)
@@ -61,18 +60,6 @@ model OtpVerification {
   @@map("otp_verifications")
 }
 
-model PasswordResetOtp {
-  id        String   @id @default(uuid())
-  email     String   @unique @db.VarChar(254)
-  code      String   @db.Char(6)
-  attempts  Int      @default(0)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  @@map("password_reset_otps")
-}
-
-
 model Item {
   id                      String         @id @default(uuid())
   code                    String         @unique
@@ -92,23 +79,19 @@ model Item {
   photoCaption            String?        @db.VarChar(500)
   photoPath               String?        @db.VarChar(255)
   borrowRecords           BorrowRecord[]
-  images                  ItemImage[]
+  image                   ItemImage?
 
   @@index([status, category])
   @@map("items")
 }
 
 model ItemImage {
-  id        String   @id @default(uuid())
-  itemId    String
+  itemId    String   @id
   imageData Bytes    @db.LongBlob
   mimeType  String   @db.VarChar(50)
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
-  @@index([itemId, order])
   @@map("item_images")
 }
 
@@ -122,9 +105,7 @@ model BorrowRecord {
   userId          String?
   user            User?        @relation("BorrowRecordUser", fields: [userId], references: [id], onDelete: SetNull)
   borrowerName    String
-  borrowerPhone   String       @default("")
-  borrowerEmail   String       @default("")
-  borrowerContact String       @default("")
+  borrowerContact String
   borrowQuantity  Int
   borrowDate      DateTime     @default(now())
   dueDate         DateTime

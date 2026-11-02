@@ -187,9 +187,7 @@ erDiagram
         string adminId FK "Admin pemroses (nullable)"
         string userId FK "User pengaju (nullable untuk data lama)"
         string borrowerName "Nama Staf Peminjam"
-        string borrowerPhone "Nomor Telepon/WhatsApp Peminjam"
-        string borrowerEmail "Alamat Email Peminjam"
-        string borrowerContact "Kontak Gabungan Peminjam (Legacy & Search)"
+        string borrowerContact "Nomor WhatsApp/HP Peminjam"
         int borrowQuantity "Jumlah Unit Dipinjam"
         datetime borrowDate "Tanggal Mulai Pinjam"
         datetime dueDate "Tenggat Waktu Pengembalian"
@@ -220,7 +218,6 @@ Persamaan ini dijaga secara mutlak oleh blok transaksi `prisma.$transaction`.
 
 Gambar disimpan sebagai data biner di tabel `item_images` pada MySQL dan ikut dimasukkan ke berkas backup/restore basis data.
 Setelah memperbarui skema pada instalasi yang sudah ada, jalankan `pnpm db:push` untuk membuat tabel tersebut.
-
 
 ### SOP-02: Transaksi Sirkulasi Peminjaman Aset (FR-TRX-01)
 1. User memilih barang di katalog, lalu mengisi jumlah, tanggal pinjam/kembali, dan catatan keperluan.

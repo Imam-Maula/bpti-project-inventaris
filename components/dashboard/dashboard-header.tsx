@@ -7,7 +7,7 @@ import { Role } from "@prisma/client";
 const pageTitles: Record<string, { title: string; description: string }> = {
   "/": {
     title: "Ringkasan Dasbor",
-    description: "Statistik aset inventaris dan aktivitas sirkulasi BPTI",
+    description: "Statistik aset inventaris dan aktivitas sirkulasi",
   },
   "/barang": {
     title: "Master Barang",
@@ -15,15 +15,11 @@ const pageTitles: Record<string, { title: string; description: string }> = {
   },
   "/riwayat": {
     title: "Riwayat Peminjaman",
-    description: "Status pengajuan dan riwayat peminjaman aset",
+    description: "Status pengajuan dan riwayat peminjaman Anda",
   },
   "/sirkulasi": {
     title: "Sirkulasi Peminjaman",
     description: "Pencatatan peminjaman dan pengembalian aset",
-  },
-  "/aktivitas": {
-    title: "Log Aktivitas & Audit Trail",
-    description: "Rekam jejak kronologis dan transparansi riwayat perubahan data master aset serta transaksi sirkulasi BPTI.",
   },
 };
 
@@ -35,11 +31,11 @@ export function DashboardHeader({ role, name }: { role: Role; name: string }) {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-background px-4 sm:px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-background px-6">
       <div className="pl-10 lg:pl-0">
-        <h1 className="text-xl font-semibold text-foreground leading-tight">
+        <span className="block text-sm font-semibold text-foreground sm:text-base">
           {current.title}
-        </h1>
+        </span>
         <p className="hidden text-xs text-muted-foreground sm:block">
           {current.description}
         </p>
@@ -50,12 +46,9 @@ export function DashboardHeader({ role, name }: { role: Role; name: string }) {
         <ThemeToggle />
 
         {/* Info Sesi Administrator */}
-        <div className="flex items-center gap-2 border-l border-border pl-3 text-xs">
+        <div className="flex items-center gap-2 border-l border-border pl-3 text-xs text-muted-foreground">
           <span className="font-medium text-foreground">
-            {name}
-          </span>
-          <span className="rounded-md border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
-            {role === Role.ADMIN ? "Admin" : "User"}
+            {name} · {role === Role.ADMIN ? "Admin" : "User"}
           </span>
         </div>
       </div>

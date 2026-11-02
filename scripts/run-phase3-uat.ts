@@ -210,9 +210,7 @@ async function main() {
       const record = await createBorrowTransactionService(prisma, adminUser!.id, {
         itemId: testItemId,
         borrowerName: "Ir. M. Ridwan (Pusat Riset)",
-        borrowerPhone: "081288887777",
-        borrowerEmail: "ridwan@uhamka.ac.id",
-        borrowerContact: "081288887777 | ridwan@uhamka.ac.id",
+        borrowerContact: "081288887777",
         borrowQuantity,
         dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         notes: "Uji sirkulasi via service domain",
@@ -240,7 +238,6 @@ async function main() {
           borrowQuantity: 2,
           borrowDate: new Date(),
           dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          borrowerPhone: "081211112222",
         },
         { name: "User Uji Pengajuan", email: "uat-user@example.com" }
       );
@@ -266,7 +263,6 @@ async function main() {
               borrowQuantity: 6,
               borrowDate: new Date(),
               dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-              borrowerPhone: "081233335555",
             },
             { name: "User Uji Kedua", email: "uat-user-2@example.com" }
           );
@@ -304,9 +300,7 @@ async function main() {
         await createBorrowTransactionService(prisma, adminUser!.id, {
           itemId: testItemId,
           borrowerName: "Peminjam Ilegal",
-          borrowerPhone: "081200000000",
-          borrowerEmail: "ilegal@uhamka.ac.id",
-          borrowerContact: "081200000000 | ilegal@uhamka.ac.id",
+          borrowerContact: "081200000000",
           borrowQuantity: 8, // Sisa hanya 7 unit
           dueDate: new Date(),
           notes: "Over borrow",
@@ -390,9 +384,7 @@ async function main() {
       const overdueRecord = await createBorrowTransactionService(prisma, adminUser!.id, {
         itemId: testItemId,
         borrowerName: "Staf Terlambat",
-        borrowerPhone: "081299990000",
-        borrowerEmail: "terlambat@uhamka.ac.id",
-        borrowerContact: "081299990000 | terlambat@uhamka.ac.id",
+        borrowerContact: "081299990000",
         borrowQuantity: 1,
         dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000), // Kemarin
         notes: "Uji filter keterlambatan",
@@ -459,18 +451,14 @@ async function main() {
         createBorrowTransactionService(prisma, adminUser!.id, {
           itemId: raceItemId,
           borrowerName: "Staf Konkuren A",
-          borrowerPhone: "081233334444",
-          borrowerEmail: "konkuren.a@uhamka.ac.id",
-          borrowerContact: "081233334444 | konkuren.a@uhamka.ac.id",
+          borrowerContact: "081233334444",
           borrowQuantity: 1,
           dueDate: new Date(),
         }),
         createBorrowTransactionService(prisma, adminUser!.id, {
           itemId: raceItemId,
           borrowerName: "Staf Konkuren B",
-          borrowerPhone: "081255556666",
-          borrowerEmail: "konkuren.b@uhamka.ac.id",
-          borrowerContact: "081255556666 | konkuren.b@uhamka.ac.id",
+          borrowerContact: "081255556666",
           borrowQuantity: 1,
           dueDate: new Date(),
         }),
