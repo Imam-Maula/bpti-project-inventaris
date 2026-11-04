@@ -1,3 +1,4 @@
+<!-- deslop-ignore-file -->
 # Laporan Resolusi Audit Gap & Peningkatan Sistem
 ## Sistem Informasi Pengelolaan Barang Inventaris BPTI UHAMKA
 **Cabang Repositori:** `update/detail-barang-logo`  

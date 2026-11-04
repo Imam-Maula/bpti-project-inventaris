@@ -15,9 +15,13 @@ import {
   loginSchema,
   registerUserSchema,
   verifyOtpSchema,
+  requestResetOtpSchema,
+  verifyResetOtpSchema,
+  resetPasswordWithOtpSchema,
   type RegisterUserInput,
+  type ResetPasswordWithOtpInput,
 } from "@/lib/validations/auth";
-import { sendOtpEmail } from "@/lib/mail";
+import { sendOtpEmail, sendPasswordResetOtpEmail } from "@/lib/mail";
 import {
   checkLoginRateLimit,
   recordFailedLogin,
@@ -124,7 +128,7 @@ export async function registerUser(
     };
   }
 
-  const { name, username, email, password } = validated.data;
+  const { name, username, email, phone, password } = validated.data;
   const existing = await prisma.user.findFirst({
     where: { OR: [{ username }, { email }] },
     select: { id: true },
@@ -148,14 +152,17 @@ export async function registerUser(
           name,
           username,
           email,
+          phone,
           password: passwordHash,
           role: Role.USER,
           isVerified: false,
         },
         select: { id: true },
       });
-      await tx.otpVerification.create({
-        data: { email, code, expiresAt },
+      await tx.otpVerification.upsert({
+        where: { email },
+        update: { code, attempts: 0, expiresAt },
+        create: { email, code, attempts: 0, expiresAt },
       });
       return user.id;
     });
@@ -277,6 +284,213 @@ export async function verifyOtp(emailInput: string, codeInput: string): Promise<
     return {
       success: false,
       message: "Terjadi kendala server saat memverifikasi OTP.",
+    };
+  }
+}
+
+/**
+ * Server Action: Mengirim kode OTP pemulihan kata sandi ke email pengguna.
+ */
+export async function requestPasswordResetOtp(emailInput: string): Promise<AuthActionResult> {
+  const validated = requestResetOtpSchema.safeParse({ email: emailInput });
+  if (!validated.success) {
+    return {
+      success: false,
+      message: validated.error.issues[0]?.message ?? "Format email tidak valid.",
+    };
+  }
+
+  const { email } = validated.data;
+
+  try {
+    const user = await prisma.user.findFirst({
+      where: { email },
+      select: { id: true, name: true, isVerified: true },
+    });
+
+    if (!user) {
+      return {
+        success: false,
+        message: "Email tidak ditemukan dalam sistem akun inventaris.",
+      };
+    }
+
+    const code = randomInt(100_000, 1_000_000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 menit
+
+    await prisma.passwordResetOtp.upsert({
+      where: { email },
+      update: { code, attempts: 0, expiresAt },
+      create: { email, code, attempts: 0, expiresAt },
+    });
+
+    await sendPasswordResetOtpEmail(email, code);
+
+    return {
+      success: true,
+      email,
+      message: "Kode OTP untuk reset kata sandi telah dikirimkan ke email Anda.",
+    };
+  } catch (error) {
+    console.error("Kesalahan saat meminta OTP reset kata sandi:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : "Terjadi kendala saat mengirimkan OTP.",
+    };
+  }
+}
+
+/**
+ * Server Action: Memverifikasi kode OTP reset password.
+ */
+export async function verifyPasswordResetOtp(
+  emailInput: string,
+  codeInput: string
+): Promise<AuthActionResult> {
+  const validated = verifyResetOtpSchema.safeParse({ email: emailInput, code: codeInput });
+  if (!validated.success) {
+    return {
+      success: false,
+      message: validated.error.issues[0]?.message ?? "Kode OTP tidak valid.",
+    };
+  }
+
+  const { email, code } = validated.data;
+  const now = new Date();
+
+  try {
+    const otp = await prisma.passwordResetOtp.findUnique({ where: { email } });
+    if (!otp) {
+      return {
+        success: false,
+        message: "Permintaan OTP reset kata sandi tidak ditemukan atau telah kedaluwarsa.",
+      };
+    }
+
+    if (otp.expiresAt <= now) {
+      await prisma.passwordResetOtp.deleteMany({ where: { email } });
+      return {
+        success: false,
+        message: "Kode OTP telah kedaluwarsa. Silakan minta kode OTP baru.",
+      };
+    }
+
+    if (otp.attempts >= 5) {
+      return {
+        success: false,
+        message: "Batas percobaan OTP terlampaui. Silakan minta kode OTP baru.",
+      };
+    }
+
+    if (otp.code !== code) {
+      await prisma.passwordResetOtp.updateMany({
+        where: { email, attempts: { lt: 5 }, expiresAt: { gt: now } },
+        data: { attempts: { increment: 1 } },
+      });
+      return {
+        success: false,
+        message: "Kode OTP tidak cocok. Periksa kembali email Anda.",
+      };
+    }
+
+    return {
+      success: true,
+      email,
+      message: "Kode OTP valid.",
+    };
+  } catch (error) {
+    console.error("Kesalahan verifikasi OTP reset password:", error);
+    return {
+      success: false,
+      message: "Terjadi kesalahan saat memverifikasi kode OTP.",
+    };
+  }
+}
+
+/**
+ * Server Action: Memperbarui kata sandi akun dengan kode OTP secara atomik.
+ */
+export async function resetPasswordWithOtp(
+  input: ResetPasswordWithOtpInput
+): Promise<AuthActionResult> {
+  const validated = resetPasswordWithOtpSchema.safeParse(input);
+  if (!validated.success) {
+    return {
+      success: false,
+      message: validated.error.issues[0]?.message ?? "Data reset kata sandi tidak valid.",
+      errors: validated.error.flatten().fieldErrors,
+    };
+  }
+
+  const { email, code, newPassword } = validated.data;
+  const now = new Date();
+
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const otp = await tx.passwordResetOtp.findUnique({ where: { email } });
+      if (!otp) {
+        return {
+          success: false,
+          message: "Permintaan OTP tidak ditemukan. Silakan ulangi langkah pemulihan.",
+        };
+      }
+
+      if (otp.expiresAt <= now) {
+        await tx.passwordResetOtp.deleteMany({ where: { email } });
+        return {
+          success: false,
+          message: "Kode OTP telah kedaluwarsa. Silakan minta kode baru.",
+        };
+      }
+
+      if (otp.attempts >= 5) {
+        return {
+          success: false,
+          message: "Batas percobaan OTP tercapai. Silakan ajukan ulang kode OTP baru.",
+        };
+      }
+
+      if (otp.code !== code) {
+        await tx.passwordResetOtp.updateMany({
+          where: { email, attempts: { lt: 5 }, expiresAt: { gt: now } },
+          data: { attempts: { increment: 1 } },
+        });
+        return {
+          success: false,
+          message: "Kode OTP tidak valid.",
+        };
+      }
+
+      // Hapus OTP yang sudah dipakai
+      await tx.passwordResetOtp.deleteMany({ where: { email, code } });
+
+      // Hash password baru dengan bcrypt
+      const passwordHash = await hashPassword(newPassword);
+
+      // Update password user
+      const updatedUser = await tx.user.updateMany({
+        where: { email },
+        data: { password: passwordHash },
+      });
+
+      if (updatedUser.count === 0) {
+        return {
+          success: false,
+          message: "Akun dengan email ini tidak ditemukan.",
+        };
+      }
+
+      return {
+        success: true,
+        email,
+        message: "Kata sandi Anda berhasil diperbarui. Silakan masuk menggunakan kata sandi baru.",
+      };
+    });
+  } catch (error) {
+    console.error("Kesalahan saat mereset kata sandi dengan OTP:", error);
+    return {
+      success: false,
+      message: "Terjadi kendala pada server saat memperbarui kata sandi.",
     };
   }
 }

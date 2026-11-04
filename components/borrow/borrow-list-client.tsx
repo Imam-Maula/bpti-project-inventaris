@@ -23,6 +23,8 @@ import {
   AlertTriangle,
   Download,
   FileText,
+  Phone,
+  Mail,
 } from "lucide-react";
 
 interface BorrowRecordWithItem {
@@ -31,6 +33,8 @@ interface BorrowRecordWithItem {
   itemId: string;
   adminId: string | null;
   borrowerName: string;
+  borrowerPhone: string;
+  borrowerEmail: string;
   borrowerContact: string;
   borrowQuantity: number;
   borrowDate: Date;
@@ -93,6 +97,8 @@ export function BorrowListClient({
         rec.borrowCode.toLowerCase().includes(search.toLowerCase()) ||
         rec.borrowerName.toLowerCase().includes(search.toLowerCase()) ||
         rec.borrowerContact.toLowerCase().includes(search.toLowerCase()) ||
+        (rec.borrowerPhone && rec.borrowerPhone.toLowerCase().includes(search.toLowerCase())) ||
+        (rec.borrowerEmail && rec.borrowerEmail.toLowerCase().includes(search.toLowerCase())) ||
         rec.item.name.toLowerCase().includes(search.toLowerCase()) ||
         rec.item.code.toLowerCase().includes(search.toLowerCase());
 
@@ -178,6 +184,8 @@ export function BorrowListClient({
       id: record.id,
       borrowCode: record.borrowCode,
       borrowerName: record.borrowerName,
+      borrowerPhone: record.borrowerPhone,
+      borrowerEmail: record.borrowerEmail,
       borrowerContact: record.borrowerContact,
       borrowQuantity: record.borrowQuantity,
       borrowDate: new Date(record.borrowDate),
@@ -198,6 +206,8 @@ export function BorrowListClient({
       id: record.id,
       borrowCode: record.borrowCode,
       borrowerName: record.borrowerName,
+      borrowerPhone: record.borrowerPhone,
+      borrowerEmail: record.borrowerEmail,
       borrowerContact: record.borrowerContact,
       borrowQuantity: record.borrowQuantity,
       borrowDate: record.borrowDate,
@@ -227,6 +237,8 @@ export function BorrowListClient({
     const headers = [
       "Kode Transaksi",
       "Nama Peminjam",
+      "No. Telepon Peminjam",
+      "Email Peminjam",
       "Kontak Peminjam",
       "Kode Barang",
       "Nama Barang",
@@ -241,6 +253,8 @@ export function BorrowListClient({
     const rows = recordsToExport.map((rec) => [
       `"${rec.borrowCode.replace(/"/g, '""')}"`,
       `"${rec.borrowerName.replace(/"/g, '""')}"`,
+      `"${(rec.borrowerPhone || "").replace(/"/g, '""')}"`,
+      `"${(rec.borrowerEmail || "").replace(/"/g, '""')}"`,
       `"${rec.borrowerContact.replace(/"/g, '""')}"`,
       `"${rec.item.code.replace(/"/g, '""')}"`,
       `"${rec.item.name.replace(/"/g, '""')}"`,
@@ -326,9 +340,9 @@ export function BorrowListClient({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Bar Kontrol & Filter */}
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex h-full flex-1 flex-col min-h-0 overflow-hidden space-y-4">
+      {/* Bar Kontrol & Filter (Statis & Tetap Diam) */}
+      <div className="shrink-0 flex flex-col gap-2.5 rounded-lg border border-border bg-card p-2.5 sm:flex-row sm:items-center sm:justify-between shadow-2xs">
         <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
           <LiveSearch
             value={search}
@@ -377,11 +391,11 @@ export function BorrowListClient({
         </div>
       </div>
 
-      {/* Bilah Aksi Massal (Bulk Action Bar) */}
+      {/* Bilah Aksi Massal (Bulk Action Bar) - Statis */}
       {selectedIds.size > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3.5 shadow-xs transition-all">
+        <div className="shrink-0 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3.5 shadow-xs transition-colors duration-150">
           <div className="flex flex-wrap items-center gap-2.5">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+            <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground">
               {selectedIds.size}
             </span>
             <span className="text-xs font-medium text-foreground">
@@ -420,13 +434,13 @@ export function BorrowListClient({
         </div>
       )}
 
-      {/* Tabel Sirkulasi Peminjaman */}
-      <div className="overflow-hidden rounded-md border border-border bg-card shadow-xs">
-        <div className="overflow-x-auto">
+      {/* Tabel Sirkulasi Peminjaman - Area Scroll Mandiri */}
+      <div className="flex flex-1 flex-col min-h-0 overflow-hidden rounded-md border border-border bg-card shadow-xs">
+        <div className="flex-1 overflow-auto">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-muted/40 text-xs font-medium text-muted-foreground">
+            <thead className="sticky top-0 z-10 border-b border-border bg-muted text-xs font-medium text-muted-foreground shadow-2xs whitespace-nowrap">
               <tr>
-                <th scope="col" className="w-10 px-3 py-3 text-center">
+                <th scope="col" className="w-10 px-2.5 py-2 text-center">
                   <input
                     type="checkbox"
                     checked={isAllPageSelected}
@@ -438,25 +452,28 @@ export function BorrowListClient({
                     aria-label="Pilih semua transaksi di halaman ini"
                   />
                 </th>
-                <th scope="col" className="px-4 py-3">
+                <th scope="col" className="px-3 py-2">
                   Kode Transaksi
                 </th>
-                <th scope="col" className="px-4 py-3">
+                <th scope="col" className="px-3 py-2">
                   Barang Inventaris
                 </th>
-                <th scope="col" className="px-4 py-3">
-                  Peminjam & Kontak
+                <th scope="col" className="px-3 py-2">
+                  Peminjam & No. Telepon
                 </th>
-                <th scope="col" className="px-4 py-3 text-center">
+                <th scope="col" className="px-3 py-2">
+                  Email Peminjam
+                </th>
+                <th scope="col" className="px-3 py-2 text-center">
                   Jumlah
                 </th>
-                <th scope="col" className="px-4 py-3">
+                <th scope="col" className="px-3 py-2">
                   Tenggat Waktu
                 </th>
-                <th scope="col" className="px-4 py-3">
+                <th scope="col" className="px-3 py-2">
                   Status
                 </th>
-                <th scope="col" className="px-4 py-3 text-right">
+                <th scope="col" className="px-3 py-2 text-right">
                   Aksi
                 </th>
               </tr>
@@ -465,7 +482,7 @@ export function BorrowListClient({
               {filteredRecords.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={8}
+                    colSpan={9}
                     className="px-4 py-8 text-center text-muted-foreground"
                   >
                     <ArrowLeftRight className="mx-auto mb-2 h-8 w-8 text-muted-foreground/60" />
@@ -490,7 +507,7 @@ export function BorrowListClient({
                         isSelected ? "bg-primary/5" : ""
                       }`}
                     >
-                      <td className="w-10 px-3 py-3 text-center">
+                      <td className="w-10 px-2.5 py-1.5 text-center">
                         <input
                           type="checkbox"
                           checked={isSelected}
@@ -499,12 +516,12 @@ export function BorrowListClient({
                           aria-label={`Pilih transaksi ${rec.borrowCode}`}
                         />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-1.5 whitespace-nowrap">
                         {/* deslop-ignore-next-line 34 */}
                         <span className="font-mono text-xs font-semibold text-foreground">
                           {rec.borrowCode}
                         </span>
-                        <div className="text-[11px] text-muted-foreground">
+                        <div className="text-[10px] text-muted-foreground">
                           {new Date(rec.borrowDate).toLocaleDateString("id-ID", {
                             day: "numeric",
                             month: "short",
@@ -512,27 +529,48 @@ export function BorrowListClient({
                           })}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-foreground">
+                      <td className="px-3 py-1.5">
+                        <div className="font-medium text-foreground leading-tight">
                           {rec.item.name}
                         </div>
                         {/* deslop-ignore-next-line 34 */}
-                        <div className="text-xs font-mono text-muted-foreground">
+                        <div className="text-[11px] font-mono text-muted-foreground">
                           {rec.item.code} &bull; {rec.item.location}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="text-foreground">{rec.borrowerName}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {rec.borrowerContact}
-                        </div>
+                      <td className="px-3 py-1.5">
+                        <div className="font-medium text-foreground leading-tight">{rec.borrowerName}</div>
+                        {rec.borrowerPhone ? (
+                          <div className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Phone className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            <span>{rec.borrowerPhone}</span>
+                          </div>
+                        ) : rec.borrowerContact ? (
+                          <div className="text-[11px] text-muted-foreground">
+                            {rec.borrowerContact}
+                          </div>
+                        ) : (
+                          <div className="text-[11px] text-muted-foreground">-</div>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-3 py-1.5">
+                        {rec.borrowerEmail ? (
+                          <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                            <Mail className="h-3 w-3 shrink-0 text-muted-foreground" />
+                            <span className="truncate max-w-[180px]" title={rec.borrowerEmail}>
+                              {rec.borrowerEmail}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground">-</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-1.5 text-center">
                         <span className="tabular-nums text-xs font-semibold text-foreground">
                           {rec.borrowQuantity} unit
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-xs">
+                      <td className="px-3 py-1.5 text-xs">
                         <div
                           className={
                             isOverdue
@@ -561,7 +599,7 @@ export function BorrowListClient({
                           </div>
                         )}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-3 py-1.5">
                         {rec.status === "DIPINJAM" && !isOverdue && (
                           <span className="inline-flex items-center gap-1 rounded border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
                             <Clock className="h-3 w-3" />
@@ -581,12 +619,14 @@ export function BorrowListClient({
                           </span>
                         )}
                         {rec.status === "PENDING" && (
-                          <span className="inline-flex items-center gap-1 rounded border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                          <span className="inline-flex items-center gap-1 rounded border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
+                            <Clock className="h-3 w-3 text-muted-foreground" />
                             Menunggu Persetujuan
                           </span>
                         )}
                         {rec.status === "APPROVED" && (
-                          <span className="inline-flex items-center gap-1 rounded border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[11px] font-medium text-blue-700 dark:text-blue-400">
+                          <span className="inline-flex items-center gap-1 rounded border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                            <CheckCircle2 className="h-3 w-3 text-primary" />
                             Disetujui — Menunggu Diambil
                           </span>
                         )}
@@ -596,7 +636,7 @@ export function BorrowListClient({
                           </span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-1.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {rec.status === "PENDING" && (
                             <>
@@ -664,15 +704,17 @@ export function BorrowListClient({
           </table>
         </div>
 
-        {/* Kontrol Paginasi Sirkulasi */}
-        <Pagination
-          currentPage={safeCurrentPage}
-          totalPages={totalPages}
-          totalItems={filteredRecords.length}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={setPageSize}
-        />
+        {/* Kontrol Paginasi Sirkulasi - Tetap Terlihat di Bawah Tabel */}
+        <div className="shrink-0 border-t border-border bg-card">
+          <Pagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            totalItems={filteredRecords.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
+        </div>
       </div>
 
       {/* Modal Catat Peminjaman */}
@@ -713,7 +755,7 @@ export function BorrowListClient({
           />
           <form
             onSubmit={handleReject}
-            className="relative z-10 w-full max-w-md space-y-4 rounded-lg border border-border bg-card p-5 text-card-foreground shadow-xl"
+            className="relative z-10 w-full max-w-md space-y-4 rounded-lg border border-border bg-card p-5 text-card-foreground shadow-md"
           >
             <div>
               <h2 id="reject-borrow-title" className="font-semibold">

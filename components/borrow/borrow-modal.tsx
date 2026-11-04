@@ -4,7 +4,7 @@ import { useState, useTransition, useMemo, useEffect } from "react";
 import { Item } from "@prisma/client";
 import { createBorrowAction } from "@/actions/borrow-actions";
 import { useToast } from "@/components/ui/toast";
-import { X, Loader2, AlertCircle } from "lucide-react";
+import { X, Loader2, AlertCircle, Phone, Mail } from "lucide-react";
 
 interface BorrowModalProps {
   open: boolean;
@@ -43,7 +43,8 @@ export function BorrowModal({
   const [formData, setFormData] = useState({
     itemId: selectableItems[0]?.id || "",
     borrowerName: "",
-    borrowerContact: "",
+    borrowerPhone: "",
+    borrowerEmail: "",
     borrowQuantity: 1,
     dueDate: "",
     notes: "",
@@ -85,7 +86,8 @@ export function BorrowModal({
       const res = await createBorrowAction({
         itemId: formData.itemId,
         borrowerName: formData.borrowerName,
-        borrowerContact: formData.borrowerContact,
+        borrowerPhone: formData.borrowerPhone,
+        borrowerEmail: formData.borrowerEmail,
         borrowQuantity: Number(formData.borrowQuantity),
         dueDate: new Date(formData.dueDate),
         notes: formData.notes || undefined,
@@ -219,29 +221,62 @@ export function BorrowModal({
               )}
             </div>
 
-            {/* Kontak Peminjam */}
+          </div>
+
+          {/* 2 Kontak Peminjam: Telepon & Email */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* No. Telepon / WhatsApp */}
             <div className="space-y-1.5">
               <label
-                htmlFor="borrowerContact"
-                className="block text-xs font-medium text-foreground"
+                htmlFor="borrowerPhone"
+                className="flex items-center gap-1.5 text-xs font-medium text-foreground"
               >
-                No. HP / WhatsApp Peminjam *
+                <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>No. HP / WhatsApp Peminjam *</span>
               </label>
               <input
-                id="borrowerContact"
-                type="text"
+                id="borrowerPhone"
+                type="tel"
                 required
                 disabled={isPending}
-                value={formData.borrowerContact}
+                value={formData.borrowerPhone}
                 onChange={(e) =>
-                  setFormData({ ...formData, borrowerContact: e.target.value })
+                  setFormData({ ...formData, borrowerPhone: e.target.value })
                 }
                 placeholder="Contoh: 081234567890"
                 className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
               />
-              {fieldErrors.borrowerContact && (
+              {fieldErrors.borrowerPhone && (
                 <p className="text-xs text-destructive">
-                  {fieldErrors.borrowerContact[0]}
+                  {fieldErrors.borrowerPhone[0]}
+                </p>
+              )}
+            </div>
+
+            {/* Email Peminjam */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="borrowerEmail"
+                className="flex items-center gap-1.5 text-xs font-medium text-foreground"
+              >
+                <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                <span>Email Peminjam *</span>
+              </label>
+              <input
+                id="borrowerEmail"
+                type="email"
+                required
+                disabled={isPending}
+                value={formData.borrowerEmail}
+                onChange={(e) =>
+                  setFormData({ ...formData, borrowerEmail: e.target.value })
+                }
+                placeholder="Contoh: peminjam@uhamka.ac.id"
+                className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+              />
+              {fieldErrors.borrowerEmail && (
+                <p className="text-xs text-destructive">
+                  {fieldErrors.borrowerEmail[0]}
                 </p>
               )}
             </div>
