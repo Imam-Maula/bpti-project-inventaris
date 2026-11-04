@@ -10,6 +10,7 @@
     "lint": "node --max-old-space-size=2048 node_modules/eslint/bin/eslint.js .",
     "typecheck": "tsc --noEmit",
     "postinstall": "prisma generate",
+    "db:start": "scripts\\start-mysql.bat",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
