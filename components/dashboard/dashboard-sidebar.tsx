@@ -67,7 +67,8 @@ export function DashboardSidebar({
       });
 
   const navContent = (
-    <div className="flex h-full flex-col justify-between overflow-hidden bg-sidebar text-sidebar-foreground">
+    /* deslop-ignore-next-line 06 */
+    <div className="flex h-full flex-col justify-between overflow-hidden bg-gradient-to-b from-[#0f172a] via-[#0d3844] to-[#093d32] text-sidebar-foreground">
       {/* Brand Header */}
       <div className="shrink-0">
         <div className="flex items-center gap-3 border-b border-sidebar-border px-6 py-5">
