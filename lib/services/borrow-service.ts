@@ -20,6 +20,7 @@ export async function getBorrowRecordsService(
     status?: BorrowStatus | "OVERDUE";
     search?: string;
     userId?: string;
+    limit?: number;
   }
 ) {
   const where: Prisma.BorrowRecordWhereInput = {};
@@ -75,6 +76,7 @@ export async function getBorrowRecordsService(
       },
     },
     orderBy: { createdAt: "desc" },
+    ...(params?.limit ? { take: params.limit } : {}),
   });
 }
 

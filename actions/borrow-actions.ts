@@ -36,6 +36,7 @@ export interface BorrowActionResult<T = unknown> {
 export async function getBorrowRecordsAction(params?: {
   status?: BorrowStatus | "OVERDUE";
   search?: string;
+  limit?: number;
 }) {
   await requireAdmin();
   return getBorrowRecordsService(prisma, params);

@@ -43,6 +43,14 @@ export function checkLoginRateLimit(key: string): {
  */
 export function recordFailedLogin(key: string): void {
   const now = Date.now();
+
+  // Bersihkan entri kedaluwarsa jika cache membesar
+  if (loginAttempts.size > 200) {
+    for (const [k, v] of loginAttempts.entries()) {
+      if (now > v.resetAt) loginAttempts.delete(k);
+    }
+  }
+
   const record = loginAttempts.get(key);
 
   if (!record || now > record.resetAt) {

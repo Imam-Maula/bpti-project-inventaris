@@ -155,6 +155,7 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleRefresh = () => {
@@ -269,6 +270,7 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
               <option value="ALL">Semua Entitas</option>
               <option value="ITEM">Master Barang (ITEM)</option>
               <option value="BORROW_RECORD">Sirkulasi (BORROW_RECORD)</option>
+              <option value="USER">Akun User</option>
               <option value="SYSTEM">Sistem</option>
             </select>
           </div>
@@ -296,6 +298,9 @@ export function AuditLogClient({ initialLogs }: AuditLogClientProps) {
               <option value="AKTIFKAN_MASSAL">AKTIFKAN_MASSAL</option>
               <option value="CATAT_PEMINJAMAN">CATAT_PEMINJAMAN</option>
               <option value="PENGEMBALIAN_BARANG">PENGEMBALIAN_BARANG</option>
+              <option value="TAMBAH_AKUN_USER">TAMBAH_AKUN_USER</option>
+              <option value="UBAH_AKUN_USER">UBAH_AKUN_USER</option>
+              <option value="HAPUS_AKUN_USER">HAPUS_AKUN_USER</option>
             </select>
           </div>
         </div>

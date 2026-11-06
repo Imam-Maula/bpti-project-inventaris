@@ -32,8 +32,9 @@ async function findUserWithRetry(userId: string, maxAttempts = 2) {
 /**
  * Memastikan sesi pengguna valid untuk operasi Server Actions / Server Components.
  * Melempar error atau redirect jika sesi tidak ditemukan.
+ * Dibungkus dengan React cache() untuk deduping query per siklus render request.
  */
-export async function requireAuth(): Promise<SessionPayload> {
+export const requireAuth = cache(async (): Promise<SessionPayload> => {
   const session = await verifySession();
   if (!session) {
     redirect("/login");
@@ -53,7 +54,7 @@ export async function requireAuth(): Promise<SessionPayload> {
     redirect("/login");
   }
   return { ...session, ...user };
-}
+});
 
 export async function requireRole(role: Role): Promise<SessionPayload> {
   const session = await requireAuth();

@@ -40,6 +40,7 @@ export async function getItemsAction(params?: {
   category?: string;
   condition?: Condition;
   status?: ItemStatus | "ALL";
+  limit?: number;
 }) {
   await requireAuth();
   return getItemsService(prisma, params);
@@ -432,4 +433,4 @@ export async function bulkUnarchiveItemsAction(
       message,
     };
   }
-}
+}
