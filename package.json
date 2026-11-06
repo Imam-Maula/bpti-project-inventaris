@@ -18,6 +18,7 @@
     "db:check": "node --import tsx scripts/check-db.ts",
     "db:backup": "node --import tsx scripts/backup-db.ts",
     "db:restore": "node --import tsx scripts/restore-db.ts",
+    "admin:credentials": "node --env-file=.env --import tsx scripts/update-admin-credentials.ts",
     "test:uat": "node --import tsx scripts/run-phase3-uat.ts",
     "test:audit": "node --import tsx scripts/run-audit-uat.ts",
     "scan:slop": "node scripts/scan.mjs"
