@@ -101,7 +101,7 @@ export async function GET(request: Request, { params }: RouteContext) {
     headers: {
       "Content-Type": image.mimeType,
       "Content-Length": String(image.imageData.byteLength),
-      "Cache-Control": "private, no-store",
+      "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
       "X-Content-Type-Options": "nosniff",
       "Content-Disposition": "inline",
     },
@@ -237,6 +237,7 @@ export async function DELETE(request: Request, { params }: RouteContext) {
     // Rapikan kembali urutan order (0, 1, 2...)
     const remaining = await tx.itemImage.findMany({
       where: { itemId },
+      select: { id: true, order: true },
       orderBy: { order: "asc" },
     });
     for (let i = 0; i < remaining.length; i++) {

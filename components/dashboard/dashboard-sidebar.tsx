@@ -112,6 +112,7 @@ export function DashboardSidebar({
                 <Link
                   key={item.name}
                   href={item.href}
+                  prefetch={false}
                   onClick={() => setMobileOpen(false)}
                   className={`group flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150 ${
                     isActive

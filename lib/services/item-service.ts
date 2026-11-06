@@ -13,6 +13,7 @@ export async function getItemsService(
     category?: string;
     condition?: Condition;
     status?: ItemStatus | "ALL";
+    limit?: number;
   }
 ) {
   const where: Prisma.ItemWhereInput = {};
@@ -42,6 +43,7 @@ export async function getItemsService(
   return db.item.findMany({
     where,
     orderBy: { createdAt: "desc" },
+    ...(params?.limit ? { take: params.limit } : {}),
   });
 }
 
