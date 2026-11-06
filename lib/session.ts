@@ -77,6 +77,10 @@ export async function deleteSession(): Promise<void> {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
   if (token) {
+    if (revokedTokens.size > 500) {
+      const first = revokedTokens.values().next().value;
+      if (first) revokedTokens.delete(first);
+    }
     revokedTokens.add(token);
   }
   cookieStore.delete(SESSION_COOKIE_NAME);

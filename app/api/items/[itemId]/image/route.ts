@@ -101,7 +101,7 @@ export async function GET(request: Request, { params }: RouteContext) {
     headers: {
       "Content-Type": image.mimeType,
       "Content-Length": String(image.imageData.byteLength),
-      "Cache-Control": "private, no-store",
+      "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
       "X-Content-Type-Options": "nosniff",
       "Content-Disposition": "inline",
     },
@@ -237,17 +237,9 @@ export async function DELETE(request: Request, { params }: RouteContext) {
     // Rapikan kembali urutan order (0, 1, 2...)
     const remaining = await tx.itemImage.findMany({
       where: { itemId },
-      orderBy: { order: "asc" },
+      create: { itemId, imageData: Buffer.from(imageData), mimeType },
+      update: { imageData: Buffer.from(imageData), mimeType },
     });
-    for (let i = 0; i < remaining.length; i++) {
-      if (remaining[i].order !== i) {
-        await tx.itemImage.update({
-          where: { id: remaining[i].id },
-          data: { order: i },
-        });
-      }
-    }
-
     await recordAuditLogService(tx, {
       action: "HAPUS_GAMBAR_BARANG",
       entityType: "ITEM",

@@ -23,17 +23,17 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardPage() {
-  const [metrics, recentRecords, allItems] = await Promise.all([
+  const [metrics, recentRecords, activeItems] = await Promise.all([
     getCirculationMetricsAction(),
-    getBorrowRecordsAction(),
-    getItemsAction(),
+    getBorrowRecordsAction({ limit: 5 }),
+    getItemsAction({ status: "AKTIF" }),
   ]);
 
-  // Ambil 5 transaksi sirkulasi terbaru
-  const latestCirculation = recentRecords.slice(0, 5);
+  // Ambil 5 transaksi sirkulasi terbaru langsung dari query
+  const latestCirculation = recentRecords;
 
   // Aset dengan ketersediaan unit kritis (stok habis atau tersisa <= 1)
-  const criticalItems = allItems
+  const criticalItems = activeItems
     .filter((item) => item.availableQuantity <= 1)
     .slice(0, 5);
 
@@ -53,6 +53,7 @@ export default async function DashboardPage() {
         <div className="flex items-center gap-2">
           <Link
             href="/barang"
+            prefetch={false}
             className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-foreground shadow-2xs hover:bg-muted focus:outline-hidden"
           >
             <Plus className="h-3.5 w-3.5" />
@@ -60,6 +61,7 @@ export default async function DashboardPage() {
           </Link>
           <Link
             href="/sirkulasi"
+            prefetch={false}
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 focus:outline-hidden"
           >
             <ArrowLeftRight className="h-3.5 w-3.5" />
@@ -86,6 +88,7 @@ export default async function DashboardPage() {
           </div>
           <Link
             href="/sirkulasi"
+            prefetch={false}
             className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-destructive/30 bg-background px-3 py-1.5 text-xs font-medium text-destructive shadow-2xs hover:bg-destructive/10"
           >
             <span>Tinjau Transaksi</span>
@@ -217,6 +220,7 @@ export default async function DashboardPage() {
             </div>
             <Link
               href="/sirkulasi"
+              prefetch={false}
               className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
             >
               <span>Lihat Semua</span>
@@ -295,6 +299,7 @@ export default async function DashboardPage() {
             </div>
             <Link
               href="/barang"
+              prefetch={false}
               className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
             >
               <span>Katalog</span>

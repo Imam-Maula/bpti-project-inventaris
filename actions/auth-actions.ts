@@ -70,6 +70,7 @@ export async function loginAction(
     };
   }
 
+  let userRole: Role | null = null;
   try {
     const user = await prisma.user.findUnique({
       where: { username },
@@ -103,6 +104,7 @@ export async function loginAction(
     // Reset percobaan jika login berhasil
     resetLoginRateLimit(rateLimitKey);
 
+    userRole = user.role;
     await createSession(user.id, user.username, user.name, user.role, user.email);
   } catch (error) {
     console.error("Kesalahan server saat login:", error);
@@ -112,8 +114,7 @@ export async function loginAction(
     };
   }
 
-  const session = await verifySession();
-  redirect(session?.role === Role.ADMIN ? "/" : "/barang");
+  redirect(userRole === Role.ADMIN ? "/" : "/barang");
 }
 
 export async function registerUser(
