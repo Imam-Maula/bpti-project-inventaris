@@ -275,7 +275,7 @@ export function ForgotPasswordForm() {
           <div className="space-y-1">
             <h3 className="font-semibold text-foreground">Kata Sandi Berhasil Direset</h3>
             <p className="text-xs text-muted-foreground">
-              Silakan masuk kembali menggunakan alamat username atau email Anda bersama kata sandi baru.
+              Silakan masuk dengan NIDN, NIM, atau NIP sesuai kategori beserta kata sandi baru. Admin tetap menggunakan username.
             </p>
           </div>
           <button
@@ -300,4 +300,3 @@ export function ForgotPasswordForm() {
     </div>
   );
 }
-

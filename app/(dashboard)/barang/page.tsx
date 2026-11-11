@@ -16,8 +16,20 @@ export default async function BarangPage() {
   const items = await getItemsAction(isAdmin ? { status: "ALL" } : { status: "AKTIF" });
 
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
+    <div
+      className={
+        isAdmin
+          ? "flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+          : "flex h-full min-h-0 flex-1 flex-col gap-4 overflow-hidden"
+      }
+    >
+      <div
+        className={
+          isAdmin
+            ? "shrink-0 space-y-0.5 pb-2.5"
+            : "shrink-0 space-y-1"
+        }
+      >
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           {user.role === Role.ADMIN ? "Katalog Master Barang" : "Katalog Barang"}
         </h1>

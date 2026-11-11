@@ -9,11 +9,17 @@ import {
   verifyOtp,
   type AuthActionResult,
 } from "@/actions/auth-actions";
+import {
+  USER_CATEGORIES,
+  USER_CATEGORY_DETAILS,
+  type UserCategoryValue,
+} from "@/lib/user-categories";
 import { AlertCircle, Loader2, Mail, Phone, UserPlus } from "lucide-react";
 
 export function RegisterForm() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [userCategory, setUserCategory] = useState<UserCategoryValue>("DOSEN");
   const [email, setEmail] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [code, setCode] = useState("");
@@ -27,7 +33,8 @@ export function RegisterForm() {
     startTransition(async () => {
       const result = await registerUser({
         name: String(formData.get("name") ?? ""),
-        username: String(formData.get("username") ?? ""),
+        userCategory,
+        identityNumber: String(formData.get("identityNumber") ?? ""),
         email: String(formData.get("email") ?? ""),
         phone: String(formData.get("phone") ?? ""),
         password: String(formData.get("password") ?? ""),
@@ -91,20 +98,51 @@ export function RegisterForm() {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="username" className="block text-sm font-medium text-foreground">
-              Username
+            <label htmlFor="userCategory" className="block text-sm font-medium text-foreground">
+              Kategori Pengguna
+            </label>
+            <select
+              id="userCategory"
+              name="userCategory"
+              value={userCategory}
+              onChange={(event) => setUserCategory(event.target.value as UserCategoryValue)}
+              required
+              disabled={isPending}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
+            >
+              {USER_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {USER_CATEGORY_DETAILS[category].label}
+                </option>
+              ))}
+            </select>
+            {message?.errors?.userCategory && (
+              <p className="text-xs text-destructive">{message.errors.userCategory[0]}</p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="identityNumber" className="block text-sm font-medium text-foreground">
+              {USER_CATEGORY_DETAILS[userCategory].identifierLabel}
             </label>
             <input
-              id="username"
-              name="username"
+              key={userCategory}
+              id="identityNumber"
+              name="identityNumber"
+              type="text"
+              inputMode="numeric"
               required
-              minLength={3}
-              maxLength={50}
-              autoComplete="username"
+              minLength={1}
+              maxLength={30}
+              pattern="[0-9]+"
+              autoComplete="off"
               disabled={isPending}
-              placeholder="Contoh: budi.santoso"
+              placeholder={`Masukkan ${USER_CATEGORY_DETAILS[userCategory].identifierLabel}`}
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
             />
+            {message?.errors?.identityNumber && (
+              <p className="text-xs text-destructive">{message.errors.identityNumber[0]}</p>
+            )}
           </div>
 
           <div className="space-y-1.5">

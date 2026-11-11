@@ -3,6 +3,11 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { loginAction, type AuthActionResult } from "@/actions/auth-actions";
+import {
+  USER_CATEGORIES,
+  USER_CATEGORY_DETAILS,
+  type UserCategoryValue,
+} from "@/lib/user-categories";
 import { User, Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 
 const initialState: AuthActionResult = {
@@ -12,6 +17,7 @@ const initialState: AuthActionResult = {
 export function LoginForm() {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
+  const [userCategory, setUserCategory] = useState<UserCategoryValue>("DOSEN");
 
   return (
     <form action={formAction} className="space-y-4" noValidate>
@@ -28,32 +34,62 @@ export function LoginForm() {
         </div>
       )}
 
-      {/* Input Username */}
       <div className="space-y-1.5">
         <label
-          htmlFor="username"
+          htmlFor="userCategory"
           className="block text-sm font-medium text-foreground"
         >
-          Username
+          Kategori Pengguna
+        </label>
+        <select
+          id="userCategory"
+          name="userCategory"
+          value={userCategory}
+          onChange={(event) => setUserCategory(event.target.value as UserCategoryValue)}
+          required
+          disabled={isPending}
+          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {USER_CATEGORIES.map((category) => (
+            <option key={category} value={category}>
+              {USER_CATEGORY_DETAILS[category].label}
+            </option>
+          ))}
+        </select>
+        {state.errors?.userCategory && (
+          <p className="text-xs text-destructive">{state.errors.userCategory[0]}</p>
+        )}
+      </div>
+
+      <div className="space-y-1.5">
+        <label
+          htmlFor="identifier"
+          className="block text-sm font-medium text-foreground"
+        >
+          {USER_CATEGORY_DETAILS[userCategory].identifierLabel}
         </label>
         <div className="relative">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
             <User className="h-4 w-4" />
           </div>
           <input
-            id="username"
-            name="username"
+            key={userCategory}
+            id="identifier"
+            name="identifier"
             type="text"
             autoComplete="username"
             required
             disabled={isPending}
-            placeholder="Masukkan username"
+            placeholder={`Masukkan ${USER_CATEGORY_DETAILS[userCategory].identifierLabel}`}
             className="w-full rounded-md border border-input bg-background py-2 pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground transition-colors duration-150 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
           />
         </div>
-        {state.errors?.username && (
+        <p className="text-xs text-muted-foreground">
+          Admin tetap dapat masuk menggunakan username akun.
+        </p>
+        {state.errors?.identifier && (
           <p className="text-xs text-destructive">
-            {state.errors.username[0]}
+            {state.errors.identifier[0]}
           </p>
         )}
       </div>
