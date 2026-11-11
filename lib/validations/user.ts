@@ -1,15 +1,14 @@
 import { z } from "zod";
+import { USER_CATEGORIES } from "@/lib/user-categories";
 
 const nameSchema = z.string().min(2, "Nama minimal 2 karakter").max(100).trim();
-const usernameSchema = z
+const userCategorySchema = z.enum(USER_CATEGORIES);
+const identityNumberSchema = z
   .string()
-  .min(3, "Username minimal 3 karakter")
-  .max(50, "Username maksimal 50 karakter")
-  .regex(
-    /^[A-Za-z0-9._-]+$/,
-    "Username hanya boleh berisi huruf, angka, titik, garis bawah, dan tanda hubung"
-  )
-  .trim();
+  .trim()
+  .min(1, "NIDN, NIM, atau NIP wajib diisi")
+  .max(30, "NIDN, NIM, atau NIP maksimal 30 angka")
+  .regex(/^\d+$/, "NIDN, NIM, atau NIP hanya boleh berisi angka");
 const emailSchema = z
   .string()
   .email("Format email tidak valid")
@@ -28,7 +27,8 @@ const phoneSchema = z
 
 export const createManagedUserSchema = z.object({
   name: nameSchema,
-  username: usernameSchema,
+  userCategory: userCategorySchema,
+  identityNumber: identityNumberSchema,
   email: emailSchema,
   phone: phoneSchema,
   password: z.string().min(8, "Kata sandi minimal 8 karakter").max(100),
@@ -37,7 +37,8 @@ export const createManagedUserSchema = z.object({
 export const updateManagedUserSchema = z.object({
   id: z.string().uuid("ID akun tidak valid"),
   name: nameSchema,
-  username: usernameSchema,
+  userCategory: userCategorySchema,
+  identityNumber: identityNumberSchema,
   email: z.preprocess(
     (value) => (typeof value === "string" && value.trim() === "" ? null : value),
     emailSchema.nullable()

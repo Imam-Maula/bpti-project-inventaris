@@ -27,6 +27,12 @@ enum Role {
   USER
 }
 
+enum UserCategory {
+  DOSEN
+  MAHASISWA
+  STAFF
+}
+
 enum ItemStatus {
   AKTIF
   DIARSIPKAN
@@ -35,6 +41,8 @@ enum ItemStatus {
 model User {
   id            String         @id @default(uuid())
   username      String         @unique
+  userCategory  UserCategory?
+  identityNumber String?       @db.VarChar(50)
   email         String?        @unique @db.VarChar(254)
   phone         String?        @db.VarChar(30)
   password      String
@@ -47,6 +55,7 @@ model User {
   borrowRequests BorrowRecord[] @relation("BorrowRecordUser")
   auditLogs     AuditLog[]
 
+  @@unique([userCategory, identityNumber])
   @@map("users")
 }
 

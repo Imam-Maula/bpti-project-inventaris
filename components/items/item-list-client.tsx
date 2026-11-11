@@ -467,8 +467,8 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
       )}
 
       {/* Bar Kontrol & Filter (Statis & Tetap Diam) */}
-      <div className="shrink-0 flex flex-col gap-2.5 rounded-lg border border-border bg-card p-2.5 sm:flex-row sm:items-center sm:justify-between shadow-2xs">
-        <div className="flex flex-1 flex-wrap items-center gap-2">
+      <div className="shrink-0 grid gap-2.5 rounded-lg border border-border bg-card p-2.5 shadow-2xs sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+        <div className="flex min-w-0 flex-col items-start gap-2">
           <LiveSearch
             value={search}
             onChange={handleSearchChange}
@@ -476,53 +476,55 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
             className="w-full sm:max-w-xs"
           />
 
-          {/* Filter Status */}
-          <select
-            value={selectedStatus}
-            onChange={(e) => handleStatusChange(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
-            aria-label="Filter Status Arsip"
-          >
-            <option value="ALL">Semua Status</option>
-            <option value={ItemStatus.AKTIF}>Status: Aktif</option>
-            <option value={ItemStatus.DIARSIPKAN}>Status: Diarsipkan</option>
-          </select>
+          <div className="flex w-full flex-wrap items-center gap-2">
+            {/* Filter Status */}
+            <select
+              value={selectedStatus}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+              aria-label="Filter Status Arsip"
+            >
+              <option value="ALL">Semua Status</option>
+              <option value={ItemStatus.AKTIF}>Status: Aktif</option>
+              <option value={ItemStatus.DIARSIPKAN}>Status: Diarsipkan</option>
+            </select>
 
-          {/* Filter Kategori */}
-          <select
-            value={selectedCategory}
-            onChange={(e) => handleCategoryChange(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
-            aria-label="Filter Kategori"
-          >
-            <option value="ALL">Semua Kategori</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+            {/* Filter Kategori */}
+            <select
+              value={selectedCategory}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+              aria-label="Filter Kategori"
+            >
+              <option value="ALL">Semua Kategori</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
 
-          {/* Filter Kondisi */}
-          <select
-            value={selectedCondition}
-            onChange={(e) => handleConditionChange(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
-            aria-label="Filter Kondisi Fisik"
-          >
-            <option value="ALL">Semua Kondisi</option>
-            <option value={Condition.BAIK}>Kondisi: BAIK</option>
-            <option value={Condition.RUSAK_RINGAN}>RUSAK RINGAN</option>
-            <option value={Condition.RUSAK_BERAT}>RUSAK BERAT</option>
-          </select>
+            {/* Filter Kondisi */}
+            <select
+              value={selectedCondition}
+              onChange={(e) => handleConditionChange(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+              aria-label="Filter Kondisi Fisik"
+            >
+              <option value="ALL">Semua Kondisi</option>
+              <option value={Condition.BAIK}>Kondisi: BAIK</option>
+              <option value={Condition.RUSAK_RINGAN}>RUSAK RINGAN</option>
+              <option value={Condition.RUSAK_BERAT}>RUSAK BERAT</option>
+            </select>
+          </div>
         </div>
 
         {/* Tombol Aksi Kanan */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-end gap-2 sm:pt-0.5">
           <button
             type="button"
             onClick={handleExportCSV}
-            className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-foreground shadow-2xs hover:bg-muted focus:outline-hidden"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-medium text-foreground shadow-2xs hover:bg-muted focus:outline-hidden"
             title="Unduh seluruh data tabel dalam format CSV/Excel"
           >
             <Download className="h-3.5 w-3.5" />
@@ -532,7 +534,7 @@ export function ItemListClient({ initialItems }: ItemListClientProps) {
           <button
             type="button"
             onClick={handleOpenCreate}
-            className="inline-flex items-center justify-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 focus:outline-hidden focus:ring-1 focus:ring-ring"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md bg-primary px-3.5 text-xs font-medium text-primary-foreground shadow-xs hover:bg-primary/90 focus:outline-hidden focus:ring-1 focus:ring-ring"
           >
             <Plus className="h-4 w-4" />
             <span>Tambah Barang</span>
