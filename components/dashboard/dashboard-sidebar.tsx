@@ -11,6 +11,7 @@ import {
   Package,
   ArrowLeftRight,
   History,
+  Users,
   LogOut,
   ShieldCheck,
   Menu,
@@ -38,6 +39,11 @@ const navigationItems = [
     name: "Log Aktivitas",
     href: "/aktivitas",
     icon: History,
+  },
+  {
+    name: "Kelola Akun User",
+    href: "/pengguna",
+    icon: Users,
   },
 ];
 

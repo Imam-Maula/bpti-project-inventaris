@@ -237,6 +237,7 @@ export async function DELETE(request: Request, { params }: RouteContext) {
     // Rapikan kembali urutan order (0, 1, 2...)
     const remaining = await tx.itemImage.findMany({
       where: { itemId },
+<<<<<<< HEAD
       select: { id: true, order: true },
       orderBy: { order: "asc" },
     });
@@ -249,6 +250,11 @@ export async function DELETE(request: Request, { params }: RouteContext) {
       }
     }
 
+=======
+      create: { itemId, imageData: Buffer.from(imageData), mimeType },
+      update: { imageData: Buffer.from(imageData), mimeType },
+    });
+>>>>>>> origin/main
     await recordAuditLogService(tx, {
       action: "HAPUS_GAMBAR_BARANG",
       entityType: "ITEM",

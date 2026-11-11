@@ -2,7 +2,7 @@ import { PrismaClient, Prisma } from "@prisma/client";
 
 export interface RecordAuditInput {
   action: string;
-  entityType: "ITEM" | "BORROW_RECORD" | "SYSTEM";
+  entityType: "ITEM" | "BORROW_RECORD" | "USER" | "SYSTEM";
   entityId: string;
   adminId: string;
   details: string;
