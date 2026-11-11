@@ -4,19 +4,11 @@
   "private": true,
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-<<<<<<< HEAD
     "dev": "node --max-old-space-size=1024 node_modules/next/dist/bin/next dev --webpack --disable-source-maps",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "node --max-old-space-size=2048 node_modules/eslint/bin/eslint.js .",
     "typecheck": "node --max-old-space-size=1024 node_modules/typescript/bin/tsc --noEmit",
-=======
-    "dev": "next dev --webpack --disable-source-maps",
-    "build": "next build --webpack",
-    "start": "next start",
-    "lint": "node --max-old-space-size=2048 node_modules/eslint/bin/eslint.js .",
-    "typecheck": "tsc --noEmit",
->>>>>>> origin/main
     "postinstall": "prisma generate",
     "db:start": "scripts\\start-mysql.bat",
     "db:generate": "prisma generate",
