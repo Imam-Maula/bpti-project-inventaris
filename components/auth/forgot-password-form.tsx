@@ -114,7 +114,7 @@ export function ForgotPasswordForm() {
                 maxLength={254}
                 autoComplete="email"
                 disabled={isPending}
-                placeholder="nama@uhamka.ac.id"
+                placeholder="emailanda@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-md border border-input bg-background py-2 pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
