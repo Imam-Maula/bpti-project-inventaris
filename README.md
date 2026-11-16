@@ -134,6 +134,7 @@ Gunakan akun berikut untuk masuk ke sistem:
 - **Masa Berlaku Sesi:** 7 hari kalender (JWT HS256 HttpOnly Cookie).
 
 Pendaftaran melalui `/register` selalu membuat akun ber-role `USER`. User harus memverifikasi email OTP sebelum dapat masuk. `pnpm db:seed` memastikan akun `admin` ber-role Admin dan juga memasukkan barang contoh.
+Saat login, user memilih kategori Dosen (NIDN), Mahasiswa (NIM), atau Staff/Tendik (NIP). Admin tetap masuk menggunakan username.
 
 ---
 
@@ -147,7 +148,9 @@ erDiagram
 
     users {
         string id PK "UUID"
-        string username UK "Identitas Login"
+        string username UK "Username internal"
+        enum userCategory "DOSEN | MAHASISWA | STAFF"
+        string identityNumber "NIDN/NIM/NIP unik per kategori"
         string email UK "Email terverifikasi"
         string password "Bcrypt Hash 12 Rounds"
         string name "Nama Lengkap"
@@ -246,7 +249,7 @@ Setelah memperbarui skema pada instalasi yang sudah ada, jalankan `pnpm db:push`
 - Pada menu Sirkulasi: Filter transaksi berdasarkan status, termasuk menunggu persetujuan, disetujui, ditolak, sedang dipinjam, dikembalikan, dan terlambat.
 
 ### SOP-06: Pendaftaran User & Pengajuan Peminjaman
-1. User mendaftar di `/register` menggunakan nama, username, email, dan kata sandi.
+1. User mendaftar di `/register` menggunakan nama, kategori, ID sesuai kategori (NIDN/NIM/NIP), email, dan kata sandi.
 2. Masukkan kode OTP enam digit yang dikirim ke email. Kode berlaku selama lima menit.
 3. Setelah masuk, buka **Master Barang** untuk melihat jumlah stok tersedia dan ajukan peminjaman barang.
 4. Pantau status melalui **Riwayat Peminjaman**. Pengajuan yang disetujui dapat diambil di kantor BPTI; jika ditolak, alasan Admin tersedia pada detail pengajuan.

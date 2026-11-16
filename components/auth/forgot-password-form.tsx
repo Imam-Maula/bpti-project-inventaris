@@ -114,7 +114,7 @@ export function ForgotPasswordForm() {
                 maxLength={254}
                 autoComplete="email"
                 disabled={isPending}
-                placeholder="nama@uhamka.ac.id"
+                placeholder="emailanda@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full rounded-md border border-input bg-background py-2 pr-3 pl-9 text-sm text-foreground placeholder:text-muted-foreground transition-colors focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary disabled:opacity-50"
@@ -275,7 +275,7 @@ export function ForgotPasswordForm() {
           <div className="space-y-1">
             <h3 className="font-semibold text-foreground">Kata Sandi Berhasil Direset</h3>
             <p className="text-xs text-muted-foreground">
-              Silakan masuk kembali menggunakan alamat username atau email Anda bersama kata sandi baru.
+              Silakan masuk dengan NIDN, NIM, atau NIP sesuai kategori beserta kata sandi baru. Admin tetap menggunakan username.
             </p>
           </div>
           <button
@@ -300,4 +300,3 @@ export function ForgotPasswordForm() {
     </div>
   );
 }
-

@@ -16,13 +16,31 @@ export default async function BarangPage() {
   const items = await getItemsAction(isAdmin ? { status: "ALL" } : { status: "AKTIF" });
 
   return (
-    <div className="flex h-full flex-1 flex-col min-h-0 overflow-hidden">
+    <div
+      className={
+        isAdmin
+          ? "flex h-full min-h-0 flex-1 flex-col overflow-hidden"
+          : "flex h-full min-h-0 flex-1 flex-col gap-4 overflow-hidden"
+      }
+    >
       {/* Header Halaman (Judul & Deskripsi) - Tetap Statis & Diam */}
-      <div className="shrink-0 space-y-0.5 pb-2.5">
-        <h1 className="text-xl font-bold tracking-tight text-foreground">
+      <div
+        className={
+          isAdmin
+            ? "shrink-0 space-y-0.5 pb-2.5"
+            : "shrink-0 space-y-1"
+        }
+      >
+        <h1
+          className={
+            isAdmin
+              ? "text-xl font-bold tracking-tight text-foreground"
+              : "text-2xl font-bold tracking-tight text-foreground"
+          }
+        >
           {isAdmin ? "Katalog Master Barang" : "Katalog Barang"}
         </h1>
-        <p className="text-xs text-muted-foreground">
+        <p className={isAdmin ? "text-xs text-muted-foreground" : "text-sm text-muted-foreground"}>
           {isAdmin
             ? "Kelola aset inventaris, ketersediaan unit fisik, lokasi penyimpanan, dan kondisi barang."
             : "Lihat ketersediaan barang inventaris dan ajukan peminjaman."}

@@ -136,30 +136,6 @@ export function ItemImageModal({ item, onClose }: ItemImageModalProps) {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Tombol navigasi di header seperti pada referensi Google Image */}
-            {totalImages > 1 && (
-              <div className="flex items-center gap-1 mr-2 border-r border-border pr-2">
-                <button
-                  type="button"
-                  onClick={handlePrev}
-                  aria-label="Gambar sebelumnya (Panah Kiri)"
-                  title="Gambar sebelumnya (←)"
-                  className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-xs hover:bg-muted focus:outline-hidden focus:ring-1 focus:ring-primary"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  aria-label="Gambar berikutnya (Panah Kanan)"
-                  title="Gambar berikutnya (→)"
-                  className="flex h-8 w-8 items-center justify-center rounded-md border border-border bg-background text-foreground shadow-xs hover:bg-muted focus:outline-hidden focus:ring-1 focus:ring-primary"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-              </div>
-            )}
-
             <button
               type="button"
               onClick={onClose}

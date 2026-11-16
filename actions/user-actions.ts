@@ -22,6 +22,8 @@ export interface UserActionResult {
 const managedUserSelect = {
   id: true,
   username: true,
+  userCategory: true,
+  identityNumber: true,
   name: true,
   email: true,
   phone: true,
@@ -35,6 +37,8 @@ function getSafeUserValues(user: ManagedUser) {
   return {
     id: user.id,
     username: user.username,
+    userCategory: user.userCategory,
+    identityNumber: user.identityNumber,
     name: user.name,
     email: user.email,
     phone: user.phone,
@@ -64,7 +68,8 @@ export async function createManagedUserAction(
     };
   }
 
-  const { name, username, email, phone, password } = validated.data;
+  const { name, userCategory, identityNumber, email, phone, password } = validated.data;
+  const username = `${userCategory.toLowerCase()}-${identityNumber}`;
 
   try {
     const passwordHash = await hashPassword(password);
@@ -73,6 +78,8 @@ export async function createManagedUserAction(
         data: {
           name,
           username,
+          userCategory,
+          identityNumber,
           email,
           phone,
           password: passwordHash,
@@ -87,7 +94,7 @@ export async function createManagedUserAction(
         entityType: "USER",
         entityId: created.id,
         adminId: admin.userId,
-        details: `Admin membuat akun user "${created.username}" (${created.name}).`,
+        details: `Admin membuat akun user "${created.name}" (${userCategory}: ${identityNumber}).`,
         newValue: getSafeUserValues(created),
       });
 
@@ -98,13 +105,13 @@ export async function createManagedUserAction(
     revalidatePath("/aktivitas");
     return {
       success: true,
-      message: `Akun "${user.username}" berhasil dibuat.`,
+      message: `Akun "${user.name}" berhasil dibuat.`,
     };
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return {
         success: false,
-        message: "Username atau email sudah digunakan oleh akun lain.",
+        message: "NIDN/NIM/NIP atau email sudah digunakan oleh akun lain.",
       };
     }
 
@@ -129,7 +136,17 @@ export async function updateManagedUserAction(
     };
   }
 
-  const { id, name, username, email, phone, password, isVerified } = validated.data;
+  const {
+    id,
+    name,
+    userCategory,
+    identityNumber,
+    email,
+    phone,
+    password,
+    isVerified,
+  } = validated.data;
+  const username = `${userCategory.toLowerCase()}-${identityNumber}`;
 
   try {
     const passwordHash = password ? await hashPassword(password) : undefined;
@@ -147,6 +164,8 @@ export async function updateManagedUserAction(
         data: {
           name,
           username,
+          userCategory,
+          identityNumber,
           email,
           phone,
           isVerified,
@@ -168,7 +187,7 @@ export async function updateManagedUserAction(
         entityType: "USER",
         entityId: updated.id,
         adminId: admin.userId,
-        details: `Admin memperbarui akun user "${updated.username}" (${updated.name}).`,
+        details: `Admin memperbarui akun user "${updated.name}" (${userCategory}: ${identityNumber}).`,
         oldValue: getSafeUserValues(existing),
         newValue: getSafeUserValues(updated),
       });
@@ -184,7 +203,7 @@ export async function updateManagedUserAction(
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return {
         success: false,
-        message: "Username atau email sudah digunakan oleh akun lain.",
+        message: "NIDN/NIM/NIP atau email sudah digunakan oleh akun lain.",
       };
     }
 

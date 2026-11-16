@@ -13,6 +13,11 @@ import { LiveSearch } from "@/components/tables/live-search";
 import { Pagination } from "@/components/tables/pagination";
 import { useToast } from "@/components/ui/toast";
 import {
+  USER_CATEGORIES,
+  USER_CATEGORY_DETAILS,
+  type UserCategoryValue,
+} from "@/lib/user-categories";
+import {
   CheckCircle2,
   CircleAlert,
   Edit2,
@@ -39,6 +44,7 @@ export function UserManagementClient({ initialUsers }: UserManagementClientProps
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [editingUser, setEditingUser] = useState<ManagedUser | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<UserCategoryValue>("DOSEN");
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ManagedUser | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -46,7 +52,13 @@ export function UserManagementClient({ initialUsers }: UserManagementClientProps
   const filteredUsers = useMemo(() => {
     const query = search.trim().toLowerCase();
     return initialUsers.filter((user) =>
-      [user.name, user.username, user.email ?? "", user.phone ?? ""]
+      [
+        user.name,
+        user.userCategory ? USER_CATEGORY_DETAILS[user.userCategory].label : "",
+        user.identityNumber ?? "",
+        user.email ?? "",
+        user.phone ?? "",
+      ]
         .some((value) => value.toLowerCase().includes(query))
     );
   }, [initialUsers, search]);
@@ -65,7 +77,8 @@ export function UserManagementClient({ initialUsers }: UserManagementClientProps
     const formData = new FormData(event.currentTarget);
     const values = {
       name: String(formData.get("name") ?? ""),
-      username: String(formData.get("username") ?? ""),
+      userCategory: selectedCategory,
+      identityNumber: String(formData.get("identityNumber") ?? ""),
       email: String(formData.get("email") ?? ""),
       phone: String(formData.get("phone") ?? ""),
       password: String(formData.get("password") ?? ""),
@@ -108,11 +121,13 @@ export function UserManagementClient({ initialUsers }: UserManagementClientProps
 
   const openCreate = () => {
     setEditingUser(null);
+    setSelectedCategory("DOSEN");
     setModalOpen(true);
   };
 
   const openEdit = (user: ManagedUser) => {
     setEditingUser(user);
+    setSelectedCategory(user.userCategory ?? "DOSEN");
     setModalOpen(true);
   };
 
@@ -125,7 +140,7 @@ export function UserManagementClient({ initialUsers }: UserManagementClientProps
             setSearch(value);
             setPage(1);
           }}
-          placeholder="Cari nama, username, email, atau telepon..."
+          placeholder="Cari nama, NIDN/NIM/NIP, email, atau telepon..."
           className="w-full sm:max-w-sm"
         />
         <button
@@ -142,7 +157,7 @@ export function UserManagementClient({ initialUsers }: UserManagementClientProps
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead className="sticky top-0 z-10 bg-muted/90 text-xs text-muted-foreground backdrop-blur">
             <tr>
-              <th className="px-4 py-3 font-medium">Nama / Username</th>
+              <th className="px-4 py-3 font-medium">Nama / Identitas</th>
               <th className="px-4 py-3 font-medium">Email</th>
               <th className="px-4 py-3 font-medium">Telepon</th>
               <th className="px-4 py-3 font-medium">Status</th>
@@ -155,7 +170,11 @@ export function UserManagementClient({ initialUsers }: UserManagementClientProps
               <tr key={user.id} className="hover:bg-muted/30">
                 <td className="px-4 py-3">
                   <p className="font-medium text-foreground">{user.name}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">@{user.username}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    {user.userCategory
+                      ? `${USER_CATEGORY_DETAILS[user.userCategory].label} · ${USER_CATEGORY_DETAILS[user.userCategory].identifierLabel}: ${user.identityNumber}`
+                      : "Kategori belum diatur"}
+                  </p>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">{user.email ?? "—"}</td>
                 <td className="px-4 py-3 text-muted-foreground">{user.phone ?? "—"}</td>
@@ -182,7 +201,7 @@ export function UserManagementClient({ initialUsers }: UserManagementClientProps
                     <button
                       type="button"
                       onClick={() => openEdit(user)}
-                      aria-label={`Ubah akun ${user.username}`}
+                      aria-label={`Ubah akun ${user.name}`}
                       className="rounded-md border border-border p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
                       <Edit2 className="h-4 w-4" />
@@ -190,7 +209,7 @@ export function UserManagementClient({ initialUsers }: UserManagementClientProps
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(user)}
-                      aria-label={`Hapus akun ${user.username}`}
+                      aria-label={`Hapus akun ${user.name}`}
                       className="rounded-md border border-border p-2 text-destructive hover:bg-destructive/10"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -264,8 +283,36 @@ export function UserManagementClient({ initialUsers }: UserManagementClientProps
                 <input name="name" required minLength={2} maxLength={100} defaultValue={editingUser?.name ?? ""} className={inputClass} disabled={isPending} />
               </label>
               <label className="space-y-1.5 text-sm font-medium">
-                Username
-                <input name="username" required minLength={3} maxLength={50} pattern="[A-Za-z0-9._-]+" defaultValue={editingUser?.username ?? ""} className={inputClass} disabled={isPending} />
+                Kategori pengguna
+                <select
+                  name="userCategory"
+                  value={selectedCategory}
+                  onChange={(event) => setSelectedCategory(event.target.value as UserCategoryValue)}
+                  required
+                  className={inputClass}
+                  disabled={isPending}
+                >
+                  {USER_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {USER_CATEGORY_DETAILS[category].label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-1.5 text-sm font-medium">
+                {USER_CATEGORY_DETAILS[selectedCategory].identifierLabel}
+                <input
+                  key={selectedCategory}
+                  name="identityNumber"
+                  required
+                  minLength={1}
+                  maxLength={30}
+                  pattern="[0-9]+"
+                  inputMode="numeric"
+                  defaultValue={editingUser?.identityNumber ?? ""}
+                  className={inputClass}
+                  disabled={isPending}
+                />
               </label>
               <label className="space-y-1.5 text-sm font-medium">
                 Email
@@ -322,7 +369,7 @@ export function UserManagementClient({ initialUsers }: UserManagementClientProps
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         title="Hapus akun user?"
-        description={`Akun ${deleteTarget?.name ?? ""} (@${deleteTarget?.username ?? ""}) akan dihapus. Riwayat peminjaman tetap tersimpan tanpa tautan ke akun ini.`}
+        description={`Akun ${deleteTarget?.name ?? ""} akan dihapus. Riwayat peminjaman tetap tersimpan tanpa tautan ke akun ini.`}
         confirmText="Hapus Akun"
         isPending={isPending}
         onConfirm={handleDelete}

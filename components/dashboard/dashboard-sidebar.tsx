@@ -131,7 +131,11 @@ export function DashboardSidebar({
                       isActive ? "text-primary-foreground" : "text-muted-foreground"
                     }`}
                   />
-                  <span className="whitespace-nowrap">{item.name}</span>
+                  <span className="whitespace-nowrap">
+                    {role === Role.USER && item.href === "/barang"
+                      ? "Katalog Barang"
+                      : item.name}
+                  </span>
                 </Link>
               );
             })}

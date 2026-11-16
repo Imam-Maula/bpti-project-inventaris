@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Item } from "@prisma/client";
 import { requestBorrow } from "@/actions/borrow-actions";
 import { useToast } from "@/components/ui/toast";
+import { Pagination } from "@/components/tables/pagination";
 import { ItemImageModal } from "./item-image-modal";
 import {
   Package,
@@ -23,6 +24,8 @@ import {
 interface UserItemCatalogProps {
   items: Item[];
 }
+
+const ITEMS_PER_PAGE = 9;
 
 function ItemCardThumbnail({
   item,
@@ -91,6 +94,7 @@ export function UserItemCatalog({ items }: UserItemCatalogProps) {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [imageItem, setImageItem] = useState<Item | null>(null);
@@ -124,6 +128,11 @@ export function UserItemCatalog({ items }: UserItemCatalogProps) {
       return matchSearch && matchCategory;
     });
   }, [items, search, selectedCategory]);
+  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+  const pageItems = filteredItems.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   function closeDialog() {
     if (isPending) return;
@@ -156,7 +165,7 @@ export function UserItemCatalog({ items }: UserItemCatalogProps) {
   }
 
   return (
-    <div className="flex h-full flex-1 flex-col min-h-0 overflow-hidden space-y-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
       {/* Bilah Kontrol & Filter Pengguna - Tetap Statis & Diam */}
       <div className="shrink-0 flex flex-col gap-3 rounded-lg border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between shadow-2xs">
         <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:items-center">
@@ -165,7 +174,10 @@ export function UserItemCatalog({ items }: UserItemCatalogProps) {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
               placeholder="Cari nama, kode, atau lokasi barang..."
               className="h-8 w-full rounded-md border border-input bg-background pl-8 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
             />
@@ -175,7 +187,10 @@ export function UserItemCatalog({ items }: UserItemCatalogProps) {
             <Layers className="h-3.5 w-3.5 text-muted-foreground hidden sm:inline" />
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setCurrentPage(1);
+              }}
               className="h-8 rounded-md border border-input bg-background px-2.5 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
               aria-label="Filter Kategori Barang"
             >
@@ -195,7 +210,7 @@ export function UserItemCatalog({ items }: UserItemCatalogProps) {
       </div>
 
       {/* Grid Kartu Katalog Barang - Area Scroll Mandiri */}
-      <div className="flex-1 min-h-0 overflow-y-auto pr-2 pb-2">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-2 pb-2">
         {filteredItems.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
             <Package className="mx-auto mb-2 h-8 w-8 text-muted-foreground/60" />
@@ -204,7 +219,7 @@ export function UserItemCatalog({ items }: UserItemCatalogProps) {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[repeat(3,minmax(0,1fr))]">
-            {filteredItems.map((item) => {
+            {pageItems.map((item) => {
               const canBorrow =
                 item.status === "AKTIF" && item.availableQuantity > 0;
 
@@ -295,6 +310,18 @@ export function UserItemCatalog({ items }: UserItemCatalogProps) {
           </div>
         )}
       </div>
+
+      {filteredItems.length > 0 && (
+        <div className="shrink-0">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredItems.length}
+            pageSize={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
 
       {/* Modal Galeri Foto Barang Lengkap (Persis seperti yang ada di Admin) */}
       <ItemImageModal

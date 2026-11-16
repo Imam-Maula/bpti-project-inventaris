@@ -1,11 +1,13 @@
 import { z } from "zod";
+import { USER_CATEGORIES } from "@/lib/user-categories";
 
 export const loginSchema = z.object({
-  username: z
+  userCategory: z.enum(USER_CATEGORIES),
+  identifier: z
     .string()
-    .min(3, "Username minimal 3 karakter")
-    .max(50, "Username maksimal 50 karakter")
-    .trim(),
+    .trim()
+    .min(1, "NIDN, NIM, NIP, atau username admin wajib diisi")
+    .max(50, "ID maksimal 50 karakter"),
   password: z
     .string()
     .min(6, "Password minimal 6 karakter")
@@ -16,15 +18,13 @@ export type LoginInput = z.infer<typeof loginSchema>;
 
 export const registerUserSchema = z.object({
   name: z.string().min(2, "Nama minimal 2 karakter").max(100).trim(),
-  username: z
+  userCategory: z.enum(USER_CATEGORIES),
+  identityNumber: z
     .string()
-    .min(3, "Username minimal 3 karakter")
-    .max(50, "Username maksimal 50 karakter")
-    .regex(
-      /^[A-Za-z0-9._-]+$/,
-      "Username hanya boleh berisi huruf, angka, titik, garis bawah, dan tanda hubung"
-    )
-    .trim(),
+    .trim()
+    .min(1, "NIDN, NIM, atau NIP wajib diisi")
+    .max(30, "NIDN, NIM, atau NIP maksimal 30 angka")
+    .regex(/^\d+$/, "NIDN, NIM, atau NIP hanya boleh berisi angka"),
   email: z.string().email("Format email tidak valid").max(254).trim().toLowerCase(),
   phone: z
     .string()

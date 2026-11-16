@@ -433,8 +433,4 @@ export async function bulkUnarchiveItemsAction(
       message,
     };
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> origin/main

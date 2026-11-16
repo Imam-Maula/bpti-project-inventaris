@@ -36,7 +36,7 @@ export interface AuthActionResult {
 }
 
 /**
- * Server Action untuk autentikasi login administrator BPTI.
+ * Server Action untuk autentikasi login user dan administrator BPTI.
  * Dilengkapi proteksi brute-force rate limiter dan pencetakan cookie sesi JWT.
  */
 export async function loginAction(
@@ -44,7 +44,8 @@ export async function loginAction(
   formData: FormData
 ): Promise<AuthActionResult> {
   const rawData = {
-    username: formData.get("username"),
+    userCategory: formData.get("userCategory"),
+    identifier: formData.get("identifier"),
     password: formData.get("password"),
   };
 
@@ -57,8 +58,8 @@ export async function loginAction(
     };
   }
 
-  const { username, password } = validated.data;
-  const rateLimitKey = username.toLowerCase();
+  const { userCategory, identifier, password } = validated.data;
+  const rateLimitKey = identifier.toLowerCase();
 
   // 1. Periksa batas laju percobaan login (Rate Limiting)
   const rateLimitStatus = checkLoginRateLimit(rateLimitKey);
@@ -72,16 +73,30 @@ export async function loginAction(
 
   let userRole: Role | null = null;
   try {
-    const user = await prisma.user.findUnique({
-      where: { username },
-    });
+    const user =
+      (await prisma.user.findFirst({
+        where: {
+          userCategory,
+          identityNumber: identifier,
+          role: Role.USER,
+        },
+      })) ??
+      // Fallback for admin accounts and users registered before categories were added.
+      (await prisma.user.findFirst({
+        where: {
+          username: identifier,
+          OR: [
+            { role: Role.ADMIN },
+            { role: Role.USER, userCategory: null },
+          ],
+        },
+      }));
 
-    // Gunakan pesan generik untuk mencegah kebocoran informasi validitas username
     if (!user) {
       recordFailedLogin(rateLimitKey);
       return {
         success: false,
-        message: "Username atau password tidak sesuai.",
+        message: "ID pengguna atau password tidak sesuai.",
       };
     }
 
@@ -90,7 +105,7 @@ export async function loginAction(
       recordFailedLogin(rateLimitKey);
       return {
         success: false,
-        message: "Username atau password tidak sesuai.",
+        message: "ID pengguna atau password tidak sesuai.",
       };
     }
 
@@ -129,15 +144,22 @@ export async function registerUser(
     };
   }
 
-  const { name, username, email, phone, password } = validated.data;
+  const { name, userCategory, identityNumber, email, phone, password } = validated.data;
+  const username = `${userCategory.toLowerCase()}-${identityNumber}`;
   const existing = await prisma.user.findFirst({
-    where: { OR: [{ username }, { email }] },
+    where: {
+      OR: [
+        { username },
+        { email },
+        { userCategory, identityNumber },
+      ],
+    },
     select: { id: true },
   });
   if (existing) {
     return {
       success: false,
-      message: "Username atau email sudah terdaftar.",
+      message: "NIDN, NIM, NIP, atau email sudah terdaftar.",
     };
   }
 
@@ -152,6 +174,8 @@ export async function registerUser(
         data: {
           name,
           username,
+          userCategory,
+          identityNumber,
           email,
           phone,
           password: passwordHash,
@@ -171,7 +195,7 @@ export async function registerUser(
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
       return {
         success: false,
-        message: "Username atau email sudah terdaftar.",
+        message: "NIDN, NIM, NIP, atau email sudah terdaftar.",
       };
     }
     console.error("Kesalahan saat membuat pendaftaran user:", error);
