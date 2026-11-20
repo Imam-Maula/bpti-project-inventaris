@@ -9,6 +9,7 @@ import {
   verifyOtp,
   type AuthActionResult,
 } from "@/actions/auth-actions";
+import { GoogleSignInButton } from "@/components/auth/google-signin-button";
 import {
   USER_CATEGORIES,
   USER_CATEGORY_DETAILS,
@@ -253,6 +254,18 @@ export function RegisterForm() {
             Kembali ke formulir pendaftaran
           </button>
         </form>
+      )}
+
+      {!otpSent && (
+        <>
+          <div className="relative flex items-center py-0.5">
+            <div className="grow border-t border-border" />
+            <span className="mx-3 shrink text-xs text-muted-foreground">atau</span>
+            <div className="grow border-t border-border" />
+          </div>
+
+          <GoogleSignInButton label="Daftar / Masuk Cepat dengan Akun Google" />
+        </>
       )}
 
       <p className="text-center text-xs text-muted-foreground">

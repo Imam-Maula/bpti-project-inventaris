@@ -69,3 +69,25 @@ export const resetPasswordWithOtpSchema = z
 export type RequestResetOtpInput = z.infer<typeof requestResetOtpSchema>;
 export type VerifyResetOtpInput = z.infer<typeof verifyResetOtpSchema>;
 export type ResetPasswordWithOtpInput = z.infer<typeof resetPasswordWithOtpSchema>;
+
+export const completeGoogleProfileSchema = z.object({
+  name: z.string().min(2, "Nama minimal 2 karakter").max(100).trim(),
+  userCategory: z.enum(USER_CATEGORIES),
+  identityNumber: z
+    .string()
+    .trim()
+    .min(1, "NIDN, NIM, atau NIP wajib diisi")
+    .max(30, "NIDN, NIM, atau NIP maksimal 30 angka")
+    .regex(/^\d+$/, "NIDN, NIM, atau NIP hanya boleh berisi angka"),
+  phone: z
+    .string()
+    .min(8, "Nomor telepon/WhatsApp minimal 8 karakter")
+    .max(20, "Nomor telepon/WhatsApp maksimal 20 karakter")
+    .regex(
+      /^[\d\s+\-()]+$/,
+      "Format nomor telepon hanya boleh memuat angka, spasi, dan simbol (+ - ())"
+    )
+    .trim(),
+});
+
+export type CompleteGoogleProfileInput = z.infer<typeof completeGoogleProfileSchema>;

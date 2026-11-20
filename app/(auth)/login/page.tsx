@@ -7,7 +7,26 @@ export const metadata: Metadata = {
   description: "Portal masuk Sistem Inventaris Badan Pengembangan Teknologi Informasi",
 };
 
-export default function LoginPage() {
+interface LoginPageProps {
+  searchParams: Promise<{
+    error?: string;
+    verified?: string;
+    google_sim?: string;
+  }>;
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const initialError = typeof params.error === "string" ? params.error : undefined;
+  const isVerifiedNotice = params.verified === "1";
+  const hasGoogleOAuthEnv = Boolean(
+    process.env.GOOGLE_CLIENT_ID?.trim() && process.env.GOOGLE_CLIENT_SECRET?.trim()
+  );
+  const showGoogleSimulator =
+    params.google_sim === "1" &&
+    process.env.NODE_ENV !== "production" &&
+    !hasGoogleOAuthEnv;
+
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-background px-4 py-12 text-foreground sm:px-6">
       <div className="w-full max-w-sm space-y-6">
@@ -35,7 +54,11 @@ export default function LoginPage() {
 
         {/* Kartu Form Login Solid */}
         <div className="rounded-lg border border-border bg-card p-6 shadow-xs">
-          <LoginForm />
+          <LoginForm
+            initialError={initialError}
+            isVerifiedNotice={isVerifiedNotice}
+            showGoogleSimulator={showGoogleSimulator}
+          />
         </div>
 
         {/* Footer Hak Cipta & Info */}

@@ -3,36 +3,73 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { loginAction, type AuthActionResult } from "@/actions/auth-actions";
+import { GoogleSignInButton } from "@/components/auth/google-signin-button";
 import {
   USER_CATEGORIES,
   USER_CATEGORY_DETAILS,
   type UserCategoryValue,
 } from "@/lib/user-categories";
-import { User, Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import {
+  User,
+  Lock,
+  Eye,
+  EyeOff,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 
 const initialState: AuthActionResult = {
   success: false,
 };
 
-export function LoginForm() {
+interface LoginFormProps {
+  initialError?: string;
+  isVerifiedNotice?: boolean;
+  showGoogleSimulator?: boolean;
+}
+
+export function LoginForm({
+  initialError,
+  isVerifiedNotice = false,
+  showGoogleSimulator = false,
+}: LoginFormProps) {
   const [state, formAction, isPending] = useActionState(loginAction, initialState);
   const [showPassword, setShowPassword] = useState(false);
   const [userCategory, setUserCategory] = useState<UserCategoryValue>("DOSEN");
+  const [simEmail, setSimEmail] = useState("mahasiswa.demo@gmail.com");
+  const [simName, setSimName] = useState("Mahasiswa Demo Google");
+
+  const activeErrorMessage = !state.success ? (state.message ?? initialError) : undefined;
 
   return (
-    <form action={formAction} className="space-y-4" noValidate>
+    <div className="space-y-4">
+      {isVerifiedNotice && (
+        <div
+          role="status"
+          className="flex items-start gap-2.5 rounded-md border border-border bg-muted p-3 text-sm text-foreground"
+        >
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <div className="leading-snug">
+            Email berhasil diverifikasi. Silakan masuk dengan akun Anda.
+          </div>
+        </div>
+      )}
+
       {/* Banner Pesan Error */}
-      {!state.success && state.message && (
+      {activeErrorMessage && (
         <div
           role="alert"
           className="flex items-start gap-2.5 rounded-md border border-destructive/25 bg-destructive/5 p-3 text-sm text-destructive"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="leading-snug">
-            <span className="font-semibold">Gagal masuk:</span> {state.message}
+            <span className="font-semibold">Gagal masuk:</span> {activeErrorMessage}
           </div>
         </div>
       )}
+
+      <form action={formAction} className="space-y-4" noValidate>
 
       <div className="space-y-1.5">
         <label
@@ -154,12 +191,78 @@ export function LoginForm() {
           "Masuk"
         )}
       </button>
-      <p className="text-center text-xs text-muted-foreground">
-        Belum punya akun?{" "}
-        <Link href="/register" className="font-medium text-primary hover:underline">
-          Daftar sebagai User
-        </Link>
-      </p>
     </form>
+
+    <div className="relative flex items-center py-0.5">
+      <div className="grow border-t border-border" />
+      <span className="mx-3 shrink text-xs text-muted-foreground">atau</span>
+      <div className="grow border-t border-border" />
+    </div>
+
+    <GoogleSignInButton label="Masuk dengan Akun Google" />
+
+    {showGoogleSimulator && (
+      <form
+        action="/api/auth/google/callback"
+        method="GET"
+        className="space-y-3 rounded-md border border-border bg-muted/60 p-3.5 text-xs"
+      >
+        <input type="hidden" name="sim" value="1" />
+        <div className="space-y-0.5">
+          <p className="font-semibold text-foreground">
+            Simulator Akun Google (Mode Dev)
+          </p>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Kredensial GOOGLE_CLIENT_ID belum diisi di .env. Gunakan simulasi akun Google berikut untuk menguji alur OAuth secara lokal.
+          </p>
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="simEmail" className="block font-medium text-foreground">
+            Email Google Simulasi
+          </label>
+          <input
+            id="simEmail"
+            name="email"
+            type="email"
+            required
+            value={simEmail}
+            onChange={(event) => setSimEmail(event.target.value)}
+            className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="simName" className="block font-medium text-foreground">
+            Nama Tampilan Google
+          </label>
+          <input
+            id="simName"
+            name="name"
+            type="text"
+            required
+            minLength={2}
+            value={simName}
+            onChange={(event) => setSimName(event.target.value)}
+            className="w-full rounded-md border border-input bg-background px-2.5 py-1.5 text-xs text-foreground focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="w-full rounded-md border border-primary bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/15"
+        >
+          Lanjutkan Simulasi Login Google
+        </button>
+      </form>
+    )}
+
+    <p className="text-center text-xs text-muted-foreground">
+      Belum punya akun?{" "}
+      <Link href="/register" className="font-medium text-primary hover:underline">
+        Daftar sebagai User
+      </Link>
+    </p>
+    </div>
   );
 }

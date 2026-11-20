@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pitch Deck - Sistem Informasi Inventaris BPTI UHAMKA</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap');
+
+    :root {
+      --bg-dark: #090e17;
+      --bg-card: rgba(17, 24, 39, 0.75);
+      --bg-card-border: rgba(255, 255, 255, 0.08);
+      --primary: #0e9f6e;
+      --primary-light: #34d399;
+      --teal: #0d4f5c;
+      --teal-light: #14b8a6;
+      --accent-blue: #3b82f6;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .deck-container {
+      width: 100vw;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: radial-gradient(circle at 15% 15%, rgba(13, 79, 92, 0.25) 0%, transparent 45%),
+                  radial-gradient(circle at 85% 85%, rgba(14, 159, 110, 0.18) 0%, transparent 45%),
+                  #090e17;
+    }
+
+    .slide {
+      width: 100vw;
+      height: 100vh;
+      max-width: 1920px;
+      max-height: 1080px;
+      padding: 3rem 4.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+      break-after: page;
+    }
+
+    /* Subtle background grid pattern */
+    .slide::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .slide-content {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* Headers */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.5rem;
+    }
+
+    .tag-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(14, 159, 110, 0.15);
+      border: 1px solid rgba(14, 159, 110, 0.35);
+      color: var(--primary-light);
+    }
+
+    .tag-badge.amber {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+    }
+
+    .tag-badge.blue {
+      background: rgba(59, 130, 246, 0.15);
+      border-color: rgba(59, 130, 246, 0.35);
+      color: #60a5fa;
+    }
+
+    .tag-badge.purple {
+      background: rgba(168, 85, 247, 0.15);
+      border-color: rgba(168, 85, 247, 0.35);
+      color: #c084fc;
+    }
+
+    .slide-title {
+      font-size: 2.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      color: #ffffff;
+      margin-top: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .slide-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .slide-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.3);
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Grids & Cards */
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      flex: 1;
+      align-items: stretch;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.75rem;
+      flex: 1;
+      align-items: stretch;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      flex: 1;
+      align-items: stretch;
+    }
+
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 16px;
+      padding: 1.5rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .card.highlight {
+      border-color: rgba(14, 159, 110, 0.4);
+      background: linear-gradient(145deg, rgba(14, 159, 110, 0.1) 0%, rgba(17, 24, 39, 0.8) 100%);
+    }
+
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      margin-bottom: 1rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.6rem;
+    }
+
+    .card-body {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      flex: 1;
+    }
+
+    .card-list {
+      list-style: none;
+      margin-top: 0.75rem;
+    }
+
+    .card-list li {
+      position: relative;
+      padding-left: 1.25rem;
+      margin-bottom: 0.45rem;
+      font-size: 0.9rem;
+      color: #cbd5e1;
+    }
+
+    .card-list li::before {
+      content: "•";
+      position: absolute;
+      left: 0;
+      color: var(--primary-light);
+      font-weight: bold;
+    }
+
+    /* Stat Box */
+    .stat-number {
+      font-size: 2.75rem;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+      line-height: 1;
+      margin-bottom: 0.4rem;
+      background: linear-gradient(135deg, #ffffff 0%, #a7f3d0 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Slide Footer */
+    .slide-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.8rem;
+      color: rgba(255, 255, 255, 0.35);
+      margin-top: 1rem;
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .footer-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+
+    /* Code Pill */
+    .code-pill {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.15rem 0.5rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #38bdf8;
+    }
+
+    /* Flow Steps */
+    .step-badge {
+      position: absolute;
+      top: -12px;
+      left: 20px;
+      background: var(--primary);
+      color: #042f2e;
+      font-weight: 800;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.75rem;
+      border-radius: 9999px;
+      letter-spacing: 0.05em;
+    }
+
+    /* Formula Banner */
+    .formula-banner {
+      background: linear-gradient(90deg, rgba(13, 79, 92, 0.5) 0%, rgba(14, 159, 110, 0.2) 100%);
+      border: 1px solid rgba(14, 159, 110, 0.4);
+      border-radius: 14px;
+      padding: 1.25rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .formula-text {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    /* Navigation Overlay for presentation */
+    .nav-bar {
+      position: fixed;
+      bottom: 20px;
+      right: 25px;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      z-index: 100;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .nav-btn {
+      background: none;
+      border: none;
+      color: #ffffff;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+
+    .nav-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Print settings for pristine PDF export */
+    @page {
+      size: 16in 9in landscape;
+      margin: 0;
+    }
+
+    @media print {
+      body {
+        background: #090e17 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .slide {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: none !important;
+        max-height: none !important;
+        page-break-after: always !important;
+        break-after: page !important;
+      }
+      .nav-bar {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Controls overlay -->
+  <div class="nav-bar" id="navbar">
+    <button class="nav-btn" onclick="prevSlide()">◀ Prev</button>
+    <span id="pageIndicator" style="font-family:'JetBrains Mono'; font-size:0.85rem; color:var(--primary-light);">1 / 10</span>
+    <button class="nav-btn" onclick="nextSlide()">Next ▶</button>
+    <button class="nav-btn" onclick="window.print()" title="Cetak / Simpan PDF" style="background:var(--primary); color:#042f2e; font-weight:700; border-radius:12px; padding:0.25rem 0.75rem;">Export PDF</button>
+  </div>
+
+  <div class="deck-container">
+
+    <!-- ==========================================
+         SLIDE 1: COVER & EXECUTIVE HOOK
+         ========================================== -->
+    <section class="slide" id="slide-1">
+      <div class="slide-content">
+        <div class="slide-header">
+          <div class="tag-badge">BPTI UHAMKA • LOGISTICS PITCH DECK</div>
+          <div class="slide-counter">01 / 10</div>
+        </div>
+
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; max-width:1100px;">
+          <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:1.25rem;">
+            <div style="width:14px; height:14px; border-radius:50%; background:var(--primary); box-shadow:0 0 15px var(--primary);"></div>
+            <span style="font-size:0.95rem; font-weight:700; letter-spacing:0.1em; color:var(--primary-light); text-transform:uppercase;">Badan Pengembangan Teknologi Informasi</span>
+          </div>
+
+          <h1 style="font-size:3.75rem; font-weight:800; line-height:1.1; color:#ffffff; letter-spacing:-0.03em; margin-bottom:1.25rem;">
+            Sistem Informasi Pengelolaan <br>
+            <span style="background: linear-gradient(135deg, #34d399 0%, #14b8a6 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+              Barang Inventaris Kampus
+            </span>
+          </h1>
+
+          <p style="font-size:1.35rem; color:#94a3b8; line-height:1.6; max-width:900px; margin-bottom:2.5rem;">
+            Platform Terpadu Manajemen Aset Kantor, Sirkulasi Peminjaman Atomik, dan Jejak Audit (<span style="color:#ffffff; font-weight:600;">Audit Trail</span>) Berbasis Web Modern untuk Efisiensi Operasional Terverifikasi.
+          </p>
+
+          <div style="display:flex; gap:2.5rem; align-items:center;">
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:1rem 1.75rem;">
+              <div style="font-size:0.8rem; color:#64748b; text-transform:uppercase; font-weight:700;">Pengembang</div>
+              <div style="font-size:1.05rem; font-weight:700; color:#f8fafc; margin-top:0.25rem;">Tim Mahasiswa PKL BPTI UHAMKA</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:1rem 1.75rem;">
+              <div style="font-size:0.8rem; color:#64748b; text-transform:uppercase; font-weight:700;">Fondasi Rekayasa</div>
+              <div style="font-size:1.05rem; font-weight:700; color:#34d399; margin-top:0.25rem;">Next.js 16 • React 19 • MySQL 8.4 ACID</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="slide-footer">
+          <div class="footer-left">
+            <span class="footer-dot"></span>
+            <span>Universitas Muhammadiyah Prof. DR. HAMKA</span>
+          </div>
+          <div>BPTI Enterprise Architecture Series • 2026</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 2: THE PROBLEM (URGENSI MASALAH)
+         ========================================== -->
+    <section class="slide" id="slide-2">
+      <div class="slide-content">
+        <div class="slide-header">
+          <div>
+            <div class="tag-badge amber">Tantangan & Urgensi</div>
+            <h2 class="slide-title">Tantangan Tata Kelola Aset Konvensional</h2>
+            <div class="slide-subtitle">Tiga friksi utama dalam logistik operasional kampus sebelum digitalisasi terintegrasi</div>
+          </div>
+          <div class="slide-counter">02 / 10</div>
+        </div>
+
+        <div class="grid-3">
+          <div class="card" style="border-top: 4px solid var(--accent-rose);">
+            <div class="card-icon" style="background:rgba(244,63,94,0.15); color:var(--accent-rose);">⚠️</div>
+            <h3 class="card-title">1. Selisih Stok & Data Tercecer</h3>
+            <p class="card-body">
+              Pencatatan manual berbasis buku ekspedisi atau spreadsheet tidak tersinkronisasi langsung dengan fisik gudang.
+            </p>
+            <ul class="card-list">
+              <li>Rawan selisih antara data pembukuan vs unit riil</li>
+              <li>Tidak ada proteksi peminjaman ganda (*over-borrowing*)</li>
+              <li>Dokumentasi visual fisik barang nihil saat diserahkan</li>
+            </ul>
+          </div>
+
+          <div class="card" style="border-top: 4px solid var(--accent-amber);">
+            <div class="card-icon" style="background:rgba(245,158,11,0.15); color:var(--accent-amber);">⏱️</div>
+            <h3 class="card-title">2. Keterlambatan Tanpa Alarm</h3>
+            <p class="card-body">
+              Sulit mengawasi batas waktu peminjaman (*due date*) perangkat bernilai tinggi (laptop, proyektor, mic wireless).
+            </p>
+            <ul class="card-list">
+              <li>Peminjam lupa tanggal pengembalian tanpa notifikasi</li>
+              <li>Staf BPTI menghabiskan waktu merekap manual penerima pinjaman</li>
+              <li>Unit yang rusak berat terlambat diisolasi dari sirkulasi</li>
+            </ul>
+          </div>
+
+          <div class="card" style="border-top: 4px solid var(--accent-blue);">
+            <div class="card-icon" style="background:rgba(59,130,246,0.15); color:var(--accent-blue);">⚖️</div>
+            <h3 class="card-title">3. Ketiadaan Rekam Audit Sah</h3>
+            <p class="card-body">
+              Perubahan kuota atau status aset tidak terdokumentasi historinya secara detail dan rentan sengketa.
+            </p>
+            <ul class="card-list">
+              <li>Tidak ada rekam jejak (*who changed what & when*)</li>
+              <li>Penerbitan Berita Acara manual memakan waktu birokrasi</li>
+              <li>Risiko akuntabilitas tinggi saat audit aset universitas tahunan</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="slide-footer">
+          <div class="footer-left">
+            <span class="footer-dot"></span>
+            <span>Urgensi: Mencegah kerugian finansial & degradasi aset teknologi kampus</span>
+          </div>
+          <div>BPTI UHAMKA • Problem Discovery</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 3: THE SOLUTION (SOLUSI SISTEM)
+         ========================================== -->
+    <section class="slide" id="slide-3">
+      <div class="slide-content">
+        <div class="slide-header">
+          <div>
+            <div class="tag-badge">Transformasi Digital</div>
+            <h2 class="slide-title">Solusi Sistemik: Sirkulasi Aset Otomatis & Terverifikasi</h2>
+            <div class="slide-subtitle">Mentransformasi alur birokrasi manual menjadi platform digital berkecepatan tinggi</div>
+          </div>
+          <div class="slide-counter">03 / 10</div>
+        </div>
+
+        <div class="grid-3">
+          <div class="card highlight">
+            <div class="card-icon" style="background:rgba(14,159,110,0.2); color:var(--primary-light);">🛡️</div>
+            <h3 class="card-title">Integritas Stok Atomik</h3>
+            <p class="card-body">
+              Setiap penambahan, reservasi, dan mutasi barang dieksekusi menggunakan transaksi database ACID dengan locking atomik.
+            </p>
+            <ul class="card-list">
+              <li>Zero Negative Stock: Menolak peminjaman jika stok fisik habis</li>
+              <li>Compare-and-Swap (CAS) Mutex mencegah benturan sirkulasi</li>
+              <li>Konsistensi data absolut di level penyimpanan MySQL 8.4</li>
+            </ul>
+          </div>
+
+          <div class="card highlight">
+            <div class="card-icon" style="background:rgba(20,184,166,0.2); color:var(--teal-light);">⚡</div>
+            <h3 class="card-title">Alur 4 Tahap Terstruktur</h3>
+            <p class="card-body">
+              Pemisahan tegas antara kesepakatan administratif (Approval) dan serah-terima unit di lapangan (Physical Handover).
+            </p>
+            <ul class="card-list">
+              <li>Pengajuan mandiri oleh dosen/staf melalui katalog online</li>
+              <li>Persetujuan verifikatif oleh admin logistik BPTI</li>
+              <li>Stok fisik hanya berkurang saat barang diserahkan ke tangan peminjam</li>
+            </ul>
+          </div>
+
+          <div class="card highlight">
+            <div class="card-icon" style="background:rgba(59,130,246,0.2); color:#60a5fa;">🔍</div>
+            <h3 class="card-title">Audit Trail & Berita Acara</h3>
+            <p class="card-body">
+              Transparansi mutlak melalui rekam jejak digital otomatis dan generator berkas serah terima resmi.
+            </p>
+            <ul class="card-list">
+              <li>Logging mendalam perbedaan data sebelum & sesudah (*Diff Tracking*)</li>
+              <li>Cetak lembar Berita Acara resmi instan siap tanda tangan basah</li>
+              <li>Ekspor laporan terverifikasi ke format CSV/Excel dalam 1 klik</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="slide-footer">
+          <div class="footer-left">
+            <span class="footer-dot"></span>
+            <span>Nilai Tambah: Transparansi, Kecepatan Layanan, dan Nol Selisih Barang Fisik</span>
+          </div>
+          <div>BPTI UHAMKA • Solution Blueprint</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 4: DOMAIN MODEL & DATABASE ARCHITECTURE
+         ========================================== -->
+    <section class="slide" id="slide-4">
+      <div class="slide-content">
+        <div class="slide-header">
+          <div>
+            <div class="tag-badge blue">Model Entitas & Data</div>
+            <h2 class="slide-title">Arsitektur Domain Relasional Terstruktur</h2>
+            <div class="slide-subtitle">Rancangan basis data ternormalisasi tinggi yang menjamin keutuhan relasi transaksi</div>
+          </div>
+          <div class="slide-counter">04 / 10</div>
+        </div>
+
+        <div class="grid-4">
+          <div class="card">
+            <div class="card-icon">👤</div>
+            <h4 class="card-title" style="font-size:1.05rem;">User & Keamanan</h4>
+            <div style="font-size:0.85rem; color:#94a3b8; line-height:1.5;">
+              <p><strong style="color:#ffffff;">Role:</strong> <span class="code-pill">ADMIN</span> | <span class="code-pill">USER</span></p>
+              <p style="margin-top:0.4rem;">Enkripsi sandi Bcrypt (12 salt rounds), token sesi JWT HS256 di HttpOnly Cookie, proteksi brute-force login.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-icon">📦</div>
+            <h4 class="card-title" style="font-size:1.05rem;">Item (Master Aset)</h4>
+            <div style="font-size:0.85rem; color:#94a3b8; line-height:1.5;">
+              <p><strong style="color:#ffffff;">Kode SKU:</strong> <span class="code-pill">BRG-xxx</span></p>
+              <p style="margin-top:0.4rem;">Menyimpan kuota fisik, stok tersedia, lokasi rak gudang, kategori aset, dan kondisi fisik dominan.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-icon">🖼️</div>
+            <h4 class="card-title" style="font-size:1.05rem;">ItemImage (MySQL Blob)</h4>
+            <div style="font-size:0.85rem; color:#94a3b8; line-height:1.5;">
+              <p><strong style="color:#ffffff;">Tipe:</strong> <span class="code-pill">LONGBLOB</span></p>
+              <p style="margin-top:0.4rem;">Foto barang tersimpan langsung di dalam database (hingga 5MB). Backup & restore database selalu membawa seluruh foto aset.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-icon">📋</div>
+            <h4 class="card-title" style="font-size:1.05rem;">Borrow & AuditLog</h4>
+            <div style="font-size:0.85rem; color:#94a3b8; line-height:1.5;">
+              <p><strong style="color:#ffffff;">Trx:</strong> <span class="code-pill">PJM-YYYYMMDD-XXXX</span></p>
+              <p style="margin-top:0.4rem;">Pencatatan siklus peminjaman, tanggal tenggat, dan audit log selisih JSON <span class="code-pill">oldValue</span> vs <span class="code-pill">newValue</span>.</p>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:1.25rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:12px; padding:1rem 1.5rem; display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-size:0.9rem; color:#cbd5e1;">
+            <strong style="color:#34d399;">Integritas Referensial:</strong> Relasi antar tabel dilindungi aturan Foreign Key dengan indeks terarah untuk performa pencarian kilat di bawah 50ms.
+          </div>
+          <div class="code-pill">Prisma ORM 5.22 • MySQL 8.4 Server</div>
+        </div>
+
+        <div class="slide-footer">
+          <div class="footer-left">
+            <span class="footer-dot"></span>
+            <span>Keunggulan Biner: Menghilangkan risiko broken images akibat berkas OS yang terhapus</span>
+          </div>
+          <div>BPTI UHAMKA • Data Model</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 5: THE CORE ENGINE - STOCK INVARIANT
+         ========================================== -->
+    <section class="slide" id="slide-5">
+      <div class="slide-content">
+        <div class="slide-header">
+          <div>
+            <div class="tag-badge">Jantung Logika Bisnis</div>
+            <h2 class="slide-title">Invarian Stok Matematika & Concurrency Guard</h2>
+            <div class="slide-subtitle">Formula kekekalan stok fisik BPTI yang diproteksi di tingkat transaksi database</div>
+          </div>
+          <div class="slide-counter">05 / 10</div>
+        </div>
+
+        <div class="formula-banner">
+          <div>
+            <div style="font-size:0.8rem; color:#34d399; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.25rem;">Hukum Kekekalan Stok Fisik BPTI</div>
+            <div class="formula-text">Total Fisik = Stok Tersedia + Sedang Dipinjam + Unit Karantina</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.75rem; color:#94a3b8;">Proteksi Mutlak</div>
+            <div style="font-size:1.1rem; font-weight:700; color:#38bdf8; font-family:'JetBrains Mono';">CAS Atomic Mutex</div>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-icon" style="color:var(--primary-light);">1️⃣</div>
+            <h3 class="card-title">Zero Negative Stock</h3>
+            <p class="card-body">
+              Pembaruan stok menggunakan klausa bersyarat atomik:
+              <br><br>
+              <code class="code-pill" style="display:block; padding:0.5rem; color:#a7f3d0; background:#0f172a;">
+                where: { id, availableQuantity: { gte: qty } }
+              </code>
+              <br>
+              Jika stok tidak mencukupi, transaksi secara otomatis digugurkan (*Rollback*).
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon" style="color:#60a5fa;">2️⃣</div>
+            <h3 class="card-title">Anti-Race Condition</h3>
+            <p class="card-body">
+              Ketika dua pengguna mengajukan 1 unit terakhir di milidetik yang sama, locking transaksi database memastikan:
+            </p>
+            <ul class="card-list">
+              <li>Tepat 1 pengguna berhasil reservasi</li>
+              <li>1 pengguna lainnya ditolak secara elegan tanpa crash</li>
+              <li>Stok fisik tidak pernah menyentuh nilai minus (-1)</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-icon" style="color:#f43f5e;">3️⃣</div>
+            <h3 class="card-title">Isolasi Karantina Otomatis</h3>
+            <p class="card-body">
+              Barang yang dikembalikan dalam kondisi <span class="code-pill" style="color:#f43f5e;">RUSAK_BERAT</span> tidak dikembalikan ke stok aktif, melainkan langsung dialihkan ke kuota Karantina BPTI hingga dilakukan servis resmi.
+            </p>
+          </div>
+        </div>
+
+        <div class="slide-footer">
+          <div class="footer-left">
+            <span class="footer-dot"></span>
+            <span>Jaminan Kualitas: Unit fisik di gudang dijamin 100% konsisten dengan angka di dasbor</span>
+          </div>
+          <div>BPTI UHAMKA • Mathematical Proof</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 6: TECH STACK & ARCHITECTURE
+         ========================================== -->
+    <section class="slide" id="slide-6">
+      <div class="slide-content">
+        <div class="slide-header">
+          <div>
+            <div class="tag-badge purple">Tumpukan Teknologi Modern</div>
+            <h2 class="slide-title">Arsitektur Perangkat Lunak Tiga Tingkat</h2>
+            <div class="slide-subtitle">Kombinasi teknologi industri mutakhir untuk performa tinggi, stabilitas, dan keamanan</div>
+          </div>
+          <div class="slide-counter">06 / 10</div>
+        </div>
+
+        <div class="grid-3">
+          <div class="card" style="border-top: 4px solid #38bdf8;">
+            <div class="card-icon" style="color:#38bdf8;">🖥️</div>
+            <h3 class="card-title">Presentation Tier</h3>
+            <p class="card-body">
+              Antarmuka responsif dan intuitif dirancang khusus untuk kenyamanan operasional staf.
+            </p>
+            <ul class="card-list">
+              <li><strong>Next.js 16.3.7</strong> App Router & <strong>React 19</strong></li>
+              <li><strong>Tailwind CSS Native</strong> & Geist Font Typography</li>
+              <li>Instant Live Search tanpa reload halaman</li>
+              <li>Sistem Notifikasi Toast Global Native</li>
+            </ul>
+          </div>
+
+          <div class="card" style="border-top: 4px solid var(--primary-light);">
+            <div class="card-icon" style="color:var(--primary-light);">⚙️</div>
+            <h3 class="card-title">Application Tier</h3>
+            <p class="card-body">
+              Pemisahan tegas antara Server Components, Server Actions, dan Domain Service Layer.
+            </p>
+            <ul class="card-list">
+              <li><strong>TypeScript 5.x</strong> dengan <em>Strict Type Safety</em></li>
+              <li>Validasi data lapis ganda dengan skema <strong>Zod</strong></li>
+              <li>Edge Middleware Guard JWT (HttpOnly Cookie)</li>
+              <li>Service domain terisolasi (`item-service`, `borrow-service`)</li>
+            </ul>
+          </div>
+
+          <div class="card" style="border-top: 4px solid #f59e0b;">
+            <div class="card-icon" style="color:#f59e0b;">🗄️</div>
+            <h3 class="card-title">Persistence Tier</h3>
+            <p class="card-body">
+              Penyimpanan data relasional berkinerja tinggi dengan kepatuhan standar transaksi ACID.
+            </p>
+            <ul class="card-list">
+              <li><strong>Prisma ORM 5.22.0</strong> dengan tipe data ter-generasi</li>
+              <li><strong>MySQL Server 8.4</strong> Enterprise Engine</li>
+              <li>Indeks pencarian teroptimasi pada foreign key</li>
+              <li>Penyimpanan biner foto aset terenkapsulasi penuh</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="slide-footer">
+          <div class="footer-left">
+            <span class="footer-dot"></span>
+            <span>Standar Keamanan: Proteksi SQL Injection, CSRF, XSS, dan Brute Force Rate Limiter</span>
+          </div>
+          <div>BPTI UHAMKA • System Architecture</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 7: KEY FEATURES
+         ========================================== -->
+    <section class="slide" id="slide-7">
+      <div class="slide-content">
+        <div class="slide-header">
+          <div>
+            <div class="tag-badge">Fitur Unggulan</div>
+            <h2 class="slide-title">Fitur-Fitur Kunci Sistem Operasional</h2>
+            <div class="slide-subtitle">Solusi fungsional yang dibangun spesifik untuk menjawab kebutuhan riil logistik kampus</div>
+          </div>
+          <div class="slide-counter">07 / 10</div>
+        </div>
+
+        <div class="grid-4">
+          <div class="card">
+            <div class="card-icon" style="background:rgba(239,68,68,0.15); color:#f87171;">🚨</div>
+            <h3 class="card-title" style="font-size:1.1rem;">Warning Keterlambatan</h3>
+            <p class="card-body" style="font-size:0.88rem;">
+              Banner alarm merah dinamis di dasbor admin yang secara instan menyorot peminjaman aktif yang telah melewati batas waktu (*Overdue*).
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon" style="background:rgba(59,130,246,0.15); color:#60a5fa;">🖼️</div>
+            <h3 class="card-title" style="font-size:1.1rem;">Galeri Multi-Sudut</h3>
+            <p class="card-body" style="font-size:0.88rem;">
+              Unggah dan visualisasi kondisi fisik barang dari berbagai sudut resolusi tinggi dengan modal penampil gambar interaktif.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon" style="background:rgba(14,159,110,0.15); color:var(--primary-light);">📝</div>
+            <h3 class="card-title" style="font-size:1.1rem;">Cetak Berita Acara</h3>
+            <p class="card-body" style="font-size:0.88rem;">
+              Otomasi penerbitan dokumen resmi Berita Acara Peminjaman berformat standar universitas yang siap dicetak dan ditandatangani.
+            </p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon" style="background:rgba(168,85,247,0.15); color:#c084fc;">🔍</div>
+            <h3 class="card-title" style="font-size:1.1rem;">Diff Audit Inspector</h3>
+            <p class="card-body" style="font-size:0.88rem;">
+              Modal inspeksi audit menampilkan komparasi visual baris-per-baris data lama versus data baru untuk setiap mutasi aset.
+            </p>
+          </div>
+        </div>
+
+        <div style="margin-top:1.25rem; display:flex; gap:1.5rem;">
+          <div class="card" style="flex:1; padding:1.25rem 1.5rem; flex-direction:row; align-items:center; gap:1.25rem;">
+            <div style="font-size:2rem;">📊</div>
+            <div>
+              <div style="font-size:0.95rem; font-weight:700; color:#ffffff;">Ekspor Laporan 1-Klik</div>
+              <div style="font-size:0.85rem; color:#94a3b8;">Unduh seluruh rekaman transaksi, inventaris barang, atau audit log ke format CSV/Excel untuk pelaporan pimpinan.</div>
+            </div>
+          </div>
+          <div class="card" style="flex:1; padding:1.25rem 1.5rem; flex-direction:row; align-items:center; gap:1.25rem;">
+            <div style="font-size:2rem;">🌓</div>
+            <div>
+              <div style="font-size:0.95rem; font-weight:700; color:#ffffff;">Mode Gelap & Terang Dinamis</div>
+              <div style="font-size:0.85rem; color:#94a3b8;">Tampilan adaptif otomatis yang ergonomis untuk kenyamanan staf yang bekerja di berbagai kondisi pencahayaan.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="slide-footer">
+          <div class="footer-left">
+            <span class="footer-dot"></span>
+            <span>Berfokus pada kemudahan pengguna & kecepatan proses administrasi</span>
+          </div>
+          <div>BPTI UHAMKA • Core Capabilities</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 8: EMPIRICAL VALIDATION & QUALITY ASSURANCE
+         ========================================== -->
+    <section class="slide" id="slide-8">
+      <div class="slide-content">
+        <div class="slide-header">
+          <div>
+            <div class="tag-badge">Jaminan Kualitas Empiris</div>
+            <h2 class="slide-title">Validasi Mutu & Hasil Pengujian Komprehensif</h2>
+            <div class="slide-subtitle">Keandalan sistem dibuktikan secara faktual melalui test runner otomatis di bawah beban stres</div>
+          </div>
+          <div class="slide-counter">08 / 10</div>
+        </div>
+
+        <div class="grid-4" style="margin-bottom:1.5rem;">
+          <div class="card highlight" style="align-items:center; text-align:center; padding:1.75rem 1rem;">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">UAT Concurrency (12/12)</div>
+            <p style="font-size:0.8rem; color:#94a3b8; margin-top:0.5rem;">Lulus uji CAS Mutex, Zero Stock, JWT & Brute Force</p>
+          </div>
+
+          <div class="card highlight" style="align-items:center; text-align:center; padding:1.75rem 1rem;">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">Audit Logging (6/6)</div>
+            <p style="font-size:0.8rem; color:#94a3b8; margin-top:0.5rem;">Lulus verifikasi diff data, non-repudiation & integritas foto</p>
+          </div>
+
+          <div class="card highlight" style="align-items:center; text-align:center; padding:1.75rem 1rem;">
+            <div class="stat-number">0</div>
+            <div class="stat-label">AI Slop Signal</div>
+            <p style="font-size:0.8rem; color:#94a3b8; margin-top:0.5rem;">Pemindaian 73 berkas bersih dari kode placeholder semu</p>
+          </div>
+
+          <div class="card highlight" style="align-items:center; text-align:center; padding:1.75rem 1rem;">
+            <div class="stat-number">0</div>
+            <div class="stat-label">Type Errors (Exit 0)</div>
+            <p style="font-size:0.8rem; color:#94a3b8; margin-top:0.5rem;">Pemeriksaan ketat TypeScript compiler tsc lolos tanpa eror</p>
+          </div>
+        </div>
+
+        <div class="card" style="padding:1.25rem 1.75rem; background:rgba(15,23,42,0.8);">
+          <div style="font-size:1rem; font-weight:700; color:#ffffff; margin-bottom:0.5rem;">Metodologi Pengujian Stres & Simulasi Lapangan:</div>
+          <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:1rem; font-size:0.85rem; color:#cbd5e1;">
+            <div>• <strong>Simultaneous Race Simulation:</strong> 2 proses memperebutkan 1 unit menghasilkan 1 sukses & 1 penolakan informatif.</div>
+            <div>• <strong>Security Tamper Test:</strong> Modifikasi payload JWT ditolak seketika oleh Edge Middleware Guard.</div>
+            <div>• <strong>Memory Stability Check:</strong> Webpack cache teroptimasi, bebas kebocoran memori (V8 Out of Memory resolved).</div>
+          </div>
+        </div>
+
+        <div class="slide-footer">
+          <div class="footer-left">
+            <span class="footer-dot"></span>
+            <span>Rigor Rekayasa: Bebas dari dugaan subjektif, terbukti oleh eksekusi suite pengujian otomatis</span>
+          </div>
+          <div>BPTI UHAMKA • Verification Report</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 9: ENGINEERING TEAM & EXECUTION
+         ========================================== -->
+    <section class="slide" id="slide-9">
+      <div class="slide-content">
+        <div class="slide-header">
+          <div>
+            <div class="tag-badge blue">Kolaborasi & Eksekusi</div>
+            <h2 class="slide-title">Struktur Tim Pengembang Mahasiswa PKL</h2>
+            <div class="slide-subtitle">Sinergi empat peran spesialisasi rekayasa perangkat lunak dalam mewujudkan sistem</div>
+          </div>
+          <div class="slide-counter">09 / 10</div>
+        </div>
+
+        <div class="grid-4">
+          <div class="card" style="border-top:3px solid #38bdf8;">
+            <div class="card-icon" style="color:#38bdf8;">👑</div>
+            <h4 class="card-title" style="font-size:1.1rem;">Dev 1: Lead & Security</h4>
+            <div class="card-body" style="font-size:0.88rem;">
+              <p style="color:#34d399; font-weight:700; margin-bottom:0.4rem;">Arsitektur & Keamanan</p>
+              <ul class="card-list">
+                <li>Perancangan skema relasional database Prisma & MySQL</li>
+                <li>Implementasi Bcrypt & JWT Edge Guard</li>
+                <li>Manajemen state sesi HttpOnly</li>
+                <li>Dokumentasi teknis & blueprint</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card" style="border-top:3px solid var(--primary-light);">
+            <div class="card-icon" style="color:var(--primary-light);">🎨</div>
+            <h4 class="card-title" style="font-size:1.1rem;">Dev 2: Frontend UX</h4>
+            <div class="card-body" style="font-size:0.88rem;">
+              <p style="color:#34d399; font-weight:700; margin-bottom:0.4rem;">Antarmuka & Validasi</p>
+              <ul class="card-list">
+                <li>Pengembangan UI dasbor responsif</li>
+                <li>Komponen modal dinamis & galeri gambar</li>
+                <li>Validasi form interaktif berbasis Zod</li>
+                <li>Penyempurnaan tema gelap/terang</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card" style="border-top:3px solid #f59e0b;">
+            <div class="card-icon" style="color:#f59e0b;">⚡</div>
+            <h4 class="card-title" style="font-size:1.1rem;">Dev 3: Backend Engineer</h4>
+            <div class="card-body" style="font-size:0.88rem;">
+              <p style="color:#34d399; font-weight:700; margin-bottom:0.4rem;">Logika Bisnis & Stok</p>
+              <ul class="card-list">
+                <li>Service layer mutasi stok atomik</li>
+                <li>Isolasi race condition & CAS Mutex</li>
+                <li>Alur karantina barang rusak berat</li>
+                <li>Agregasi metrik dasbor performa tinggi</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="card" style="border-top:3px solid #f43f5e;">
+            <div class="card-icon" style="color:#f43f5e;">🧪</div>
+            <h4 class="card-title" style="font-size:1.1rem;">Dev 4: QA & Tester</h4>
+            <div class="card-body" style="font-size:0.88rem;">
+              <p style="color:#34d399; font-weight:700; margin-bottom:0.4rem;">Otomasi Uji & Audit</p>
+              <ul class="card-list">
+                <li>Penyusunan test runner UAT 18 skenario</li>
+                <li>Sistem notifikasi Toast native</li>
+                <li>Audit kualitas kode & deteksi slop</li>
+                <li>Verifikasi Berita Acara & ekspor berkas</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="slide-footer">
+          <div class="footer-left">
+            <span class="footer-dot"></span>
+            <span>Sinergi Rekayasa: Menghasilkan kode berkualitas tinggi, modular, dan mudah dirawat</span>
+          </div>
+          <div>BPTI UHAMKA • Engineering Team</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 10: ROADMAP & FUTURE VISION
+         ========================================== -->
+    <section class="slide" id="slide-10">
+      <div class="slide-content">
+        <div class="slide-header">
+          <div>
+            <div class="tag-badge">Visi Masa Depan</div>
+            <h2 class="slide-title">Rencana Pengembangan Strategis & Penutup</h2>
+            <div class="slide-subtitle">Rencana ekspansi kapabilitas sistem untuk mendukung operasional kampus cerdas modern</div>
+          </div>
+          <div class="slide-counter">10 / 10</div>
+        </div>
+
+        <div class="grid-3">
+          <div class="card" style="border-left: 4px solid #38bdf8;">
+            <div class="card-icon" style="color:#38bdf8;">📱</div>
+            <div style="font-size:0.75rem; color:#38bdf8; font-weight:700; text-transform:uppercase;">Fase I • Q3 2026</div>
+            <h3 class="card-title" style="margin-top:0.25rem;">Mobile Barcode / QR Scanner</h3>
+            <p class="card-body">
+              Penempelan label QR Code fisik pada setiap unit inventaris. Staf cukup memindai dengan kamera smartphone saat serah terima barang untuk verifikasi instan.
+            </p>
+          </div>
+
+          <div class="card" style="border-left: 4px solid var(--primary-light);">
+            <div class="card-icon" style="color:var(--primary-light);">🔑</div>
+            <div style="font-size:0.75rem; color:var(--primary-light); font-weight:700; text-transform:uppercase;">Fase II • Q4 2026</div>
+            <h3 class="card-title" style="margin-top:0.25rem;">Integrasi SSO Kampus UHAMKA</h3>
+            <p class="card-body">
+              Penyatuan sistem otentikasi dengan Single Sign-On (SSO) universitas, memungkinkan dosen, staf, dan mahasiswa meminjam tanpa perlu registrasi akun terpisah.
+            </p>
+          </div>
+
+          <div class="card" style="border-left: 4px solid #f59e0b;">
+            <div class="card-icon" style="color:#f59e0b;">💬</div>
+            <div style="font-size:0.75rem; color:#f59e0b; font-weight:700; text-transform:uppercase;">Fase III • Q1 2027</div>
+            <h3 class="card-title" style="margin-top:0.25rem;">WhatsApp Gateway SLA</h3>
+            <p class="card-body">
+              Pengiriman notifikasi otomatis via WhatsApp saat persetujuan pengajuan, reminder H-1 batas pengembalian, serta peringatan instan jika terjadi keterlambatan.
+            </p>
+          </div>
+        </div>
+
+        <div style="margin-top:1.5rem; background:linear-gradient(135deg, rgba(14,159,110,0.15) 0%, rgba(13,79,92,0.25) 100%); border:1px solid rgba(14,159,110,0.3); border-radius:14px; padding:1.5rem 2rem; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:1.4rem; font-weight:800; color:#ffffff;">Terima Kasih Atas Perhatian Bapak/Ibu Pimpinan</div>
+            <div style="font-size:0.95rem; color:#94a3b8; margin-top:0.25rem;">Kami siap mendemonstrasikan sistem secara langsung dan membuka sesi diskusi serta tanya jawab.</div>
+          </div>
+          <div style="text-align:right;">
+            <span class="tag-badge" style="font-size:0.85rem; padding:0.5rem 1rem;">SESI TANYA JAWAB (Q&A)</span>
+          </div>
+        </div>
+
+        <div class="slide-footer">
+          <div class="footer-left">
+            <span class="footer-dot"></span>
+            <span>BPTI UHAMKA • Membangun Keunggulan Teknologi Informasi Kampus Islami Berkemajuan</span>
+          </div>
+          <div>BPTI Enterprise Inventory System • 2026</div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 10;
+
+    function updateSlide() {
+      const el = document.getElementById(`slide-${currentSlide}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+      document.getElementById('pageIndicator').innerText = `${currentSlide} / ${totalSlides}`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        currentSlide = 1;
+        updateSlide();
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        currentSlide = totalSlides;
+        updateSlide();
+      }
+    });
+  </script>
+</body>
+</html>

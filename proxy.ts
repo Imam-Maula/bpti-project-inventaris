@@ -4,7 +4,9 @@ import { jwtVerify } from "jose";
 
 const SESSION_COOKIE_NAME = "bpti_session";
 
-async function getSessionRole(request: NextRequest): Promise<"ADMIN" | "USER" | null> {
+async function getSessionInfo(
+  request: NextRequest
+): Promise<{ role: "ADMIN" | "USER"; username: string } | null> {
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   if (!token) return null;
 
@@ -14,7 +16,13 @@ async function getSessionRole(request: NextRequest): Promise<"ADMIN" | "USER" | 
   try {
     const secretKey = new TextEncoder().encode(secret);
     const { payload } = await jwtVerify(token, secretKey, { algorithms: ["HS256"] });
-    return payload.role === "ADMIN" || payload.role === "USER" ? payload.role : null;
+    if (
+      (payload.role === "ADMIN" || payload.role === "USER") &&
+      typeof payload.username === "string"
+    ) {
+      return { role: payload.role, username: payload.username };
+    }
+    return null;
   } catch {
     return null;
   }
@@ -22,31 +30,44 @@ async function getSessionRole(request: NextRequest): Promise<"ADMIN" | "USER" | 
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const role = await getSessionRole(request);
+  const session = await getSessionInfo(request);
 
   if (
     pathname === "/login" ||
     pathname === "/register" ||
     pathname === "/forgot-password"
   ) {
-    if (role) {
+    if (session) {
+      if (session.role === "USER" && session.username.startsWith("google-")) {
+        return NextResponse.redirect(new URL("/complete-profile", request.url));
+      }
       return NextResponse.redirect(
-        new URL(role === "ADMIN" ? "/" : "/barang", request.url)
+        new URL(session.role === "ADMIN" ? "/" : "/barang", request.url)
       );
     }
     return NextResponse.next();
   }
 
-  if (!role) {
+  if (!session) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (role === "USER" && pathname === "/") {
+  if (
+    session.role === "USER" &&
+    session.username.startsWith("google-") &&
+    pathname !== "/complete-profile"
+  ) {
+    return NextResponse.redirect(new URL("/complete-profile", request.url));
+  }
+
+  if (session.role === "USER" && pathname === "/") {
     return NextResponse.redirect(new URL("/barang", request.url));
   }
   if (
-    role === "USER" &&
-    (pathname === "/aktivitas" || pathname.startsWith("/sirkulasi"))
+    session.role === "USER" &&
+    (pathname === "/aktivitas" ||
+      pathname.startsWith("/sirkulasi") ||
+      pathname.startsWith("/pengguna"))
   ) {
     return NextResponse.redirect(new URL("/barang", request.url));
   }

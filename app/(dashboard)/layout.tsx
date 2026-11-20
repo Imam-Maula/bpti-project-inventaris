@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { Role } from "@prisma/client";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { DashboardHeader } from "@/components/dashboard/dashboard-header";
 import { requireAuth } from "@/lib/dal";
@@ -8,6 +10,14 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const user = await requireAuth();
+
+  if (
+    user.role === Role.USER &&
+    user.username.startsWith("google-") &&
+    (!user.userCategory || !user.identityNumber || !user.phone)
+  ) {
+    redirect("/complete-profile");
+  }
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">

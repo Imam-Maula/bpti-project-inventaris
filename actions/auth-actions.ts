@@ -18,8 +18,10 @@ import {
   requestResetOtpSchema,
   verifyResetOtpSchema,
   resetPasswordWithOtpSchema,
+  completeGoogleProfileSchema,
   type RegisterUserInput,
   type ResetPasswordWithOtpInput,
+  type CompleteGoogleProfileInput,
 } from "@/lib/validations/auth";
 import { sendOtpEmail, sendPasswordResetOtpEmail } from "@/lib/mail";
 import {
@@ -516,6 +518,95 @@ export async function resetPasswordWithOtp(
     return {
       success: false,
       message: "Terjadi kendala pada server saat memperbarui kata sandi.",
+    };
+  }
+}
+
+/**
+ * Server Action: Melengkapi kategori civitas, NIDN/NIM/NIP, dan kontak WhatsApp
+ * untuk akun baru hasil autentikasi Google OAuth.
+ */
+export async function completeGoogleProfileAction(
+  input: CompleteGoogleProfileInput
+): Promise<AuthActionResult> {
+  const session = await verifySession();
+  if (!session) {
+    return {
+      success: false,
+      message: "Sesi login tidak ditemukan atau telah kedaluwarsa. Silakan masuk kembali.",
+    };
+  }
+
+  const validated = completeGoogleProfileSchema.safeParse(input);
+  if (!validated.success) {
+    return {
+      success: false,
+      message: validated.error.issues[0]?.message ?? "Data profil tidak valid.",
+      errors: validated.error.flatten().fieldErrors,
+    };
+  }
+
+  const { name, userCategory, identityNumber, phone } = validated.data;
+  const username = `${userCategory.toLowerCase()}-${identityNumber}`;
+
+  try {
+    const conflict = await prisma.user.findFirst({
+      where: {
+        id: { not: session.userId },
+        OR: [{ username }, { userCategory, identityNumber }],
+      },
+      select: { id: true },
+    });
+
+    if (conflict) {
+      return {
+        success: false,
+        message: "NIDN, NIM, atau NIP tersebut sudah terdaftar pada akun lain.",
+      };
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: session.userId },
+      data: {
+        name,
+        username,
+        userCategory,
+        identityNumber,
+        phone,
+        isVerified: true,
+      },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        role: true,
+        email: true,
+      },
+    });
+
+    await createSession(
+      updated.id,
+      updated.username,
+      updated.name,
+      updated.role,
+      updated.email
+    );
+
+    return {
+      success: true,
+      message: "Profil civitas berhasil dilengkapi.",
+    };
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      return {
+        success: false,
+        message: "NIDN, NIM, atau NIP tersebut sudah terdaftar pada akun lain.",
+      };
+    }
+    console.error("Kesalahan saat melengkapi profil Google:", error);
+    return {
+      success: false,
+      message: "Terjadi kendala pada server saat menyimpan data profil.",
     };
   }
 }

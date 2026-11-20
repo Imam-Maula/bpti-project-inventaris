@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Presentasi Sistem Informasi Inventaris BPTI UHAMKA</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-card: #1e293b;
+      --bg-surface: #0d3844;
+      --primary: #0d4f5c;
+      --accent: #0e9f6e;
+      --highlight: #d9f135;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* Top Bar */
+    header {
+      height: 56px;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-badge {
+      background: linear-gradient(135deg, var(--accent), var(--highlight));
+      color: #0f172a;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 800;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slide-counter {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      background: var(--bg-card);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+    }
+
+    .btn {
+      background: var(--bg-card);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: var(--primary);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background: var(--highlight);
+    }
+
+    /* Main Slide Container */
+    main {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 3.5rem 5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(20px) scale(0.98);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+
+    .slide-tag {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slide-tag::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--highlight);
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .slide-title {
+      font-size: 2.5rem;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 1.5rem;
+      background: linear-gradient(135deg, #ffffff 60%, var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .slide-subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 800px;
+      line-height: 1.6;
+      margin-bottom: 2rem;
+    }
+
+    /* Grid Cards */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .card {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      backdrop-filter: blur(8px);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+
+    .card-icon {
+      font-size: 1.75rem;
+      margin-bottom: 0.75rem;
+      display: inline-block;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-desc {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .highlight-box {
+      background: linear-gradient(135deg, rgba(13, 79, 92, 0.4), rgba(14, 159, 110, 0.2));
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .code-pill {
+      font-family: var(--font-mono);
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--highlight);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+
+    /* Progress Bar */
+    .progress-bar-container {
+      height: 4px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 8.33%;
+      background: linear-gradient(90deg, var(--accent), var(--highlight));
+      transition: width 0.3s ease;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        overflow: visible;
+        height: auto;
+      }
+      header, .progress-bar-container {
+        display: none;
+      }
+      .slide {
+        position: relative;
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        page-break-after: always;
+        height: 100vh;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand">
+      <span class="brand-badge">BPTI UHAMKA</span>
+      <span>Sistem Pengelolaan Barang Inventaris</span>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="prevBtn" title="Slide Sebelumnya (Panah Kiri)">← Prev</button>
+      <span class="slide-counter" id="slideNum">Slide 1 / 12</span>
+      <button class="btn" id="nextBtn" title="Slide Selanjutnya (Panah Kanan / Spasi)">Next →</button>
+      <button class="btn" id="fsBtn" title="Layar Penuh (F)">⛶ Fullscreen</button>
+    </div>
+  </header>
+
+  <!-- Progress Bar -->
+  <div class="progress-bar-container">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <!-- Slides -->
+  <main>
+
+    <!-- Slide 1: Cover -->
+    <section class="slide active" data-index="1">
+      <div class="slide-tag">Sidang / Presentasi PKL 2026</div>
+      <h1 class="slide-title">SISTEM INFORMASI PENGELOLAAN<br>BARANG INVENTARIS KANTOR</h1>
+      <p class="slide-subtitle">Transformasi Tata Kelola Aset, Sirkulasi Peminjaman Staf, dan Integritas Stok Fisik Berbasis Web Modern di Badan Pengembangan Teknologi Informasi (BPTI) UHAMKA.</p>
+      
+      <div class="grid-3" style="max-width: 900px;">
+        <div class="card">
+          <div class="card-icon">🏛️</div>
+          <div class="card-title">Institusi</div>
+          <div class="card-desc">BPTI UHAMKA (Universitas Muhammadiyah Prof. DR. HAMKA)</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">👥</div>
+          <div class="card-title">Tim Pengembang</div>
+          <div class="card-desc">Tim 4 Mahasiswa Praktik Kerja Lapangan (PKL) BPTI</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚡</div>
+          <div class="card-title">Arsitektur</div>
+          <div class="card-desc">Next.js 16 App Router, React 19, Prisma, MySQL 8.4</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 2: Latar Belakang -->
+    <section class="slide" data-index="2">
+      <div class="slide-tag">Problem Statement</div>
+      <h2 class="slide-title">Latar Belakang & Urgensi Masalah</h2>
+      <p class="slide-subtitle">Tantangan nyata tata kelola aset logistik kampus di lingkungan BPTI UHAMKA sebelum implementasi sistem terpadu.</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-icon">📋</div>
+          <div class="card-title">Pencatatan Konvensional & Manual</div>
+          <div class="card-desc">Pencatatan inventaris dan sirkulasi peminjaman rawan kesalahan manusia (*human error*), kehilangan lembar arsip fisik, dan ketidaksesuaian data stok.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔄</div>
+          <div class="card-title">Mobilitas Aset Sangat Cepat</div>
+          <div class="card-desc">Perangkat IT vital (Laptop, Proyektor, Microfon, Kabel Jaringan) bergerak dinamis dipinjam oleh dosen, pimpinan, dan fakultas lintas kampus.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">⏰</div>
+          <div class="card-title">Keterlambatan Sulit Terdeteksi</div>
+          <div class="card-desc">Tidak adanya alarm peringatan keterlambatan (*overdue warning*) otomatis yang memberitahu admin siapa peminjam yang melewati tanggal kembali (*due date*).</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🛡️</div>
+          <div class="card-title">Audit Trail & Riwayat Kerusakan</div>
+          <div class="card-desc">Sulit melacak siapa yang terakhir meminjam barang ketika ditemukan unit rusak atau cacat fisik saat pengembalian.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 3: Tujuan & Solusi -->
+    <section class="slide" data-index="3">
+      <div class="slide-tag">Target & Value Proposition</div>
+      <h2 class="slide-title">Tujuan & Solusi Rekayasa</h2>
+      <p class="slide-subtitle">Solusi terstruktur untuk mewujudkan tata kelola logistik kampus yang terukur, transparan, dan akuntabel.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon">🎯</div>
+          <div class="card-title">Integritas Stok Fisik 100%</div>
+          <div class="card-desc">Menjaga keseimbangan antara stok siap pakai, unit yang dipinjam, dan kuota karantina secara matematis dan atomik di basis data.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">⚡</div>
+          <div class="card-title">Digitalisasi 4-Langkah Sirkulasi</div>
+          <div class="card-desc">Mengotomasi rantai peminjaman: <em>Pengajuan User</em> → <em>Persetujuan Admin</em> → <em>Serah Terima Fisik</em> → <em>Pengembalian & Cek Fisik</em>.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📊</div>
+          <div class="card-title">Visibilitas & Akuntabilitas</div>
+          <div class="card-desc">Menyajikan dasbor analitik real-time, pencatatan log audit transparan lengkap dengan selisih data, serta cetak Berita Acara resmi.</div>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <strong style="color: var(--highlight);">Visi Sistem:</strong> 
+        Membangun platform aset terpadu berstandar <em>Digital Progressive & Modern Academic Trust</em> yang memadukan keamanan data mutlak dengan pengalaman pengguna yang gesit dan responsif.
+      </div>
+    </section>
+
+    <!-- Slide 4: Arsitektur Sistem -->
+    <section class="slide" data-index="4">
+      <div class="slide-tag">System Architecture</div>
+      <h2 class="slide-title">Arsitektur Perangkat Lunak 3-Tier</h2>
+      <p class="slide-subtitle">Pemisahan tanggung jawab secara ketat (Separation of Concerns) demi keandalan sistem jangka panjang.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon">🖥️</div>
+          <div class="card-title">Tier 1: Presentasi (Client)</div>
+          <div class="card-desc">
+            • <strong>React 19 & Tailwind CSS v4</strong><br>
+            • Live Search Multi-Kriteria tanpa reload<br>
+            • Form validasi interaktif Zod<br>
+            • Desain adaptif Dark/Light Mode BPTI
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">⚙️</div>
+          <div class="card-title">Tier 2: Aplikasi (Next.js 16)</div>
+          <div class="card-desc">
+            • <strong>App Router Server Actions</strong><br>
+            • Middleware Edge Guard JWT (<span class="code-pill">proxy.ts</span>)<br>
+            • Domain Service Layer Terisolasi (<span class="code-pill">item-service</span>, <span class="code-pill">borrow-service</span>)<br>
+            • Rate Limiting Proteksi Brute-force
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-icon">🗄️</div>
+          <div class="card-title">Tier 3: Basis Data (MySQL 8.4)</div>
+          <div class="card-desc">
+            • <strong>Prisma ORM 5.22</strong><br>
+            • Transaksi ACID dengan CAS Mutex Locking<br>
+            • Persistensi Gambar Biner (<span class="code-pill">LONGBLOB</span>)<br>
+            • Foreign Key Cascading & Relasi Kuat
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5: Tech Stack -->
+    <section class="slide" data-index="5">
+      <div class="slide-tag">Technology Choices</div>
+      <h2 class="slide-title">Tumpukan Teknologi (Tech Stack)</h2>
+      <p class="slide-subtitle">Pemilihan teknologi modern berstandar enterprise untuk performa tinggi dan keamanan maksimal.</p>
+
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-title" style="color: var(--accent);">Framework & UI</div>
+          <div class="card-desc">
+            • <strong>Next.js 16.3.7</strong><br>
+            • <strong>React 19.2.8</strong><br>
+            • Tailwind CSS Native v4<br>
+            • Lucide React Icons
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--accent);">Bahasa & Tipe</div>
+          <div class="card-desc">
+            • <strong>TypeScript 5.x</strong><br>
+            • Strict Type-Checking<br>
+            • Zod Validation Schema<br>
+            • Zero Compilation Warnings
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--accent);">Data & ORM</div>
+          <div class="card-desc">
+            • <strong>MySQL Server 8.4</strong><br>
+            • <strong>Prisma ORM 5.22.0</strong><br>
+            • InnoDB Buffer Pool 64M<br>
+            • Native Transaction Mutex
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--accent);">Keamanan</div>
+          <div class="card-desc">
+            • <strong>Bcrypt.js</strong> (Salt 12)<br>
+            • <strong>Jose JWT HS256</strong><br>
+            • HttpOnly Cookie<br>
+            • Nodemailer OTP via SMTP
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 6: Database & ERD -->
+    <section class="slide" data-index="6">
+      <div class="slide-tag">Data Modeling</div>
+      <h2 class="slide-title">Model Basis Data & Relasi Entitas (ERD)</h2>
+      <p class="slide-subtitle">Enam tabel relasional inti yang menjaga keterkaitan data peminjam, master aset, dokumentasi gambar, dan jejak audit.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">👤 users & otps</div>
+          <div class="card-desc">Otentikasi multi-peran (Admin & User), hash password aman Bcrypt, verifikasi email, dan kode OTP pendaftaran kedaluwarsa 5 menit.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">📦 items & item_images</div>
+          <div class="card-desc">Katalog master barang, kode unik inventaris, kategori, lokasi rak, kondisi fisik, serta galeri biner foto aset multi-gambar.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">📋 borrow_records & audit_logs</div>
+          <div class="card-desc">Riwayat sirkulasi dengan kode transaksi unik, due date, status 6-fase, dan log audit perbandingan selisih data lama vs baru.</div>
+        </div>
+      </div>
+
+      <div class="highlight-box">
+        <strong>Keunggulan Persistensi Foto Terintegrasi:</strong> Foto aset disimpan langsung di MySQL dalam tabel <span class="code-pill">item_images</span>, sehingga backup basis data otomatis mengamankan seluruh visual aset tanpa risiko berkas gambar hilang di harddisk.
+      </div>
+    </section>
+
+    <!-- Slide 7: Invarian Stok -->
+    <section class="slide" data-index="7">
+      <div class="slide-tag">Mathematical Integrity</div>
+      <h2 class="slide-title">Hukum Invarian Matematika Stok BPTI</h2>
+      <p class="slide-subtitle">Fondasi integritas yang menjamin jumlah fisik aset selalu konsisten dan bebas selisih.</p>
+
+      <div class="card" style="text-align: center; padding: 2rem; border-color: var(--accent);">
+        <div style="font-family: var(--font-mono); font-size: 1.4rem; color: var(--highlight); margin-bottom: 0.75rem;">
+          Total Kuota Fisik = Unit Siap Pakai + Unit Sedang Dipinjam + Unit Karantina (Rusak Berat)
+        </div>
+        <div class="card-desc" style="max-width: 700px; margin: 0 auto;">
+          Persamaan ini dipaksakan secara mutlak oleh lapisan transaksi database atomic compare-and-swap (CAS).
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-top: 1.5rem;">
+        <div class="card">
+          <div class="card-title">🛡️ Zero Negative Stock</div>
+          <div class="card-desc">Pengurangan kuota menggunakan syarat <span class="code-pill">where: availableQuantity >= borrowQuantity</span>. Transaksi gagal seketika jika stok tidak mencukupi.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">⚡ Zero Race Condition</div>
+          <div class="card-desc">Ketika dua pengguna berebut sisa 1 unit secara bersamaan, locking atomik memastikan tepat 1 pengguna sukses dan 1 lainnya ditolak secara tertib.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">🏥 Isolasi Karantina Otomatis</div>
+          <div class="card-desc">Barang yang dikembalikan dalam kondisi <span class="code-pill">RUSAK_BERAT</span> dialihkan langsung ke stok karantina dan dikunci dari sirkulasi peminjaman.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 8: Siklus Sirkulasi -->
+    <section class="slide" data-index="8">
+      <div class="slide-tag">Workflow & Governance</div>
+      <h2 class="slide-title">Alur 4-Fase Sirkulasi Peminjaman</h2>
+      <p class="slide-subtitle">Memisahkan secara tegas kesepakatan administratif dengan serah terima fisik barang nyata.</p>
+
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-icon" style="color: var(--accent);">1️⃣</div>
+          <div class="card-title">Pengajuan (User)</div>
+          <div class="card-desc">User memilih barang di katalog, memasukkan jumlah & due date. Status <span class="code-pill">PENDING</span> mereservasi kuota tanpa potong stok fisik.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="color: var(--accent);">2️⃣</div>
+          <div class="card-title">Persetujuan (Admin)</div>
+          <div class="card-desc">Admin memeriksa keperluan dan menyetujui (<span class="code-pill">APPROVED</span>) atau menolak (<span class="code-pill">DITOLAK</span>) dengan alasan terverifikasi.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="color: var(--accent);">3️⃣</div>
+          <div class="card-title">Ambil Fisik (Kantor)</div>
+          <div class="card-desc">Peminjam datang mengambil barang. Admin konfirmasi fisik, status menjadi <span class="code-pill">DIPINJAM</span>, dan stok fisik berkurang resmi.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="color: var(--accent);">4️⃣</div>
+          <div class="card-title">Kembali & Cek Fisik</div>
+          <div class="card-desc">Admin memeriksa kondisi fisik barang (Baik / Rusak Ringan / Rusak Berat). Stok dipulihkan, status menjadi <span class="code-pill">DIKEMBALIKAN</span>.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 9: Fitur Unggulan -->
+    <section class="slide" data-index="9">
+      <div class="slide-tag">System Highlights</div>
+      <h2 class="slide-title">Fitur-Fitur Unggulan Sistem</h2>
+      <p class="slide-subtitle">Dirancang untuk memudahkan pekerjaan operasional harian tim logistik dan staf kampus.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon">🚨</div>
+          <div class="card-title">Warning Keterlambatan Real-Time</div>
+          <div class="card-desc">Banner peringatan dinamis merah pada dasbor utama yang langsung menampilkan transaksi sirkulasi yang melewati tenggat waktu (*overdue*).</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔍</div>
+          <div class="card-title">Audit Trail Diff Tracker</div>
+          <div class="card-desc">Setiap aksi pembaruan atau penghapusan aset mencatat snapshot perubahan data baris demi baris (*old value* vs *new value*).</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">📄</div>
+          <div class="card-title">Dokumen Berita Acara & Ekspor CSV</div>
+          <div class="card-desc">Format cetak resmi Berita Acara Serah Terima barang siap tanda tangan dan ekspor laporan sirkulasi ke spreadsheet dalam 1 klik.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 10: Pengujian UAT -->
+    <section class="slide" data-index="10">
+      <div class="slide-tag">Quality Assurance</div>
+      <h2 class="slide-title">Jaminan Kualitas & Pengujian UAT</h2>
+      <p class="slide-subtitle">Verifikasi empiris membuktikan seluruh logika bisnis dan keamanan berjalan sempurna.</p>
+
+      <div class="grid-4">
+        <div class="card" style="border-color: var(--accent); text-align: center;">
+          <div style="font-size: 2.2rem; font-weight: 800; color: var(--highlight);">12 / 12</div>
+          <div class="card-title">UAT Fase 3</div>
+          <div class="card-desc">100% Lulus (Bcrypt, Rate Limit, CAS Mutex, Karantina, Stres Konkurensi).</div>
+        </div>
+        <div class="card" style="border-color: var(--accent); text-align: center;">
+          <div style="font-size: 2.2rem; font-weight: 800; color: var(--highlight);">6 / 6</div>
+          <div class="card-title">UAT Audit Trail</div>
+          <div class="card-desc">100% Lulus (Persistensi Diff, Filter Multi-Kriteria, Keutuhan BLOB Gambar).</div>
+        </div>
+        <div class="card" style="border-color: var(--accent); text-align: center;">
+          <div style="font-size: 2.2rem; font-weight: 800; color: var(--highlight);">0 Error</div>
+          <div class="card-title">TypeScript Typecheck</div>
+          <div class="card-desc">Strict type-checking tanpa kesalahan kompilasi tipe statis.</div>
+        </div>
+        <div class="card" style="border-color: var(--accent); text-align: center;">
+          <div style="font-size: 2.2rem; font-weight: 800; color: var(--highlight);">0 Slop</div>
+          <div class="card-title">Kode Bersih</div>
+          <div class="card-desc">Dipindai 73 berkas: Bebas artefak AI slop dan mematuhi standar desain.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 11: Tim Pengembang -->
+    <section class="slide" data-index="11">
+      <div class="slide-tag">Engineering Team</div>
+      <h2 class="slide-title">Pembagian Peran Rekayasa Tim PKL</h2>
+      <p class="slide-subtitle">Kolaborasi empat spesialisasi teknis yang saling melengkapi dalam merancang dan membangun sistem.</p>
+
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-title" style="color: var(--highlight);">Dev 1</div>
+          <div class="card-desc" style="font-weight: 600; color: #fff; margin-bottom: 0.5rem;">Lead, DB & Security</div>
+          <div class="card-desc">Perancangan skema relasional Prisma, arsitektur keamanan Bcrypt & JWT, Route Guard middleware, dan dokumentasi arsitektur.</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--highlight);">Dev 2</div>
+          <div class="card-desc" style="font-weight: 600; color: #fff; margin-bottom: 0.5rem;">Frontend Specialist</div>
+          <div class="card-desc">Implementasi antarmuka dasbor responsif, modal katalog dan galeri foto, serta skema validasi Zod berbahasa Indonesia.</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--highlight);">Dev 3</div>
+          <div class="card-desc" style="font-weight: 600; color: #fff; margin-bottom: 0.5rem;">Backend & Circulation</div>
+          <div class="card-desc">Pembangunan logika mutasi stok atomik CAS, pencegahan race condition sirkulasi, dan agregasi metrik statistik.</div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="color: var(--highlight);">Dev 4</div>
+          <div class="card-desc" style="font-weight: 600; color: #fff; margin-bottom: 0.5rem;">QA / QC & Verification</div>
+          <div class="card-desc">Penyusunan test runner otomatis UAT, simulasi stres konkurensi stok, dan sistem notifikasi Toast native.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 12: Penutup -->
+    <section class="slide" data-index="12">
+      <div class="slide-tag">Future Roadmap & Conclusion</div>
+      <h2 class="slide-title">Kesimpulan & Rencana Masa Depan</h2>
+      <p class="slide-subtitle">Sistem inventaris BPTI UHAMKA siap menjadi tulang punggung operasional logistik kampus yang modern.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-icon">📱</div>
+          <div class="card-title">Barcode & QR Code Scanning</div>
+          <div class="card-desc">Mencetak stiker QR unik per unit barang untuk mempercepat verifikasi serah terima via kamera smartphone.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">🔑</div>
+          <div class="card-title">Single Sign-On (SSO) UHAMKA</div>
+          <div class="card-desc">Integrasi akun login langsung dengan akun portal akademik civitas akademika kampus.</div>
+        </div>
+        <div class="card">
+          <div class="card-icon">💬</div>
+          <div class="card-title">WhatsApp Notification Gateway</div>
+          <div class="card-desc">Pengingat otomatis H-1 batas pengembalian barang langsung ke WhatsApp staf peminjam.</div>
+        </div>
+      </div>
+
+      <div class="highlight-box" style="text-align: center; margin-top: 2rem;">
+        <h3 style="color: #fff; font-size: 1.3rem; margin-bottom: 0.5rem;">Terima Kasih!</h3>
+        <p style="color: var(--text-muted);">Sesi Demonstrasi Sistem & Tanya Jawab (Q&A) Dibuka.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const slideNum = document.getElementById('slideNum');
+    const progressBar = document.getElementById('progressBar');
+    const fsBtn = document.getElementById('fsBtn');
+
+    let currentSlide = 1;
+    const totalSlides = slides.length;
+
+    function updateSlide(index) {
+      if (index < 1) index = 1;
+      if (index > totalSlides) index = totalSlides;
+      currentSlide = index;
+
+      slides.forEach(s => s.classList.remove('active'));
+      const activeSlide = document.querySelector(`.slide[data-index="${currentSlide}"]`);
+      if (activeSlide) activeSlide.classList.add('active');
+
+      slideNum.textContent = `Slide ${currentSlide} / ${totalSlides}`;
+      progressBar.style.width = `${(currentSlide / totalSlides) * 100}%`;
+
+      prevBtn.disabled = currentSlide === 1;
+      nextBtn.disabled = currentSlide === totalSlides;
+    }
+
+    prevBtn.addEventListener('click', () => updateSlide(currentSlide - 1));
+    nextBtn.addEventListener('click', () => updateSlide(currentSlide + 1));
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        e.preventDefault();
+        updateSlide(currentSlide + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        updateSlide(currentSlide - 1);
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullscreen();
+      }
+    });
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    fsBtn.addEventListener('click', toggleFullscreen);
+
+    updateSlide(1);
+  </script>
+</body>
+</html>
+

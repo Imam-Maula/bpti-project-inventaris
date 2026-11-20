@@ -3,7 +3,15 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { verifySession, SessionPayload } from "@/lib/session";
-import { Role } from "@prisma/client";
+import { Role, UserCategory } from "@prisma/client";
+
+export interface AuthenticatedUser extends SessionPayload {
+  id: string;
+  userCategory: UserCategory | null;
+  identityNumber: string | null;
+  phone: string | null;
+  isVerified: boolean;
+}
 
 async function findUserWithRetry(userId: string, maxAttempts = 2) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -17,6 +25,9 @@ async function findUserWithRetry(userId: string, maxAttempts = 2) {
           email: true,
           role: true,
           isVerified: true,
+          userCategory: true,
+          identityNumber: true,
+          phone: true,
         },
       });
     } catch (error) {
@@ -34,7 +45,7 @@ async function findUserWithRetry(userId: string, maxAttempts = 2) {
  * Melempar error atau redirect jika sesi tidak ditemukan.
  * Dibungkus dengan React cache() untuk deduping query per siklus render request.
  */
-export const requireAuth = cache(async (): Promise<SessionPayload> => {
+export const requireAuth = cache(async (): Promise<AuthenticatedUser> => {
   const session = await verifySession();
   if (!session) {
     redirect("/login");
@@ -56,7 +67,7 @@ export const requireAuth = cache(async (): Promise<SessionPayload> => {
   return { ...session, ...user };
 });
 
-export async function requireRole(role: Role): Promise<SessionPayload> {
+export async function requireRole(role: Role): Promise<AuthenticatedUser> {
   const session = await requireAuth();
   if (session.role !== role) {
     redirect(session.role === Role.ADMIN ? "/" : "/barang");
@@ -64,7 +75,7 @@ export async function requireRole(role: Role): Promise<SessionPayload> {
   return session;
 }
 
-export async function requireAdmin(): Promise<SessionPayload> {
+export async function requireAdmin(): Promise<AuthenticatedUser> {
   return requireRole(Role.ADMIN);
 }
 
